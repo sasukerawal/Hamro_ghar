@@ -3,9 +3,10 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-
 import authRoutes from './routes/auth.js';
 import membershipRoutes from './routes/membership.js';
+import userRoutes from './routes/user.js';
+
 
 const app = express();
 
@@ -32,6 +33,7 @@ mongoose
 // --- Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/membership', membershipRoutes);
+app.use('/api/users', userRoutes);
 
 // --- Health
 app.get('/api/health', (_req, res) => res.json({ ok: true }));

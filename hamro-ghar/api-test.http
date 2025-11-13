@@ -1,0 +1,25 @@
+GET http://localhost:4000/api/users/me
+PUT http://localhost:4000/api/users/me
+Content-Type: application/json
+
+{
+  "name": "Testing Name",
+  "phone": "9812345678",
+  "city": "Kathmandu",
+  "profilePic": "https://picsum.photos/200"
+}
+PUT http://localhost:4000/api/users/password
+Content-Type: application/json
+
+{
+  "currentPassword": "Uditrawal@1",
+  "newPassword": "Uditrawal@12"
+}
+
+POST http://localhost:4000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "rawaludit777@gmail.com.com",
+  "password": "Uditrawal@1"
+}

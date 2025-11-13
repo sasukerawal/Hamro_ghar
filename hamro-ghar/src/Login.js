@@ -1,6 +1,8 @@
 // src/Login.js
 import React, { useState } from 'react';
 import { LogIn, Mail, Lock } from 'lucide-react';
+import { toast } from "react-toastify";
+
 
 const AuthInput = ({ id, type, label, placeholder, Icon, value, onChange }) => (
   <div className="space-y-1">
@@ -52,6 +54,7 @@ export default function Login({ onLogin, onGoRegister }) {
         setError(data.error || 'Invalid email or password');
         return;
       }
+      toast.success("Login successful!");
 
       onLogin(); // success: tell App.js to update state + go membership
     } catch (err) {
