@@ -83,16 +83,13 @@ export default function HomePage({
   const [selectedHome, setSelectedHome] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 🟦 Load listings from backend if available
+  // Load listings from backend
   useEffect(() => {
     const loadListings = async () => {
       try {
         setLoadingListings(true);
         const res = await fetch("http://localhost:4000/api/listings/all");
-        if (!res.ok) {
-          // Use fallback silently
-          return;
-        }
+        if (!res.ok) return;
         const data = await res.json();
         if (Array.isArray(data.listings) && data.listings.length > 0) {
           setListings(data.listings);
@@ -107,6 +104,28 @@ export default function HomePage({
     loadListings();
   }, []);
 
+  // Load saved homes ONCE so hearts reflect real saved state
+  useEffect(() => {
+    const loadSaved = async () => {
+      try {
+        const res = await fetch(
+          "http://localhost:4000/api/listings/saved/me",
+          { credentials: "include" }
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (Array.isArray(data.saved)) {
+          const ids = data.saved.map((h) => h._id);
+          setSavedIds(ids);
+        }
+      } catch (err) {
+        console.error("Error loading saved homes for hearts", err);
+      }
+    };
+
+    loadSaved();
+  }, []);
+
   const openHomeModal = (home) => {
     setSelectedHome(home);
     setIsModalOpen(true);
@@ -117,24 +136,27 @@ export default function HomePage({
     setIsModalOpen(false);
   };
 
-  // ❤️ Save to wishlist
-  const handleSaveHome = async (listingId) => {
+  // ❤️ TOGGLE save / unsave
+  const handleToggleSaveHome = async (listingId) => {
     if (!listingId) {
       toast.error("Listing ID missing");
       return;
     }
 
-    // don’t call backend for demo cards
+    // demo cards can't actually be saved to backend
     if (String(listingId).startsWith("demo-")) {
-      toast.info("Demo homes can't be saved yet. Try with real posted homes later.");
+      toast.info("Demo homes can't be saved. Post a real home to save it.");
       return;
     }
+
+    const isAlreadySaved = savedIds.includes(listingId);
+    const method = isAlreadySaved ? "DELETE" : "POST";
 
     try {
       const res = await fetch(
         `http://localhost:4000/api/listings/save/${listingId}`,
         {
-          method: "POST",
+          method,
           credentials: "include",
         }
       );
@@ -148,19 +170,22 @@ export default function HomePage({
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Could not save home");
+        toast.error(data.error || "Could not update favourites");
         return;
       }
 
-      toast.success("Home saved to your favourites ❤️");
-
-      // remember saved listing for red heart
-      setSavedIds((prev) =>
-        prev.includes(listingId) ? prev : [...prev, listingId]
-      );
+      if (isAlreadySaved) {
+        toast.info("Removed from your favourites");
+        setSavedIds((prev) => prev.filter((id) => id !== listingId));
+      } else {
+        toast.success("Home saved to your favourites ❤️");
+        setSavedIds((prev) =>
+          prev.includes(listingId) ? prev : [...prev, listingId]
+        );
+      }
     } catch (err) {
       console.error(err);
-      toast.error("Server error while saving home");
+      toast.error("Server error while updating favourites");
     }
   };
 
@@ -171,7 +196,7 @@ export default function HomePage({
       <FeaturedListings
         listings={listings}
         loading={loadingListings}
-        onSaveHome={handleSaveHome}
+        onToggleSaveHome={handleToggleSaveHome}
         onOpenHome={openHomeModal}
         savedIds={savedIds}
       />
@@ -339,7 +364,7 @@ const HighlightItem = ({ icon, title, text }) => (
 const FeaturedListings = ({
   listings,
   loading,
-  onSaveHome,
+  onToggleSaveHome,
   onOpenHome,
   savedIds,
 }) => (
@@ -371,7 +396,7 @@ const FeaturedListings = ({
             <ListingCard
               key={home._id || home.id}
               home={home}
-              onSaveHome={onSaveHome}
+              onToggleSaveHome={onToggleSaveHome}
               onOpenHome={onOpenHome}
               isSaved={savedIds.includes(home._id || home.id)}
             />
@@ -382,10 +407,10 @@ const FeaturedListings = ({
   </section>
 );
 
-const ListingCard = ({ home, onSaveHome, onOpenHome, isSaved }) => {
+const ListingCard = ({ home, onToggleSaveHome, onOpenHome, isSaved }) => {
   const handleClickSave = (e) => {
     e.stopPropagation();
-    onSaveHome(home._id || home.id);
+    onToggleSaveHome(home._id || home.id);
   };
 
   const imageSrc =
@@ -453,75 +478,169 @@ const ListingModal = ({ home, onClose }) => {
     home?.image ||
     "https://placehold.co/800x500/eff6ff/0f172a?text=Home";
 
+  const mapsUrl =
+    home?.location?.lat && home?.location?.lng
+      ? `https://www.google.com/maps/search/?api=1&query=${home.location.lat},${home.location.lng}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+          `${home.address || ""} ${home.city || ""}`
+        )}`;
+
+  const postedDate = home.createdAt
+    ? new Date(home.createdAt).toLocaleDateString()
+    : null;
+
+  const priceLabel =
+    typeof home.price === "number" ? `Rs. ${home.price}` : home.price;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl overflow-hidden">
-        {/* Image */}
-        <div className="h-48 sm:h-64 w-full overflow-hidden">
+      <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl overflow-hidden">
+        {/* Top image */}
+        <div className="relative h-48 sm:h-64 w-full overflow-hidden">
           <img
             src={imageSrc}
-            alt={home.title || home.address}
+            alt={home.title || home.address || "Home"}
             className="h-full w-full object-cover"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src =
+                "https://placehold.co/800x500/eff6ff/0f172a?text=Home";
+            }}
           />
-        </div>
-
-        {/* Content */}
-        <div className="p-5 space-y-3 text-sm">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase text-blue-500 mb-1">
-                {home.city}
-              </p>
-              <h3 className="text-lg font-bold text-slate-900">
-                {home.title || home.address}
-              </h3>
-              <p className="text-xs text-slate-500 mt-1">{home.address}</p>
-            </div>
-            <p className="text-base font-semibold text-blue-700">
-              {home.price}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3 text-[11px] text-slate-600">
-            <span>{home.beds} beds</span>
-            <span>{home.baths} baths</span>
-            <span>{home.sqft} sqft</span>
-            <span>{home.furnished ? "Furnished" : "Unfurnished"}</span>
-            <span>{home.parking ? "Parking available" : "No parking"}</span>
-            <span>{home.internet ? "Internet included" : "No internet"}</span>
-            {home.petsAllowed !== undefined && (
-              <span>{home.petsAllowed ? "Pets allowed" : "No pets"}</span>
-            )}
-          </div>
-
-          {home.description && (
-            <p className="text-xs text-slate-600 leading-relaxed">
-              {home.description}
-            </p>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex justify-end gap-3 px-5 pb-4">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/5 to-transparent" />
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            className="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-slate-800 hover:bg-white shadow-sm"
           >
             Close
           </button>
+          {priceLabel && (
+            <div className="absolute left-4 bottom-4 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-900 shadow">
+              {priceLabel}
+              <span className="ml-1 text-[10px] font-normal text-slate-500">
+                / month
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="p-5 sm:p-6 space-y-4 text-sm">
+          {/* Header row */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+            <div>
+              <p className="text-[11px] font-semibold uppercase text-blue-500 tracking-[0.16em] mb-1">
+                {home.city || "Listed home"}
+              </p>
+              <h3 className="text-lg sm:text-xl font-bold text-slate-900">
+                {home.title || home.address || "Home for rent"}
+              </h3>
+              {home.address && (
+                <p className="text-xs text-slate-500 mt-1">{home.address}</p>
+              )}
+            </div>
+            <div className="text-right text-[11px] text-slate-500">
+              {postedDate && (
+                <p>
+                  Posted on <span className="font-medium">{postedDate}</span>
+                </p>
+              )}
+              {home._id && (
+                <p className="mt-0.5">ID: {String(home._id).slice(-6)}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Pills for core specs */}
+          <div className="flex flex-wrap gap-2 text-[11px]">
+            <SpecPill>{home.beds} beds</SpecPill>
+            <SpecPill>{home.baths} baths</SpecPill>
+            <SpecPill>{home.sqft} sqft</SpecPill>
+          </div>
+
+          {/* Amenities */}
+          <div className="space-y-1.5">
+            <p className="text-[11px] font-semibold text-slate-700 uppercase tracking-[0.14em]">
+              Amenities
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <AmenityTag active={!!home.furnished}>Furnished</AmenityTag>
+              <AmenityTag active={!!home.internet}>Internet</AmenityTag>
+              <AmenityTag active={!!home.parking}>Parking</AmenityTag>
+              <AmenityTag
+                active={home.petsAllowed !== undefined && home.petsAllowed}
+              >
+                Pets allowed
+              </AmenityTag>
+            </div>
+          </div>
+
+          {/* Description */}
+          {home.description && (
+            <div className="space-y-1.5">
+              <p className="text-[11px] font-semibold text-slate-700 uppercase tracking-[0.14em]">
+                Description
+              </p>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                {home.description}
+              </p>
+            </div>
+          )}
+
+          {/* Location / map */}
+          <div className="mt-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="text-[11px] text-slate-500">
+              <p className="font-semibold text-slate-700 mb-0.5">Location</p>
+              {home.location?.lat && home.location?.lng ? (
+                <p>
+                  Lat: {home.location.lat.toFixed(4)}, Lng:{" "}
+                  {home.location.lng.toFixed(4)}
+                </p>
+              ) : (
+                <p>Map location based on address.</p>
+              )}
+            </div>
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-[11px] font-semibold text-blue-700 hover:bg-blue-100"
+            >
+              View on Google Maps
+            </a>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-// ───────────── Testimonials ─────────────
+const SpecPill = ({ children }) => (
+  <span className="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 border border-slate-200">
+    {children}
+  </span>
+);
+
+const AmenityTag = ({ active, children }) => (
+  <span
+    className={
+      "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium border " +
+      (active
+        ? "border-blue-200 bg-blue-50 text-blue-700"
+        : "border-slate-200 bg-white text-slate-500")
+    }
+  >
+    {children}
+  </span>
+);
+
+// ───────────── Testimonials & CTA ─────────────
 
 const Testimonials = () => (
   <section className="bg-white py-12">
     <div className="max-w-6xl mx-auto px-4">
-      <div className="flex items-end justify-between gap-4 mb-6">
+      <div className="flex items.end justify-between gap-4 mb-6">
         <div>
           <p className="text-[11px] font-semibold tracking-[0.2em] text-blue-500 uppercase">
             Stories
@@ -554,8 +673,6 @@ const Testimonials = () => (
     </div>
   </section>
 );
-
-// ───────────── CTA ─────────────
 
 const CallToAction = ({ onGoRegister, onGoMembership }) => (
   <section className="bg-gradient-to-r from-blue-600 to-sky-500 text-white py-12">

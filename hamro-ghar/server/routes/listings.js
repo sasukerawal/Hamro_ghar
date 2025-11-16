@@ -8,7 +8,7 @@ import { uploadListingMedia } from "../config/multer.js";
 const router = express.Router();
 
 /* -------------------------------------------------
-    Helper: parse body types from multipart/form-data
+   Helpers
 --------------------------------------------------- */
 const toNumber = (value, fallback = 0) => {
   if (value === undefined || value === null || value === "") return fallback;
@@ -23,11 +23,45 @@ const toBoolean = (value) => {
   return v === "true" || v === "1" || v === "on" || v === "yes";
 };
 
+// 🔍 Geocode address using OpenStreetMap Nominatim
+async function geocodeAddress(address, city) {
+  if (!address || !city) return null;
+
+  try {
+    const query = encodeURIComponent(`${address}, ${city}`);
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${query}&addressdetails=1&limit=1`;
+
+    const res = await fetch(url, {
+      headers: {
+        // (optional) put your email here
+        "User-Agent": "HamroGharDev/1.0 (contact@example.com)",
+      },
+    });
+
+    if (!res.ok) {
+      console.error("Geocoding HTTP error:", res.status);
+      return null;
+    }
+
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length === 0) {
+      return null;
+    }
+
+    const best = data[0];
+    return {
+      lat: parseFloat(best.lat),
+      lng: parseFloat(best.lon),
+      displayName: best.display_name,
+    };
+  } catch (err) {
+    console.error("Geocoding error:", err);
+    return null;
+  }
+}
+
 /* -------------------------------------------------
-    CREATE LISTING (OWNER OR MEMBER)
-    Accepts multipart/form-data from PostListing.js
-    - Text fields in req.body
-    - Files in req.files (field name: "media")
+   CREATE LISTING
 --------------------------------------------------- */
 router.post(
   "/create",
@@ -35,7 +69,7 @@ router.post(
   uploadListingMedia.array("media", 10),
   async (req, res) => {
     try {
-      const ownerId = req.user.id; // from requireAuth
+      const ownerId = req.user.id;
 
       const {
         title,
@@ -49,24 +83,27 @@ router.post(
         furnished,
         parking,
         internet,
-        petsAllowed,   // NEW
+        petsAllowed,
         video,
-        lat,
-        lng,
       } = req.body;
 
       if (!title || !description || !price || !address || !city) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "Title, description, price, address, and city are required.",
-          });
+        return res.status(400).json({
+          error:
+            "Title, description, price, address, and city are required.",
+        });
       }
 
-      // Extract image URLs from Cloudinary-uploaded files
+      // 🌍 Validate address via geocoding
+      const geo = await geocodeAddress(address, city);
+      if (!geo) {
+        return res.status(400).json({
+          error:
+            "We couldn't verify this address. Please check the spelling or add more details (area, ward, nearby landmark).",
+        });
+      }
+
       const images = (req.files || []).map((file) => {
-        // multer-storage-cloudinary usually sets file.path to the URL
         return file.path || file.secure_url || file.url;
       });
 
@@ -83,19 +120,27 @@ router.post(
         furnished: toBoolean(furnished),
         parking: toBoolean(parking),
         internet: toBoolean(internet),
-        petsAllowed: toBoolean(petsAllowed), // NEW
+        petsAllowed: toBoolean(petsAllowed),
         video: video || "",
         images,
         location: {
-          lat: lat !== undefined ? toNumber(lat, null) : null,
-          lng: lng !== undefined ? toNumber(lng, null) : null,
+          lat: geo.lat,
+          lng: geo.lng,
         },
       };
 
       const listing = new Listing(listingData);
       await listing.save();
 
-      res.status(201).json({ message: "Listing created", listing });
+      res.status(201).json({
+        message: "Listing created",
+        listing,
+        geocoded: {
+          lat: geo.lat,
+          lng: geo.lng,
+          label: geo.displayName,
+        },
+      });
     } catch (err) {
       console.error("Create listing error:", err);
       res.status(500).json({ error: "Server error creating listing" });
@@ -104,7 +149,7 @@ router.post(
 );
 
 /* -------------------------------------------------
-    GET ALL LISTINGS
+   GET ALL LISTINGS
 --------------------------------------------------- */
 router.get("/all", async (req, res) => {
   try {
@@ -117,7 +162,7 @@ router.get("/all", async (req, res) => {
 });
 
 /* -------------------------------------------------
-    GET SINGLE LISTING
+   GET SINGLE LISTING
 --------------------------------------------------- */
 router.get("/:id", async (req, res) => {
   try {
@@ -126,25 +171,43 @@ router.get("/:id", async (req, res) => {
 
     res.json({ listing });
   } catch (err) {
+    console.error("Fetch listing error:", err);
     res.status(500).json({ error: "Error fetching listing" });
   }
 });
 
 /* -------------------------------------------------
-    SAVE LISTING TO WISHLIST
+   GET LISTINGS CREATED BY CURRENT USER
+   /api/listings/mine  (because of order, put before /:id)
+--------------------------------------------------- */
+router.get("/mine/all", requireAuth, async (req, res) => {
+  try {
+    const listings = await Listing.find({ ownerId: req.user.id }).sort({
+      createdAt: -1,
+    });
+    res.json({ listings });
+  } catch (err) {
+    console.error("Load my listings error:", err);
+    res.status(500).json({ error: "Failed to load your listings" });
+  }
+});
+
+/* -------------------------------------------------
+   SAVE LISTING TO WISHLIST (ADD)
 --------------------------------------------------- */
 router.post("/save/:id", requireAuth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    if (!user.savedHomes.includes(req.params.id)) {
-      user.savedHomes.push(req.params.id);
+    const listingId = req.params.id;
+
+    if (!user.savedHomes.includes(listingId)) {
+      user.savedHomes.push(listingId);
       await user.save();
     }
 
-    res.json({ message: "Saved to wishlist" });
+    res.json({ message: "Saved to wishlist", saved: true });
   } catch (err) {
     console.error("Save home error:", err);
     res.status(500).json({ error: "Failed to save home" });
@@ -152,20 +215,46 @@ router.post("/save/:id", requireAuth, async (req, res) => {
 });
 
 /* -------------------------------------------------
-    GET USER SAVED HOMES
+   REMOVE LISTING FROM WISHLIST (UNSAVE)
 --------------------------------------------------- */
-router.get("/saved/me", requireAuth, async (req, res) => {
+router.delete("/save/:id", requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const listingId = req.params.id;
+    const before = user.savedHomes.length;
+
+    user.savedHomes = user.savedHomes.filter(
+      (id) => id.toString() !== listingId
+    );
+
+    if (user.savedHomes.length !== before) {
+      await user.save();
+    }
+
+    res.json({ message: "Removed from wishlist", saved: false });
+  } catch (err) {
+    console.error("Unsave home error:", err);
+    res.status(500).json({ error: "Failed to remove home" });
+  }
+});
+
+/* -------------------------------------------------
+   GET USER SAVED HOMES
+--------------------------------------------------- */
+router.get("/saved/me/all", requireAuth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).populate("savedHomes");
-
     res.json({ saved: user.savedHomes || [] });
   } catch (err) {
+    console.error("Load saved homes error:", err);
     res.status(500).json({ error: "Failed to load saved homes" });
   }
 });
 
 /* -------------------------------------------------
-    DELETE LISTING (OWNER ONLY)
+   DELETE LISTING (OWNER ONLY)
 --------------------------------------------------- */
 router.delete("/:id", requireAuth, async (req, res) => {
   try {
@@ -174,13 +263,14 @@ router.delete("/:id", requireAuth, async (req, res) => {
     if (!listing) return res.status(404).json({ error: "Listing not found" });
 
     if (listing.ownerId.toString() !== req.user.id.toString()) {
-      return res.status(403).json({ error: "Not allowed" });
+      return res.status(403).json({ error: "You can only delete your own listing" });
     }
 
     await Listing.findByIdAndDelete(req.params.id);
 
     res.json({ message: "Listing deleted" });
   } catch (err) {
+    console.error("Delete listing error:", err);
     res.status(500).json({ error: "Error deleting listing" });
   }
 });
