@@ -9,6 +9,10 @@ import {
   ArrowRight,
   Phone,
   Home as HomeIcon,
+  Eye,
+  Copy,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -24,6 +28,7 @@ const FALLBACK_LISTINGS = [
     city: "Kathmandu",
     image:
       "https://images.unsplash.com/photo-1600596542815-7b95e06b5f3c?auto=format&fit=crop&w=900&q=80",
+    views: 0,
   },
   {
     _id: "demo-2",
@@ -35,6 +40,7 @@ const FALLBACK_LISTINGS = [
     city: "Kathmandu",
     image:
       "https://images.unsplash.com/photo-1590490359854-dfba19688d70?auto=format&fit=crop&w=900&q=80",
+    views: 0,
   },
   {
     _id: "demo-3",
@@ -46,6 +52,7 @@ const FALLBACK_LISTINGS = [
     city: "Pokhara",
     image:
       "https://images.unsplash.com/photo-1600585154340-0ef3c08c0632?auto=format&fit=crop&w=900&q=80",
+    views: 0,
   },
 ];
 
@@ -79,32 +86,98 @@ export default function HomePage({
 }) {
   const [listings, setListings] = useState(FALLBACK_LISTINGS);
   const [loadingListings, setLoadingListings] = useState(false);
-  const [savedIds, setSavedIds] = useState([]);
+
+  // Filters
+  const [searchCity, setSearchCity] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [beds, setBeds] = useState("");
+  const [petsOnly, setPetsOnly] = useState(false);
+  const [furnishedOnly, setFurnishedOnly] = useState(false);
+
+  // Modal
   const [selectedHome, setSelectedHome] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Load listings from backend
-  useEffect(() => {
-    const loadListings = async () => {
-      try {
-        setLoadingListings(true);
-        const res = await fetch("http://localhost:4000/api/listings/all");
-        if (!res.ok) return;
-        const data = await res.json();
-        if (Array.isArray(data.listings) && data.listings.length > 0) {
-          setListings(data.listings);
-        }
-      } catch (err) {
-        console.error("Error loading listings", err);
-      } finally {
-        setLoadingListings(false);
-      }
-    };
+  // Hero stats
+  const [stats, setStats] = useState({
+    totalListings: null,
+    citiesCount: null,
+    avgViews: null,
+  });
 
-    loadListings();
+  // ❤️ Saved homes (for hearts)
+  const [savedIds, setSavedIds] = useState([]);
+
+  // Load listings from backend (with filters)
+  const fetchListings = async (opts = {}) => {
+    const {
+      city = searchCity,
+      min = minPrice,
+      max = maxPrice,
+      minBeds = beds,
+      pets = petsOnly,
+      furnished = furnishedOnly,
+    } = opts;
+
+    try {
+      setLoadingListings(true);
+
+      const params = new URLSearchParams();
+      if (city.trim()) params.append("city", city.trim());
+      if (min) params.append("minPrice", min);
+      if (max) params.append("maxPrice", max);
+      if (minBeds) params.append("beds", minBeds);
+      if (pets) params.append("petsAllowed", "true");
+      if (furnished) params.append("furnished", "true");
+
+      const qs = params.toString();
+      const res = await fetch(
+        `http://localhost:4000/api/listings/all${qs ? `?${qs}` : ""}`
+      );
+
+      if (!res.ok) {
+        // Silent fallback: keep demo listings
+        return;
+      }
+
+      const data = await res.json();
+      if (Array.isArray(data.listings) && data.listings.length > 0) {
+        setListings(data.listings);
+      } else {
+        setListings([]);
+      }
+    } catch (err) {
+      console.error("Error loading listings", err);
+    } finally {
+      setLoadingListings(false);
+    }
+  };
+
+  // Load stats for hero box
+  const fetchStats = async () => {
+    try {
+      const res = await fetch("http://localhost:4000/api/listings/stats");
+      if (!res.ok) return;
+      const data = await res.json();
+      setStats({
+        totalListings: data.totalListings ?? null,
+        citiesCount: data.citiesCount ?? null,
+        avgViews: data.avgViews ?? null,
+      });
+    } catch (err) {
+      console.error("Error loading listing stats", err);
+    }
+  };
+
+  // Initial load: listings + stats
+  useEffect(() => {
+    fetchListings();
+    fetchStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load saved homes ONCE so hearts reflect real saved state
+  // Load saved homes once so hearts reflect real saved state
   useEffect(() => {
     const loadSaved = async () => {
       try {
@@ -115,7 +188,7 @@ export default function HomePage({
         if (!res.ok) return;
         const data = await res.json();
         if (Array.isArray(data.saved)) {
-          const ids = data.saved.map((h) => h._id);
+          const ids = data.saved.map((h) => h._id || h.id);
           setSavedIds(ids);
         }
       } catch (err) {
@@ -126,37 +199,27 @@ export default function HomePage({
     loadSaved();
   }, []);
 
-  const openHomeModal = (home) => {
-    setSelectedHome(home);
-    setIsModalOpen(true);
-  };
-
-  const closeHomeModal = () => {
-    setSelectedHome(null);
-    setIsModalOpen(false);
-  };
-
-  // ❤️ TOGGLE save / unsave
-  const handleToggleSaveHome = async (listingId) => {
-    if (!listingId) {
+  // ❤️ Save / unsave home using your backend routes
+  const handleToggleSaveHome = async (listing) => {
+    const id = listing?._id || listing?.id;
+    if (!id) {
       toast.error("Listing ID missing");
       return;
     }
 
-    // demo cards can't actually be saved to backend
-    if (String(listingId).startsWith("demo-")) {
+    // Demo cards can't actually be saved to backend
+    if (String(id).startsWith("demo-")) {
       toast.info("Demo homes can't be saved. Post a real home to save it.");
       return;
     }
 
-    const isAlreadySaved = savedIds.includes(listingId);
-    const method = isAlreadySaved ? "DELETE" : "POST";
+    const isSaved = savedIds.includes(id);
 
     try {
       const res = await fetch(
-        `http://localhost:4000/api/listings/save/${listingId}`,
+        `http://localhost:4000/api/listings/save/${id}`,
         {
-          method,
+          method: isSaved ? "DELETE" : "POST",
           credentials: "include",
         }
       );
@@ -170,33 +233,117 @@ export default function HomePage({
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Could not update favourites");
+        toast.error(data.error || "Could not update saved status");
         return;
       }
 
-      if (isAlreadySaved) {
-        toast.info("Removed from your favourites");
-        setSavedIds((prev) => prev.filter((id) => id !== listingId));
-      } else {
-        toast.success("Home saved to your favourites ❤️");
-        setSavedIds((prev) =>
-          prev.includes(listingId) ? prev : [...prev, listingId]
+      toast.success(
+        isSaved
+          ? "Removed from your favourites"
+          : "Home saved to your favourites ❤️"
+      );
+
+      setSavedIds((prev) =>
+        isSaved ? prev.filter((savedId) => savedId !== id) : [...prev, id]
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error("Server error while updating saved status");
+    }
+  };
+
+  // 👁️ Open modal + bump view count
+  const openHomeModal = async (home) => {
+    setSelectedHome(home);
+    setIsModalOpen(true);
+
+    const id = home?._id || home?.id;
+    if (!id || String(id).startsWith("demo-")) return;
+
+    try {
+      const res = await fetch(
+        `http://localhost:4000/api/listings/${id}/view`,
+        { method: "POST" }
+      );
+
+      if (!res.ok) return;
+      const data = await res.json();
+
+      if (typeof data.views === "number") {
+        setListings((prev) =>
+          prev.map((l) =>
+            (l._id || l.id) === id ? { ...l, views: data.views } : l
+          )
+        );
+        setSelectedHome((prev) =>
+          prev && (prev._id || prev.id) === id
+            ? { ...prev, views: data.views }
+            : prev
         );
       }
     } catch (err) {
-      console.error(err);
-      toast.error("Server error while updating favourites");
+      console.error("Increment view error", err);
     }
+  };
+
+  const closeHomeModal = () => {
+    setSelectedHome(null);
+    setIsModalOpen(false);
+  };
+
+  const handleRunSearch = () => {
+    fetchListings();
+  };
+
+  const handleClearFilters = () => {
+    setSearchCity("");
+    setMinPrice("");
+    setMaxPrice("");
+    setBeds("");
+    setPetsOnly(false);
+    setFurnishedOnly(false);
+    fetchListings({
+      city: "",
+      min: "",
+      max: "",
+      minBeds: "",
+      pets: false,
+      furnished: false,
+    });
   };
 
   return (
     <>
-      <HeroSection onGoLogin={onGoLogin} />
+      <HeroSection
+        searchCity={searchCity}
+        setSearchCity={setSearchCity}
+        onSearch={handleRunSearch}
+        onGoLogin={onGoLogin}
+        stats={stats}
+      />
       <HighlightStrip />
+
+      <FiltersBar
+        searchCity={searchCity}
+        setSearchCity={setSearchCity}
+        minPrice={minPrice}
+        setMinPrice={setMinPrice}
+        maxPrice={maxPrice}
+        setMaxPrice={setMaxPrice}
+        beds={beds}
+        setBeds={setBeds}
+        petsOnly={petsOnly}
+        setPetsOnly={setPetsOnly}
+        furnishedOnly={furnishedOnly}
+        setFurnishedOnly={setFurnishedOnly}
+        onSearch={handleRunSearch}
+        onClear={handleClearFilters}
+      />
+
       <FeaturedListings
         listings={listings}
         loading={loadingListings}
-        onToggleSaveHome={handleToggleSaveHome}
+        onToggleSave={handleToggleSaveHome}
         onOpenHome={openHomeModal}
         savedIds={savedIds}
       />
@@ -206,8 +353,13 @@ export default function HomePage({
         onGoMembership={onGoMembership}
       />
 
-      {isModalOpen && (
-        <ListingModal home={selectedHome} onClose={closeHomeModal} />
+      {isModalOpen && selectedHome && (
+        <ListingModal
+          home={selectedHome}
+          onClose={closeHomeModal}
+          onToggleSave={handleToggleSaveHome}
+          isSaved={savedIds.includes(selectedHome._id || selectedHome.id)}
+        />
       )}
     </>
   );
@@ -215,11 +367,19 @@ export default function HomePage({
 
 // ───────────────── Hero section ─────────────────
 
-const HeroSection = ({ onGoLogin }) => {
-  const [query, setQuery] = useState("");
+const HeroSection = ({
+  searchCity,
+  setSearchCity,
+  onSearch,
+  onGoLogin,
+  stats,
+}) => {
+  const total = stats.totalListings ?? "12,430";
+  const cities = stats.citiesCount ?? "32";
+  const avgViews = stats.avgViews ?? "9+";
 
   return (
-    <section className="bg-gradient-to-br from-blue-50 via-white to-blue-100">
+    <section className="bg-gradient.to-br from-blue-50 via-white to-blue-100">
       <div className="max-w-6xl mx-auto px-4 py-16 lg:py-24 grid gap-10 lg:grid-cols-2 items-center">
         <div>
           <p className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 border border-blue-100 mb-4">
@@ -231,7 +391,7 @@ const HeroSection = ({ onGoLogin }) => {
             <span className="text-blue-600"> feels like you.</span>
           </h1>
           <p className="mt-3 text-slate-600 text-sm sm:text-base max-w-md">
-            Search blue &amp; white modern homes, cozy apartments, and family
+            Search modern blue &amp; white homes, cozy apartments, and family
             spaces across the city in just a few clicks.
           </p>
 
@@ -240,14 +400,15 @@ const HeroSection = ({ onGoLogin }) => {
               <MapPin className="h-4 w-4 text-blue-500" />
               <input
                 type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Enter area, city, or postcode"
+                value={searchCity}
+                onChange={(e) => setSearchCity(e.target.value)}
+                placeholder="Enter area or city, e.g. Baneshwor, Kathmandu"
                 className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
               />
             </div>
             <button
               type="button"
+              onClick={onSearch}
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
             >
               <Search className="h-4 w-4" />
@@ -256,7 +417,7 @@ const HeroSection = ({ onGoLogin }) => {
           </div>
 
           <div className="mt-4 flex items-center gap-4 text-xs text-slate-500">
-            <div className="flex items-center gap-1">
+            <div className="flex.items-center gap-1">
               <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
               <span>4.9/5 from 2k+ users</span>
             </div>
@@ -270,30 +431,33 @@ const HeroSection = ({ onGoLogin }) => {
           </div>
         </div>
 
-        <HeroStatsCard />
+        <HeroStatsCard
+          totalListings={total}
+          cities={cities}
+          avgViews={avgViews}
+        />
       </div>
     </section>
   );
 };
 
-const HeroStatsCard = () => (
+const HeroStatsCard = ({ totalListings, cities, avgViews }) => (
   <div className="relative">
     <div className="relative rounded-3xl bg-gradient-to-tr from-blue-600 to-sky-500 text-white p-6 sm:p-8 shadow-xl overflow-hidden">
       <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10" />
-      <div className="absolute -bottom-8 -left-12 h-32 w-32 rounded-full bg-white/10" />
+      <div className="absolute -bottom-8 -left-12 h-32 w-32 rounded-full bg.white/10" />
 
       <p className="text-xs uppercase tracking-[0.2em] text-blue-100 mb-2">
         Live listings
       </p>
-      <p className="text-3xl font-bold mb-1">12,430</p>
+      <p className="text-3xl font-bold mb-1">{totalListings}</p>
       <p className="text-xs text-blue-100 mb-6">
         properties available right now
       </p>
 
       <div className="space-y-3 text-xs">
-        <HeroStat label="Average response time" value="15 min" />
-        <HeroStat label="Homes viewed per user" value="9+" />
-        <HeroStat label="Cities covered" value="32" />
+        <HeroStat label="Average homes viewed per user" value={avgViews} />
+        <HeroStat label="Cities covered" value={cities} />
       </div>
 
       <div className="mt-6 flex items-center gap-3">
@@ -321,6 +485,103 @@ const AvatarInitial = ({ label }) => (
   <div className="h-7 w-7 rounded-full bg-white/90 flex items-center justify-center text-xs font-semibold text-blue-700 border border-blue-100">
     {label}
   </div>
+);
+
+// ───────────── Filters bar ─────────────
+
+const FiltersBar = ({
+  searchCity,
+  setSearchCity,
+  minPrice,
+  setMinPrice,
+  maxPrice,
+  setMaxPrice,
+  beds,
+  setBeds,
+  petsOnly,
+  setPetsOnly,
+  furnishedOnly,
+  setFurnishedOnly,
+  onSearch,
+  onClear,
+}) => (
+  <section className="bg-white border-y border-blue-50">
+    <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="grid gap-3 sm:grid-cols-4 flex-1">
+        <FilterInput
+          label="City / Area"
+          placeholder="Baneshwor"
+          value={searchCity}
+          onChange={(e) => setSearchCity(e.target.value)}
+        />
+        <FilterInput
+          label="Min rent (Rs)"
+          type="number"
+          value={minPrice}
+          onChange={(e) => setMinPrice(e.target.value)}
+        />
+        <FilterInput
+          label="Max rent (Rs)"
+          type="number"
+          value={maxPrice}
+          onChange={(e) => setMaxPrice(e.target.value)}
+        />
+        <FilterInput
+          label="Min beds"
+          type="number"
+          value={beds}
+          onChange={(e) => setBeds(e.target.value)}
+        />
+      </div>
+      <div className="flex flex-wrap gap-2 mt-2 sm:mt-0 sm:ml-4">
+        <FilterCheckbox
+          label="Pets allowed"
+          checked={petsOnly}
+          onChange={(e) => setPetsOnly(e.target.checked)}
+        />
+        <FilterCheckbox
+          label="Furnished only"
+          checked={furnishedOnly}
+          onChange={(e) => setFurnishedOnly(e.target.checked)}
+        />
+        <button
+          type="button"
+          onClick={onSearch}
+          className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+        >
+          Apply filters
+        </button>
+        <button
+          type="button"
+          onClick={onClear}
+          className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
+        >
+          Clear
+        </button>
+      </div>
+    </div>
+  </section>
+);
+
+const FilterInput = ({ label, ...props }) => (
+  <div className="text-xs">
+    <p className="font-semibold text-slate-700 mb-1">{label}</p>
+    <input
+      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+      {...props}
+    />
+  </div>
+);
+
+const FilterCheckbox = ({ label, ...props }) => (
+  <label className="inline-flex items-center gap-1.5 text-[11px] text-slate-700 cursor-pointer">
+    <input
+      type="checkbox"
+      className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+      {...props}
+    />
+    <span>{label}</span>
+  </label>
 );
 
 // ───────────── Highlight strip ─────────────
@@ -359,12 +620,12 @@ const HighlightItem = ({ icon, title, text }) => (
   </div>
 );
 
-// ───────────── Featured listings (with Save) ─────────────
+// ───────────── Featured listings ─────────────
 
 const FeaturedListings = ({
   listings,
   loading,
-  onToggleSaveHome,
+  onToggleSave,
   onOpenHome,
   savedIds,
 }) => (
@@ -379,44 +640,45 @@ const FeaturedListings = ({
             Homes picked for you
           </h2>
         </div>
-        <button
-          type="button"
-          className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:text-blue-800"
-        >
-          View all
-          <ArrowRight className="h-3.5 w-3.5" />
-        </button>
       </div>
 
       {loading ? (
         <p className="text-xs text-slate-500">Loading listings…</p>
+      ) : listings.length === 0 ? (
+        <p className="text-xs text-slate-500">
+          No homes match these filters yet. Try adjusting your search.
+        </p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {listings.map((home) => (
-            <ListingCard
-              key={home._id || home.id}
-              home={home}
-              onToggleSaveHome={onToggleSaveHome}
-              onOpenHome={onOpenHome}
-              isSaved={savedIds.includes(home._id || home.id)}
-            />
-          ))}
+          {listings.map((home) => {
+            const id = home._id || home.id;
+            const isSaved = savedIds.includes(id);
+            return (
+              <ListingCard
+                key={id}
+                home={home}
+                onToggleSave={onToggleSave}
+                onOpenHome={onOpenHome}
+                isSaved={isSaved}
+              />
+            );
+          })}
         </div>
       )}
     </div>
   </section>
 );
 
-const ListingCard = ({ home, onToggleSaveHome, onOpenHome, isSaved }) => {
-  const handleClickSave = (e) => {
-    e.stopPropagation();
-    onToggleSaveHome(home._id || home.id);
-  };
-
+const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved }) => {
   const imageSrc =
-    home?.images?.[0] ||
-    home?.image ||
+    home.images?.[0] ||
+    home.image ||
     "https://placehold.co/600x400/eff6ff/0f172a?text=Home";
+
+  const handleSaveClick = (e) => {
+    e.stopPropagation();
+    onToggleSave(home);
+  };
 
   return (
     <div
@@ -426,7 +688,7 @@ const ListingCard = ({ home, onToggleSaveHome, onOpenHome, isSaved }) => {
       <div className="relative h-40 w-full overflow-hidden">
         <img
           src={imageSrc}
-          alt={home.address || home.title || "Home"}
+          alt={home.address}
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           onError={(e) => {
             e.target.onerror = null;
@@ -436,23 +698,20 @@ const ListingCard = ({ home, onToggleSaveHome, onOpenHome, isSaved }) => {
         />
         <button
           type="button"
-          onClick={handleClickSave}
-          className={
-            "absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full shadow-sm transition-colors " +
-            (isSaved
-              ? "bg-red-500 text-white"
-              : "bg-white/90 text-slate-700 hover:bg-blue-50")
-          }
+          onClick={handleSaveClick}
+          className={`absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 shadow-sm hover:bg-blue-50 ${
+            isSaved ? "text-red-500" : "text-slate-700"
+          }`}
         >
-          <Heart className={"h-4 w-4 " + (isSaved ? "fill-current" : "")} />
+          <Heart className="h-4 w-4" fill={isSaved ? "currentColor" : "none"} />
         </button>
         <span className="absolute left-3 bottom-3 rounded-full bg-blue-600/90 px-2.5 py-1 text-[11px] font-semibold text-white">
-          {home.price}
+          {typeof home.price === "number" ? `Rs. ${home.price}` : home.price}
         </span>
       </div>
       <div className="p-3.5 space-y-2">
         <p className="text-sm font-semibold text-slate-900 truncate">
-          {home.address}
+          {home.title || home.address}
         </p>
         <p className="text-xs text-slate-500 flex items-center gap-1">
           <MapPin className="h-3.5 w-3.5 text-blue-500" />
@@ -463,20 +722,127 @@ const ListingCard = ({ home, onToggleSaveHome, onOpenHome, isSaved }) => {
           <span>{home.baths} baths</span>
           <span>{home.sqft} sqft</span>
         </div>
+        <div className="mt-1 flex items-center justify-between text-[10px] text-slate-400">
+          <span className="inline-flex items-center gap-1">
+            <Eye className="h-3 w-3" />
+            {home.views ?? 0} views
+          </span>
+        </div>
       </div>
     </div>
   );
 };
 
-// ───────────── Modal for listing details ─────────────
+// ───────────── Testimonials ─────────────
 
-const ListingModal = ({ home, onClose }) => {
+const Testimonials = () => (
+  <section className="bg-white py-12">
+    <div className="max-w-6xl mx-auto px-4">
+      <div className="flex items-end justify-between gap-4 mb-6">
+        <div>
+          <p className="text-[11px] font-semibold tracking-[0.2em] text-blue-500 uppercase">
+            Stories
+          </p>
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+            What members say
+          </h2>
+        </div>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-3">
+        {TESTIMONIALS.map((item) => (
+          <div
+            key={item.id}
+            className="rounded-2xl border border-blue-50 bg-slate-50/60 p-4 shadow-sm"
+          >
+            <div className="flex items-center gap-1 mb-2">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <Star
+                  key={i}
+                  className="h-3.5 w-3.5 text-yellow-400 fill-yellow-400"
+                />
+              ))}
+            </div>
+            <p className="text-sm text-slate-700 mb-4">“{item.quote}”</p>
+            <p className="text-xs font-semibold text-slate-900">{item.name}</p>
+            <p className="text-[11px] text-slate-500">{item.role}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
+// ───────────── CTA ─────────────
+
+const CallToAction = ({ onGoRegister, onGoMembership }) => (
+  <section className="bg-gradient-to-r from-blue-600 to-sky-500 text-white py-12">
+    <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div>
+        <p className="text-xs uppercase tracking-[0.2em] text-blue-100 mb-1">
+          Membership
+        </p>
+        <h2 className="text-2xl sm:text-3xl font-bold">
+          Unlock member-only homes &amp; support
+        </h2>
+        <p className="mt-2 text-sm text-blue-100 max-w-md">
+          Get saved searches, instant alerts, and priority help from our team —
+          all in one clean, simple dashboard.
+        </p>
+      </div>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <button
+          type="button"
+          onClick={onGoRegister}
+          className="inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 shadow-md hover:bg-slate-100"
+        >
+          Get started free
+        </button>
+        <button
+          type="button"
+          onClick={onGoMembership}
+          className="inline-flex items-center justify-center rounded-full border border-blue-100 bg-blue-500/20 px-4 py-2.5 text-xs font-semibold text.white hover:bg-blue-500/40"
+        >
+          View member dashboard
+          <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  </section>
+);
+
+// ───────────── Listing Modal with message templates + gallery ─────────────
+
+const messageTemplates = [
+  "Hi, I saw your listing on HamroGhar. Is this home still available?",
+  "Hello, I’m interested in your listing. Can we schedule a viewing this week?",
+  "Hi, could you please share more details about utilities, internet and any extra fees?",
+];
+
+const ListingModal = ({ home, onClose, onToggleSave, isSaved }) => {
+  // ✅ Hooks at the top
+  const [activeIndex, setActiveIndex] = useState(0);
+  const homeKey = home ? (home._id || home.id) : null;
+
+  // Reset to first image whenever a different home is opened
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [homeKey]);
+
   if (!home) return null;
 
-  const imageSrc =
-    home?.images?.[0] ||
-    home?.image ||
+  // 🔹 Handle multiple images
+  const rawImages =
+    (Array.isArray(home.images) && home.images.length > 0
+      ? home.images
+      : home.image
+      ? [home.image]
+      : []) || [];
+
+  const fallbackImg =
     "https://placehold.co/800x500/eff6ff/0f172a?text=Home";
+
+  const images = rawImages.length > 0 ? rawImages : [fallbackImg];
+  const currentImage = images[activeIndex] || fallbackImg;
 
   const mapsUrl =
     home?.location?.lat && home?.location?.lng
@@ -492,35 +858,125 @@ const ListingModal = ({ home, onClose }) => {
   const priceLabel =
     typeof home.price === "number" ? `Rs. ${home.price}` : home.price;
 
+  const handleCopyTemplate = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Message copied. You can paste it in chat or SMS.");
+    } catch (err) {
+      console.error("Clipboard error", err);
+      toast.error("Could not copy message, please copy manually.");
+    }
+  };
+
+  const handleToggleSaveClick = (e) => {
+    e.stopPropagation();
+    onToggleSave(home);
+  };
+
+  // ✅ Close when tapping on the dark backdrop
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  const goPrev = (e) => {
+    e.stopPropagation();
+    setActiveIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const goNext = (e) => {
+    e.stopPropagation();
+    setActiveIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const handleThumbClick = (e, idx) => {
+    e.stopPropagation();
+    setActiveIndex(idx);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl overflow-hidden">
-        {/* Top image */}
-        <div className="relative h-48 sm:h-64 w-full overflow-hidden">
-          <img
-            src={imageSrc}
-            alt={home.title || home.address || "Home"}
-            className="h-full w-full object-cover"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src =
-                "https://placehold.co/800x500/eff6ff/0f172a?text=Home";
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/5 to-transparent" />
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-slate-800 hover:bg-white shadow-sm"
-          >
-            Close
-          </button>
-          {priceLabel && (
-            <div className="absolute left-4 bottom-4 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-900 shadow">
-              {priceLabel}
-              <span className="ml-1 text-[10px] font-normal text-slate-500">
-                / month
-              </span>
+    <div
+      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4 py-6"
+      onClick={handleBackdropClick}
+    >
+      {/* Scrollable panel with max height */}
+      <div className="w-full max-w-xl max-h-[90vh] rounded-3xl bg-white shadow-2xl overflow-y-auto">
+        {/* Top image + gallery */}
+        <div className="relative w-full overflow-hidden">
+          <div className="relative h-48 sm:h-64 w-full">
+            <img
+              src={currentImage}
+              alt={home.title || home.address || "Home"}
+              className="h-full w-full object-cover"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = fallbackImg;
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/5 to-transparent" />
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-slate-800 hover:bg-white shadow-sm"
+            >
+              Close
+            </button>
+            {priceLabel && (
+              <div className="absolute left-4 bottom-4 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-900 shadow">
+                {priceLabel}
+                <span className="ml-1 text-[10px] font-normal text-slate-500">
+                  / month
+                </span>
+              </div>
+            )}
+
+            {/* ⬅️➡️ arrows if multiple images */}
+            {images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={goPrev}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white hover:bg-black/60"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={goNext}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white hover:bg-black/60"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Thumbnails */}
+          {images.length > 1 && (
+            <div className="flex gap-2 px-4 py-3 bg-white/95 border-t border-slate-100 overflow-x-auto">
+              {images.map((img, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={(e) => handleThumbClick(e, idx)}
+                  className={`h-14 w-20 rounded-xl overflow-hidden border ${
+                    idx === activeIndex
+                      ? "border-blue-500"
+                      : "border-slate-200"
+                  } flex-shrink-0`}
+                >
+                  <img
+                    src={img}
+                    alt={`Thumbnail ${idx + 1}`}
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = fallbackImg;
+                    }}
+                  />
+                </button>
+              ))}
             </div>
           )}
         </div>
@@ -549,10 +1005,14 @@ const ListingModal = ({ home, onClose }) => {
               {home._id && (
                 <p className="mt-0.5">ID: {String(home._id).slice(-6)}</p>
               )}
+              <p className="mt-1 flex items-center justify-end gap-1">
+                <Eye className="h-3 w-3" />
+                {home.views ?? 0} views
+              </p>
             </div>
           </div>
 
-          {/* Pills for core specs */}
+          {/* Specs */}
           <div className="flex flex-wrap gap-2 text-[11px]">
             <SpecPill>{home.beds} beds</SpecPill>
             <SpecPill>{home.baths} baths</SpecPill>
@@ -588,7 +1048,35 @@ const ListingModal = ({ home, onClose }) => {
             </div>
           )}
 
-          {/* Location / map */}
+          {/* Quick contact templates */}
+          <div className="space-y-1.5">
+            <p className="text-[11px] font-semibold text-slate-700 uppercase tracking-[0.14em]">
+              Message templates
+            </p>
+            <p className="text-[11px] text-slate-500 mb-1">
+              Copy a ready-made message to send on WhatsApp, Messenger or SMS.
+            </p>
+            <div className="space-y-1.5">
+              {messageTemplates.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+                >
+                  <p className="flex-1 text-[11px] text-slate-700">{msg}</p>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyTemplate(msg)}
+                    className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-blue-700 hover:bg-blue-50"
+                  >
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Location / map + save */}
           <div className="mt-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="text-[11px] text-slate-500">
               <p className="font-semibold text-slate-700 mb-0.5">Location</p>
@@ -598,17 +1086,34 @@ const ListingModal = ({ home, onClose }) => {
                   {home.location.lng.toFixed(4)}
                 </p>
               ) : (
-                <p>Map location based on address.</p>
+                <p>Map is based on the address you see above.</p>
               )}
             </div>
-            <a
-              href={mapsUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-[11px] font-semibold text-blue-700 hover:bg-blue-100"
-            >
-              View on Google Maps
-            </a>
+            <div className="flex gap-2 flex-wrap justify-end">
+              <button
+                type="button"
+                onClick={handleToggleSaveClick}
+                className={`inline-flex items-center justify-center rounded-full border px-3 py-1.5 text-[11px] font-semibold ${
+                  isSaved
+                    ? "border-red-200 bg-red-50 text-red-600"
+                    : "border-blue-200 bg-blue-50 text-blue-700"
+                }`}
+              >
+                <Heart
+                  className="h-3.5 w-3.5 mr-1"
+                  fill={isSaved ? "currentColor" : "none"}
+                />
+                {isSaved ? "Saved" : "Save"}
+              </button>
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-[11px] font-semibold text-blue-700 hover:bg-blue-100"
+              >
+                View on Google Maps
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -633,79 +1138,4 @@ const AmenityTag = ({ active, children }) => (
   >
     {children}
   </span>
-);
-
-// ───────────── Testimonials & CTA ─────────────
-
-const Testimonials = () => (
-  <section className="bg-white py-12">
-    <div className="max-w-6xl mx-auto px-4">
-      <div className="flex items.end justify-between gap-4 mb-6">
-        <div>
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-blue-500 uppercase">
-            Stories
-          </p>
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
-            What members say
-          </h2>
-        </div>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        {TESTIMONIALS.map((item) => (
-          <div
-            key={item.id}
-            className="rounded-2xl border border-blue-50 bg-slate-50/60 p-4 shadow-sm"
-          >
-            <div className="flex items-center gap-1 mb-2">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <Star
-                  key={i}
-                  className="h-3.5 w-3.5 text-yellow-400 fill-yellow-400"
-                />
-              ))}
-            </div>
-            <p className="text-sm text-slate-700 mb-4">“{item.quote}”</p>
-            <p className="text-xs font-semibold text-slate-900">{item.name}</p>
-            <p className="text-[11px] text-slate-500">{item.role}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  </section>
-);
-
-const CallToAction = ({ onGoRegister, onGoMembership }) => (
-  <section className="bg-gradient-to-r from-blue-600 to-sky-500 text-white py-12">
-    <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
-      <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-blue-100 mb-1">
-          Membership
-        </p>
-        <h2 className="text-2xl sm:text-3xl font-bold">
-          Unlock member-only homes &amp; support
-        </h2>
-        <p className="mt-2 text-sm text-blue-100 max-w-md">
-          Get saved searches, instant alerts, and priority help from our team —
-          all in one clean, simple dashboard.
-        </p>
-      </div>
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-        <button
-          type="button"
-          onClick={onGoRegister}
-          className="inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 shadow-md hover:bg-slate-100"
-        >
-          Get started free
-        </button>
-        <button
-          type="button"
-          onClick={onGoMembership}
-          className="inline-flex items-center justify-center rounded-full border border-blue-100 bg-blue-500/20 px-4 py-2.5 text-xs font-semibold text-white hover:bg-blue-500/40"
-        >
-          View member dashboard
-          <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-        </button>
-      </div>
-    </div>
-  </section>
 );

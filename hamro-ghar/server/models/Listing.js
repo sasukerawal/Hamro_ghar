@@ -1,5 +1,6 @@
 // models/Listing.js
 import mongoose from "mongoose";
+
 const { Schema } = mongoose;
 
 const listingSchema = new Schema(
@@ -10,43 +11,59 @@ const listingSchema = new Schema(
       required: true,
     },
 
+    // Basic info
     title: { type: String, required: true },
     description: { type: String, required: true },
 
-    price: { type: Number, required: true },
+    price: { type: Number, required: true }, // monthly rent
 
     address: { type: String, required: true },
     city: { type: String, required: true },
-
-    // Geo location (lat/lon)
-    location: {
-      lat: { type: Number, default: null },
-      lng: { type: Number, default: null },
-    },
 
     beds: { type: Number, default: 1 },
     baths: { type: Number, default: 1 },
     sqft: { type: Number, default: 0 },
 
+    // Amenities
     furnished: { type: Boolean, default: false },
     parking: { type: Boolean, default: false },
     internet: { type: Boolean, default: false },
-
-    // NEW: pets allowed field
     petsAllowed: { type: Boolean, default: false },
 
+    // Listing status
+    status: {
+      type: String,
+      enum: ["active", "unavailable"],
+      default: "active",
+      index: true,
+    },
+
+    // Geo location (from geocoding, if available)
+    location: {
+      lat: { type: Number },
+      lng: { type: Number },
+    },
+
+    // Images (Cloudinary URLs)
     images: [
       {
-        type: String, // Cloudinary or static URL
+        type: String,
       },
     ],
 
+    // Optional video URL
     video: {
-      type: String, // Optional video link
+      type: String,
       default: "",
     },
 
     featured: { type: Boolean, default: false },
+
+    // 🔢 View counter
+    views: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );
