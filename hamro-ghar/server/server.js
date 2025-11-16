@@ -5,7 +5,9 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.js';
 import membershipRoutes from './routes/membership.js';
+import listingsRoutes from "./routes/listings.js";
 import userRoutes from './routes/user.js';
+import seedRoutes from "./routes/seed.js";
 
 
 const app = express();
@@ -33,7 +35,13 @@ mongoose
 // --- Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/membership', membershipRoutes);
+app.use("/api", seedRoutes);
 app.use('/api/users', userRoutes);
+// serve uploaded files
+app.use("/uploads", express.static("uploads"));
+
+// listings routes
+app.use("/api/listings", listingsRoutes);
 
 // --- Health
 app.get('/api/health', (_req, res) => res.json({ ok: true }));

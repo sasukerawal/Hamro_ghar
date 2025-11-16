@@ -1,5 +1,5 @@
 // src/HomePage.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   MapPin,
   Search,
@@ -9,84 +9,189 @@ import {
   ArrowRight,
   Phone,
   Home as HomeIcon,
-} from 'lucide-react';
+} from "lucide-react";
+import { toast } from "react-toastify";
 
-const FEATURED_LISTINGS = [
+// Fallback listings if backend fails
+const FALLBACK_LISTINGS = [
   {
-    id: 1,
-    price: 'Rs. 45,000 / month',
+    _id: "demo-1",
+    price: "Rs. 45,000 / month",
     beds: 3,
     baths: 2,
-    sqft: '1,450',
-    address: 'Modern Apartment, Lazimpat',
-    city: 'Kathmandu',
+    sqft: "1,450",
+    address: "Modern Apartment, Lazimpat",
+    city: "Kathmandu",
     image:
-      'https://images.unsplash.com/photo-1600596542815-7b95e06b5f3c?auto=format&fit=crop&w=900&q=80',
+      "https://images.unsplash.com/photo-1600596542815-7b95e06b5f3c?auto=format&fit=crop&w=900&q=80",
   },
   {
-    id: 2,
-    price: 'Rs. 35,000 / month',
+    _id: "demo-2",
+    price: "Rs. 35,000 / month",
     beds: 2,
     baths: 1,
-    sqft: '1,020',
-    address: 'Cozy Flat, Baneshwor',
-    city: 'Kathmandu',
+    sqft: "1,020",
+    address: "Cozy Flat, Baneshwor",
+    city: "Kathmandu",
     image:
-      'https://images.unsplash.com/photo-1590490359854-dfba19688d70?auto=format&fit=crop&w=900&q=80',
+      "https://images.unsplash.com/photo-1590490359854-dfba19688d70?auto=format&fit=crop&w=900&q=80",
   },
   {
-    id: 3,
-    price: 'Rs. 60,000 / month',
+    _id: "demo-3",
+    price: "Rs. 60,000 / month",
     beds: 4,
     baths: 3,
-    sqft: '1,900',
-    address: 'Family House, Pokhara Lakeside',
-    city: 'Pokhara',
+    sqft: "1,900",
+    address: "Family House, Pokhara Lakeside",
+    city: "Pokhara",
     image:
-      'https://images.unsplash.com/photo-1600585154340-0ef3c08c0632?auto=format&fit=crop&w=900&q=80',
+      "https://images.unsplash.com/photo-1600585154340-0ef3c08c0632?auto=format&fit=crop&w=900&q=80",
   },
 ];
 
 const TESTIMONIALS = [
   {
     id: 1,
-    name: 'Sara K.',
-    role: 'Student',
-    quote: 'HamroGhar made it easy to find a safe, clean flat near my college.',
+    name: "Sara K.",
+    role: "Student",
+    quote: "HamroGhar made it easy to find a safe, clean flat near my college.",
   },
   {
     id: 2,
-    name: 'Ram B.',
-    role: 'Working professional',
-    quote: 'Clean interface, no spam calls, just real homes that matched my budget.',
+    name: "Ram B.",
+    role: "Working professional",
+    quote:
+      "Clean interface, no spam calls, just real homes that matched my budget.",
   },
   {
     id: 3,
-    name: 'Anushka R.',
-    role: 'First-time renter',
-    quote: 'I liked how simple everything looked — blue and white, no confusion.',
+    name: "Anushka R.",
+    role: "First-time renter",
+    quote:
+      "I liked how simple everything looked — blue and white, no confusion.",
   },
 ];
 
-export default function HomePage({ onGoLogin, onGoRegister, onGoMembership }) {
+export default function HomePage({
+  onGoLogin,
+  onGoRegister,
+  onGoMembership,
+}) {
+  const [listings, setListings] = useState(FALLBACK_LISTINGS);
+  const [loadingListings, setLoadingListings] = useState(false);
+  const [savedIds, setSavedIds] = useState([]);
+  const [selectedHome, setSelectedHome] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // 🟦 Load listings from backend if available
+  useEffect(() => {
+    const loadListings = async () => {
+      try {
+        setLoadingListings(true);
+        const res = await fetch("http://localhost:4000/api/listings/all");
+        if (!res.ok) {
+          // Use fallback silently
+          return;
+        }
+        const data = await res.json();
+        if (Array.isArray(data.listings) && data.listings.length > 0) {
+          setListings(data.listings);
+        }
+      } catch (err) {
+        console.error("Error loading listings", err);
+      } finally {
+        setLoadingListings(false);
+      }
+    };
+
+    loadListings();
+  }, []);
+
+  const openHomeModal = (home) => {
+    setSelectedHome(home);
+    setIsModalOpen(true);
+  };
+
+  const closeHomeModal = () => {
+    setSelectedHome(null);
+    setIsModalOpen(false);
+  };
+
+  // ❤️ Save to wishlist
+  const handleSaveHome = async (listingId) => {
+    if (!listingId) {
+      toast.error("Listing ID missing");
+      return;
+    }
+
+    // don’t call backend for demo cards
+    if (String(listingId).startsWith("demo-")) {
+      toast.info("Demo homes can't be saved yet. Try with real posted homes later.");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `http://localhost:4000/api/listings/save/${listingId}`,
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
+
+      if (res.status === 401) {
+        toast.info("Please log in to save homes.");
+        onGoLogin();
+        return;
+      }
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || "Could not save home");
+        return;
+      }
+
+      toast.success("Home saved to your favourites ❤️");
+
+      // remember saved listing for red heart
+      setSavedIds((prev) =>
+        prev.includes(listingId) ? prev : [...prev, listingId]
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error("Server error while saving home");
+    }
+  };
+
   return (
     <>
       <HeroSection onGoLogin={onGoLogin} />
       <HighlightStrip />
-      <FeaturedListings />
+      <FeaturedListings
+        listings={listings}
+        loading={loadingListings}
+        onSaveHome={handleSaveHome}
+        onOpenHome={openHomeModal}
+        savedIds={savedIds}
+      />
       <Testimonials />
       <CallToAction
         onGoRegister={onGoRegister}
         onGoMembership={onGoMembership}
       />
+
+      {isModalOpen && (
+        <ListingModal home={selectedHome} onClose={closeHomeModal} />
+      )}
     </>
   );
 }
 
-// ============ HERO SECTION ============
+// ───────────────── Hero section ─────────────────
 
 const HeroSection = ({ onGoLogin }) => {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
 
   return (
     <section className="bg-gradient-to-br from-blue-50 via-white to-blue-100">
@@ -193,7 +298,7 @@ const AvatarInitial = ({ label }) => (
   </div>
 );
 
-// ============ HIGHLIGHT STRIP ============
+// ───────────── Highlight strip ─────────────
 
 const HighlightStrip = () => (
   <section className="bg-white border-y border-blue-50">
@@ -229,9 +334,15 @@ const HighlightItem = ({ icon, title, text }) => (
   </div>
 );
 
-// ============ FEATURED LISTINGS ============
+// ───────────── Featured listings (with Save) ─────────────
 
-const FeaturedListings = () => (
+const FeaturedListings = ({
+  listings,
+  loading,
+  onSaveHome,
+  onOpenHome,
+  savedIds,
+}) => (
   <section className="bg-slate-50 py-10">
     <div className="max-w-6xl mx-auto px-4">
       <div className="flex items-end justify-between gap-4 mb-6">
@@ -252,56 +363,160 @@ const FeaturedListings = () => (
         </button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {FEATURED_LISTINGS.map((home) => (
-          <ListingCard key={home.id} home={home} />
-        ))}
-      </div>
+      {loading ? (
+        <p className="text-xs text-slate-500">Loading listings…</p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {listings.map((home) => (
+            <ListingCard
+              key={home._id || home.id}
+              home={home}
+              onSaveHome={onSaveHome}
+              onOpenHome={onOpenHome}
+              isSaved={savedIds.includes(home._id || home.id)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   </section>
 );
 
-const ListingCard = ({ home }) => (
-  <div className="group rounded-2xl border border-blue-50 bg-white shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
-    <div className="relative h-40 w-full overflow-hidden">
-      <img
-        src={home.image}
-        alt={home.address}
-        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-        onError={(e) => {
-          e.target.onerror = null;
-          e.target.src =
-            'https://placehold.co/600x400/eff6ff/0f172a?text=Home';
-        }}
-      />
-      <button
-        type="button"
-        className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-sm hover:bg-blue-50"
-      >
-        <Heart className="h-4 w-4" />
-      </button>
-      <span className="absolute left-3 bottom-3 rounded-full bg-blue-600/90 px-2.5 py-1 text-[11px] font-semibold text-white">
-        {home.price}
-      </span>
-    </div>
-    <div className="p-3.5 space-y-2">
-      <p className="text-sm font-semibold text-slate-900 truncate">
-        {home.address}
-      </p>
-      <p className="text-xs text-slate-500 flex items-center gap-1">
-        <MapPin className="h-3.5 w-3.5 text-blue-500" />
-        {home.city}
-      </p>
-      <div className="flex items-center justify-between text-[11px] text-slate-500 mt-2">
-        <span>{home.beds} beds</span>
-        <span>{home.baths} baths</span>
-        <span>{home.sqft} sqft</span>
+const ListingCard = ({ home, onSaveHome, onOpenHome, isSaved }) => {
+  const handleClickSave = (e) => {
+    e.stopPropagation();
+    onSaveHome(home._id || home.id);
+  };
+
+  const imageSrc =
+    home?.images?.[0] ||
+    home?.image ||
+    "https://placehold.co/600x400/eff6ff/0f172a?text=Home";
+
+  return (
+    <div
+      className="group rounded-2xl border border-blue-50 bg-white shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer"
+      onClick={() => onOpenHome(home)}
+    >
+      <div className="relative h-40 w-full overflow-hidden">
+        <img
+          src={imageSrc}
+          alt={home.address || home.title || "Home"}
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src =
+              "https://placehold.co/600x400/eff6ff/0f172a?text=Home";
+          }}
+        />
+        <button
+          type="button"
+          onClick={handleClickSave}
+          className={
+            "absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full shadow-sm transition-colors " +
+            (isSaved
+              ? "bg-red-500 text-white"
+              : "bg-white/90 text-slate-700 hover:bg-blue-50")
+          }
+        >
+          <Heart className={"h-4 w-4 " + (isSaved ? "fill-current" : "")} />
+        </button>
+        <span className="absolute left-3 bottom-3 rounded-full bg-blue-600/90 px-2.5 py-1 text-[11px] font-semibold text-white">
+          {home.price}
+        </span>
+      </div>
+      <div className="p-3.5 space-y-2">
+        <p className="text-sm font-semibold text-slate-900 truncate">
+          {home.address}
+        </p>
+        <p className="text-xs text-slate-500 flex items-center gap-1">
+          <MapPin className="h-3.5 w-3.5 text-blue-500" />
+          {home.city}
+        </p>
+        <div className="flex items-center justify-between text-[11px] text-slate-500 mt-2">
+          <span>{home.beds} beds</span>
+          <span>{home.baths} baths</span>
+          <span>{home.sqft} sqft</span>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-// ============ TESTIMONIALS ============
+// ───────────── Modal for listing details ─────────────
+
+const ListingModal = ({ home, onClose }) => {
+  if (!home) return null;
+
+  const imageSrc =
+    home?.images?.[0] ||
+    home?.image ||
+    "https://placehold.co/800x500/eff6ff/0f172a?text=Home";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl overflow-hidden">
+        {/* Image */}
+        <div className="h-48 sm:h-64 w-full overflow-hidden">
+          <img
+            src={imageSrc}
+            alt={home.title || home.address}
+            className="h-full w-full object-cover"
+          />
+        </div>
+
+        {/* Content */}
+        <div className="p-5 space-y-3 text-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase text-blue-500 mb-1">
+                {home.city}
+              </p>
+              <h3 className="text-lg font-bold text-slate-900">
+                {home.title || home.address}
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">{home.address}</p>
+            </div>
+            <p className="text-base font-semibold text-blue-700">
+              {home.price}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3 text-[11px] text-slate-600">
+            <span>{home.beds} beds</span>
+            <span>{home.baths} baths</span>
+            <span>{home.sqft} sqft</span>
+            <span>{home.furnished ? "Furnished" : "Unfurnished"}</span>
+            <span>{home.parking ? "Parking available" : "No parking"}</span>
+            <span>{home.internet ? "Internet included" : "No internet"}</span>
+            {home.petsAllowed !== undefined && (
+              <span>{home.petsAllowed ? "Pets allowed" : "No pets"}</span>
+            )}
+          </div>
+
+          {home.description && (
+            <p className="text-xs text-slate-600 leading-relaxed">
+              {home.description}
+            </p>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-3 px-5 pb-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ───────────── Testimonials ─────────────
 
 const Testimonials = () => (
   <section className="bg-white py-12">
@@ -331,9 +546,7 @@ const Testimonials = () => (
               ))}
             </div>
             <p className="text-sm text-slate-700 mb-4">“{item.quote}”</p>
-            <p className="text-xs font-semibold text-slate-900">
-              {item.name}
-            </p>
+            <p className="text-xs font-semibold text-slate-900">{item.name}</p>
             <p className="text-[11px] text-slate-500">{item.role}</p>
           </div>
         ))}
@@ -342,7 +555,7 @@ const Testimonials = () => (
   </section>
 );
 
-// ============ CTA ============
+// ───────────── CTA ─────────────
 
 const CallToAction = ({ onGoRegister, onGoMembership }) => (
   <section className="bg-gradient-to-r from-blue-600 to-sky-500 text-white py-12">

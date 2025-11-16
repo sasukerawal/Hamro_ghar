@@ -1,53 +1,64 @@
-// server/models/User.js
-import mongoose from 'mongoose';
+// User.js
+import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema(
+const { Schema } = mongoose;
+
+const userSchema = new Schema(
   {
-    name: { type: String, trim: true, required: true },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
     email: {
       type: String,
+      required: true,
       unique: true,
       lowercase: true,
       trim: true,
-      required: true,
     },
 
-    // hashed password (set in auth routes)
-    passwordHash: { type: String, required: true },
-
-    // basic role system (you already had this)
-    role: {
-      type: String,
-      enum: ['user', 'member', 'admin'],
-      default: 'member',
-    },
-
-    // 🔹 NEW FIELDS for profile page
     phone: {
       type: String,
+      default: "",
       trim: true,
     },
 
     city: {
       type: String,
+      default: "",
       trim: true,
     },
 
     profilePic: {
-      type: String, // URL to avatar/profile image
-      trim: true,
+      type: String,
+      default: "",
     },
 
-    // 🔹 saved homes (we’ll actually use this later)
+    passwordHash: {
+      type: String,
+      required: true,
+    },
+
+    role: {
+      type: String,
+      enum: ["member", "owner", "admin"],
+      default: "member",
+    },
+
+    // ⭐ New: wishlist
     savedHomes: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Listing', // we'll create Listing model later
+        type: Schema.Types.ObjectId,
+        ref: "Listing",
       },
     ],
   },
-  { timestamps: true }
+  {
+    timestamps: true, // createdAt, updatedAt
+  }
 );
 
-export default mongoose.model('User', userSchema);
+const User = mongoose.model("User", userSchema);
+export default User;

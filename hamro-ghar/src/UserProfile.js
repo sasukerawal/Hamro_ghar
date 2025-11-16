@@ -27,13 +27,8 @@ function MobileHeader({ onGoHome, onLogout }) {
         <ArrowLeft className="h-4 w-4" />
         Back
       </button>
-      <p className="text-sm font-semibold text-slate-900">Profile</p>
-      <button
-        onClick={onLogout}
-        className="text-xs font-semibold text-red-500 hover:text-red-600"
-      >
-        Logout
-      </button>
+      <p className="text-sm font-semibold text-slate-900 ">Profile</p>
+      
     </div>
   );
 }

@@ -9,6 +9,8 @@ import Register from "./Register";
 import Membership from "./Membership";
 import Footer from "./Footer";
 import UserProfile from "./UserProfile";
+import PostListing from "./PostListing";
+
 
 
 
@@ -98,6 +100,10 @@ function App() {
       case "profile":
         return <UserProfile onGoHome={() => navigate("home")} />;
 
+      case "postListing":
+        return <PostListing onGoHome={() => navigate("home")} />;
+
+
       case "home":
       default:
         return (
@@ -127,6 +133,9 @@ function App() {
         onGoProfile={() => navigate("profile")}
         onGoMembership={() =>
           isLoggedIn ? navigate("membership") : navigate("login")
+        }
+        onGoPostListing={() =>
+          isLoggedIn ? navigate("postListing") : navigate("login")
         }
         onLogout={handleLogout}
       />
