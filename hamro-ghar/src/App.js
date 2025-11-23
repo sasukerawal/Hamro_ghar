@@ -2,6 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
+import { apiFetch } from "./api"; 
+
 import Header from "./Header";
 import HomePage from "./HomePage";
 import Login from "./Login";
@@ -11,60 +14,55 @@ import Footer from "./Footer";
 import UserProfile from "./UserProfile";
 import PostListing from "./PostListing";
 
-
-
-
 function App() {
-  const [currentPage, setCurrentPage] = useState("home"); 
+  const [currentPage, setCurrentPage] = useState("home");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [homeMode, setHomeMode] = useState("all"); // all, buy, rent
+  const [editId, setEditId] = useState(null); // 🆕 Stores ID of listing being edited
 
-  // -----------------------------
-  // CHECK IF USER IS LOGGED IN
-  // -----------------------------
+  // Check Login Status
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/auth/me", {
-          credentials: "include",
-        });
-
-        if (!res.ok) return;
-
-        const data = await res.json();
-        if (data.user) setIsLoggedIn(true);
+        const data = await apiFetch("/api/auth/me");
+        if (data && data.user) {
+          setIsLoggedIn(true);
+        }
       } catch (err) {
         console.error("Auth check failed", err);
       }
     };
-
     checkUser();
   }, []);
 
-  // -----------------------------
-  // NAVIGATION
-  // -----------------------------
   const navigate = (page) => {
     setCurrentPage(page);
+    // If navigating away from postListing, clear edit mode
+    if (page !== "postListing") {
+        setEditId(null);
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // -----------------------------
-  // LOGIN SUCCESS
-  // -----------------------------
+  // 🆕 Navigation helper for Editing
+  const goEditListing = (listingId) => {
+    setEditId(listingId);
+    navigate("postListing");
+  };
+
+  // Navigation for Header
+  const goBuy = () => { setHomeMode("buy"); navigate("home"); };
+  const goRent = () => { setHomeMode("rent"); navigate("home"); };
+  const goHome = () => { setHomeMode("all"); navigate("home"); };
+
   const handleLoginSuccess = () => {
     setIsLoggedIn(true);
     navigate("membership");
   };
 
-  // -----------------------------
-  // LOGOUT
-  // -----------------------------
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:4000/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
+      await apiFetch("/api/auth/logout", { method: "POST" });
     } catch (err) {
       console.error("Logout failed", err);
     }
@@ -72,87 +70,57 @@ function App() {
     navigate("home");
   };
 
-  // -----------------------------
-  // PAGE RENDERER
-  // -----------------------------
   const renderPage = () => {
     if (isLoggedIn && currentPage === "membership") {
       return (
         <Membership
           onLogout={handleLogout}
-          onGoHome={() => navigate("home")}
+          onGoHome={goHome}
+          onEditListing={goEditListing} // 🆕 Pass edit handler
         />
       );
     }
 
     switch (currentPage) {
       case "login":
-        return (
-          <Login
-            onLogin={handleLoginSuccess}
-            onGoRegister={() => navigate("register")}
-          />
-        );
-
+        return <Login onLogin={handleLoginSuccess} onGoRegister={() => navigate("register")} />;
       case "register":
         return <Register onGoLogin={() => navigate("login")} />;
-
       case "profile":
-        return <UserProfile onGoHome={() => navigate("home")} />;
-
+        return <UserProfile onGoHome={goHome} onLogout={handleLogout} />;
       case "postListing":
-        return <PostListing onGoHome={() => navigate("home")} />;
-
-
+        // 🆕 Pass editId to enable edit mode in PostListing
+        return <PostListing onGoHome={goHome} editId={editId} />;
       case "home":
       default:
         return (
           <HomePage
+            mode={homeMode}
             onGoLogin={() => navigate("login")}
             onGoRegister={() => navigate("register")}
-            onGoMembership={() =>
-              isLoggedIn ? navigate("membership") : navigate("login")
-            }
+            onGoMembership={() => isLoggedIn ? navigate("membership") : navigate("login")}
           />
         );
     }
   };
 
-  // -----------------------------
-  // UI LAYOUT
-  // -----------------------------
   return (
     <div className="min-h-screen flex flex-col bg-white text-slate-900">
-
-      {/* HEADER */}
       <Header
         isLoggedIn={isLoggedIn}
-        onGoHome={() => navigate("home")}
+        onGoHome={goHome}
+        onGoBuy={goBuy}
+        onGoRent={goRent}
         onGoLogin={() => navigate("login")}
         onGoRegister={() => navigate("register")}
         onGoProfile={() => navigate("profile")}
-        onGoMembership={() =>
-          isLoggedIn ? navigate("membership") : navigate("login")
-        }
-        onGoPostListing={() =>
-          isLoggedIn ? navigate("postListing") : navigate("login")
-        }
+        onGoMembership={() => isLoggedIn ? navigate("membership") : navigate("login")}
+        onGoPostListing={() => { setEditId(null); navigate("postListing"); }} // Ensure clean state for new post
         onLogout={handleLogout}
       />
-
-      {/* MAIN CONTENT */}
       <main className="flex-1 pt-24 lg:pt-28">{renderPage()}</main>
-
-      {/* FOOTER */}
       <Footer onNav={navigate} />
-
-      {/* GLOBAL TOASTS */}
-      <ToastContainer
-        position="top-center"
-        autoClose={2000}
-        pauseOnHover={false}
-        theme="light"
-      />
+      <ToastContainer position="top-center" autoClose={2000} pauseOnHover={false} theme="light" />
     </div>
   );
 }

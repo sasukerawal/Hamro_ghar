@@ -1,6 +1,7 @@
 // src/UserProfile.js
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { apiFetch } from "./api";
 import {
   User,
   Mail,
@@ -19,7 +20,7 @@ import {
 ---------------------------------------- */
 function MobileHeader({ onGoHome, onLogout }) {
   return (
-    <div className="flex justify-between items-center py-3 px-4 bg-white/80 backdrop-blur-sm border-b border-blue-100 sticky top-0 z-10 sm:hidden">
+    <div className="flex justify-between items-center py-3 px-4 bg-white/80 backdrop-blur-sm border-b border-blue-100 sticky top-0 z-10 sm:hidden shadow-md">
       <button
         onClick={onGoHome}
         className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-blue-700"
@@ -27,8 +28,7 @@ function MobileHeader({ onGoHome, onLogout }) {
         <ArrowLeft className="h-4 w-4" />
         Back
       </button>
-      <p className="text-sm font-semibold text-slate-900 ">Profile</p>
-      
+      <p className="text-sm font-semibold text-slate-900">Profile</p>
     </div>
   );
 }
@@ -64,21 +64,10 @@ export default function UserProfile({ onGoHome, onLogout }) {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/users/me", {
-          credentials: "include",
-        });
+        const data = await apiFetch("/api/users/me");
 
-        if (!res.ok) {
-          setLoading(false);
-          toast.error("Unable to load profile");
-          return;
-        }
-
-        const data = await res.json();
         if (!data.user) {
-          setLoading(false);
-          toast.error("Unable to load profile");
-          return;
+          throw new Error("User data missing from response.");
         }
 
         setUser(data.user);
@@ -90,7 +79,7 @@ export default function UserProfile({ onGoHome, onLogout }) {
         });
       } catch (err) {
         console.error(err);
-        toast.error("Server error");
+        toast.error(err.message || "Unable to load profile");
       } finally {
         setLoading(false);
       }
@@ -102,25 +91,18 @@ export default function UserProfile({ onGoHome, onLogout }) {
   // Save profile updates
   const updateProfile = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/users/me", {
+      await apiFetch("/api/users/me", {
         method: "PUT",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || "Update failed");
-        return;
-      }
 
       toast.success("Profile updated");
       setEditing(false);
       setUser((prev) => (prev ? { ...prev, ...form } : prev));
     } catch (err) {
       console.error(err);
-      toast.error("Server error");
+      toast.error(err.message || "Update failed");
     }
   };
 
@@ -132,25 +114,17 @@ export default function UserProfile({ onGoHome, onLogout }) {
     }
 
     try {
-      const res = await fetch("http://localhost:4000/api/users/password", {
+      await apiFetch("/api/users/password", {
         method: "PUT",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(passwordForm),
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.error || "Password change failed");
-        return;
-      }
 
       toast.success("Password updated");
       setPasswordForm({ currentPassword: "", newPassword: "" });
     } catch (err) {
       console.error(err);
-      toast.error("Server error");
+      toast.error(err.message || "Password change failed");
     }
   };
 
@@ -193,6 +167,18 @@ export default function UserProfile({ onGoHome, onLogout }) {
     .slice(0, 2)
     .toUpperCase();
 
+  // ✅ Build profile card classes safely (no weird template)
+  const profileCardClasses = [
+    "relative rounded-none sm:rounded-3xl bg-white/80 backdrop-blur-xl",
+    "border-x border-b sm:border border-blue-100",
+    "shadow-xl px-3 py-6 sm:px-6 sm:py-7",
+    "transition-all duration-500",
+    mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3",
+    editing ? "pb-20 sm:pb-7" : "", // extra bottom padding when editing on mobile
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-blue-100 pt-0 pb-6 sm:py-6 flex justify-center">
       <div className="w-full max-w-xl">
@@ -209,11 +195,7 @@ export default function UserProfile({ onGoHome, onLogout }) {
         </button>
 
         {/* Profile card */}
-        <div
-          className={`relative rounded-none sm:rounded-3xl bg-white/80 backdrop-blur-xl border-x border-b sm:border border-blue-100 shadow-xl px-3 py-6 sm:px-6 sm:py-7 transition-all duration-500 ${
-            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
-          }`}
-        >
+        <div className={profileCardClasses}>
           {/* Header */}
           <div className="flex justify-between items-start mb-6">
             <div>
@@ -225,12 +207,12 @@ export default function UserProfile({ onGoHome, onLogout }) {
               </p>
             </div>
 
-            {/* Edit / Save toggle button */}
+            {/* Edit / Save toggle button (Hidden on mobile when editing, moved to sticky footer) */}
             <button
               onClick={editing ? updateProfile : () => setEditing(true)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all shadow-sm ${
                 editing
-                  ? "bg-emerald-500 text-white hover:bg-emerald-600"
+                  ? "bg-emerald-500 text-white hover:bg-emerald-600 hidden sm:flex"
                   : "bg-white text-blue-600 border border-blue-200 hover:bg-blue-50"
               }`}
             >
@@ -355,33 +337,45 @@ export default function UserProfile({ onGoHome, onLogout }) {
             </div>
           </div>
 
-          {/* Bottom hint when editing */}
-          {editing && (
-            <div className="flex justify-between items-center mt-6 border-t border-blue-100 pt-4">
-              <p className="text-xs text-slate-500">Don&apos;t forget to save!</p>
-              <button
-                type="button"
-                onClick={updateProfile}
-                className="flex items-center gap-1.5 bg-emerald-500 text-white text-xs px-4 py-1.5 rounded-full hover:bg-emerald-600 transition-all font-semibold"
-              >
-                <Save className="h-4 w-4" />
-                Save Changes
-              </button>
-            </div>
-          )}
+          {/* Bottom hint when editing (Desktop only) */}
+          <div className="hidden sm:flex justify-between items-center mt-6 border-t border-blue-100 pt-4">
+            <p className="text-xs text-slate-500">Don&apos;t forget to save!</p>
+            <button
+              type="button"
+              onClick={updateProfile}
+              className="flex items-center gap-1.5 bg-emerald-500 text-white text-xs px-4 py-1.5 rounded-full hover:bg-emerald-600 transition-all font-semibold"
+            >
+              <Save className="h-4 w-4" />
+              Save Changes
+            </button>
+          </div>
         </div>
+
+        {/* ✅ Sticky Save Button (Only visible on Mobile when editing) */}
+        {editing && (
+          <div className="fixed bottom-0 left-0 right-0 z-30 sm:hidden bg-white border-t border-blue-200 p-4 shadow-2xl">
+            <button
+              type="button"
+              onClick={updateProfile}
+              className="w-full flex items-center justify-center gap-2 bg-emerald-500 text-white text-base font-semibold px-4 py-3 rounded-xl hover:bg-emerald-600 transition-all shadow-lg"
+            >
+              <Save className="h-5 w-5" />
+              Save Profile Changes
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 /* ----------------------------------------
-   FIELD COMPONENTS
+   FIELD COMPONENTS - Improved touch targets
 ---------------------------------------- */
 
 function Field({ icon: Icon, label, value, editable, onChange }) {
   return (
-    <div className="rounded-xl border border-blue-100 bg-white px-4 py-3 flex items-center gap-3 shadow-sm">
+    <div className="rounded-xl border border-blue-100 bg-white px-4 py-3 sm:py-3 flex items-center gap-3 shadow-sm">
       <Icon className="h-4 w-4 text-blue-600 shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-[11px] font-semibold uppercase text-slate-500">
@@ -392,7 +386,7 @@ function Field({ icon: Icon, label, value, editable, onChange }) {
           <input
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="mt-1 w-full bg-transparent text-sm font-medium outline-none border-b border-blue-100 focus:border-blue-400 text-slate-800"
+            className="mt-1 w-full bg-transparent text-base font-medium outline-none border-b border-blue-100 focus:border-blue-600 text-slate-800 py-1"
           />
         ) : (
           <p className="mt-1 text-sm font-semibold text-slate-800 truncate">
@@ -406,7 +400,7 @@ function Field({ icon: Icon, label, value, editable, onChange }) {
 
 function StaticField({ icon: Icon, label, value }) {
   return (
-    <div className="rounded-xl border border-blue-100 bg-white px-4 py-3 flex items-center gap-3 shadow-sm">
+    <div className="rounded-xl border border-blue-100 bg-white px-4 py-3 sm:py-3 flex items-center gap-3 shadow-sm">
       <Icon className="h-4 w-4 text-slate-600 shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-[11px] font-semibold uppercase text-slate-500">

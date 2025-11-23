@@ -1,6 +1,8 @@
 // src/Register.js
 import React, { useState } from 'react';
 import { User, Mail, Lock } from 'lucide-react';
+import { apiFetch } from "./api"; // ✅ Updated import
+// Removed duplicate import of apiFetch
 
 const AuthInput = ({ id, type, label, placeholder, Icon, value, onChange }) => (
   <div className="space-y-1">
@@ -38,9 +40,9 @@ export default function Register({ onGoLogin }) {
     setError('');
 
     try {
-      const res = await fetch('http://localhost:4000/api/auth/register', {
+      // ✅ Use apiFetch helper
+      await apiFetch('/api/auth/register', {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: fullName,
@@ -49,17 +51,10 @@ export default function Register({ onGoLogin }) {
         }),
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || 'Registration failed');
-        return;
-      }
-
       alert('Account created! Please sign in.');
       onGoLogin();
     } catch (err) {
-      setError('Server error. Is your backend running?');
+      setError(err.message || 'Registration failed');
     }
   };
 

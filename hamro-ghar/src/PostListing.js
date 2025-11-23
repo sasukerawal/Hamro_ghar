@@ -1,9 +1,10 @@
 // src/PostListing.js
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
-import { Home, UploadCloud, ArrowLeft } from "lucide-react";
+import { Home, UploadCloud, ArrowLeft, Loader } from "lucide-react";
+import { apiFetch } from "./api";
 
-export default function PostListing({ onGoHome }) {
+export default function PostListing({ onGoHome, editId }) {
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -20,10 +21,49 @@ export default function PostListing({ onGoHome }) {
   });
 
   const [mediaFiles, setMediaFiles] = useState([]);
+  const [existingImages, setExistingImages] = useState([]); // For edit mode
   const [uploading, setUploading] = useState(false);
+  const [fetching, setFetching] = useState(!!editId);
 
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [addressLoading, setAddressLoading] = useState(false);
+
+  // 🆕 If editId is present, fetch the listing data
+  useEffect(() => {
+    if (!editId) return;
+
+    const fetchListing = async () => {
+      try {
+        setFetching(true);
+        const data = await apiFetch(`/api/listings/${editId}`);
+        if (data.listing) {
+          const l = data.listing;
+          setForm({
+            title: l.title || "",
+            description: l.description || "",
+            price: l.price || "",
+            address: l.address || "",
+            city: l.city || "",
+            beds: l.beds || "",
+            baths: l.baths || "",
+            sqft: l.sqft || "",
+            furnished: !!l.furnished,
+            parking: !!l.parking,
+            internet: !!l.internet,
+            petsAllowed: !!l.petsAllowed,
+          });
+          setExistingImages(l.images || []);
+        }
+      } catch (err) {
+        toast.error("Could not load listing for editing");
+        onGoHome();
+      } finally {
+        setFetching(false);
+      }
+    };
+
+    fetchListing();
+  }, [editId, onGoHome]);
 
   const handleChange = (field) => (e) => {
     const value = e.target.type === "checkbox" ? e.target.checked : e.target.value;
@@ -45,7 +85,7 @@ export default function PostListing({ onGoHome }) {
     setAddressSuggestions([]);
   };
 
-  // 🔍 Address auto-suggestions
+  // Address auto-suggestions
   useEffect(() => {
     const address = form.address?.trim();
     if (!address || address.length < 4) {
@@ -63,9 +103,14 @@ export default function PostListing({ onGoHome }) {
           params.append("city", form.city.trim());
         }
 
+        const API_BASE =
+          (process.env.REACT_APP_API_BASE &&
+            process.env.REACT_APP_API_BASE.trim()) ||
+          "http://localhost:4000";
+
         const res = await fetch(
-          `http://localhost:4000/api/listings/geo/search?${params.toString()}`,
-          { signal: controller.signal }
+          `${API_BASE}/api/listings/geo/search?${params.toString()}`,
+          { signal: controller.signal, credentials: "omit" }
         );
 
         if (!res.ok) {
@@ -77,7 +122,7 @@ export default function PostListing({ onGoHome }) {
         setAddressSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
       } catch (err) {
         if (err.name !== "AbortError") {
-          console.error("Address suggestions error", err);
+          // ignore
         }
       } finally {
         setAddressLoading(false);
@@ -105,52 +150,42 @@ export default function PostListing({ onGoHome }) {
         fd.append(key, value);
       });
       mediaFiles.forEach((file) => {
-        fd.append("media", file);
+        fd.append("images", file);
       });
 
-      const res = await fetch("http://localhost:4000/api/listings/create", {
-        method: "POST",
-        credentials: "include",
+      // 🆕 Determine URL and Method based on edit mode
+      const url = editId ? `/api/listings/${editId}` : "/api/listings/create";
+      const method = editId ? "PUT" : "POST";
+
+      await apiFetch(url, {
+        method,
         body: fd,
       });
 
-      if (res.status === 401) {
-        toast.info("Please log in to post a home.");
-        return;
-      }
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.error || "Could not create listing");
-        return;
-      }
-
-      toast.success(data.message || "Listing posted successfully");
-
-      setForm({
-        title: "",
-        description: "",
-        price: "",
-        address: "",
-        city: "",
-        beds: "",
-        baths: "",
-        sqft: "",
-        furnished: false,
-        parking: false,
-        internet: false,
-        petsAllowed: false,
-      });
-      setMediaFiles([]);
-      setAddressSuggestions([]);
+      toast.success(editId ? "Listing updated successfully!" : "Listing posted successfully!");
+      onGoHome();
     } catch (err) {
       console.error(err);
-      toast.error("Server error while posting listing");
+      if (err.message.includes("401")) {
+         toast.info("Please log in.");
+      } else {
+        toast.error(err.message || "Operation failed");
+      }
     } finally {
       setUploading(false);
     }
   };
+
+  if (fetching) {
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-50">
+            <div className="text-center">
+                <Loader className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
+                <p className="text-sm text-slate-500">Loading listing data...</p>
+            </div>
+        </div>
+    )
+  }
 
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-slate-50 flex items-center justify-center px-4 py-10">
@@ -162,18 +197,20 @@ export default function PostListing({ onGoHome }) {
             className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-blue-700"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to home
+            Cancel
           </button>
           <Home className="h-8 w-8 text-blue-600" />
         </div>
 
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1">
-            Post a home
+            {editId ? "Edit your home" : "Post a home"}
           </h1>
           <p className="text-sm text-slate-600">
-            Share your flat, room or house with verified renters. Fields marked
-            with <span className="text-red-500">*</span> are required.
+            {editId 
+                ? "Update details, price, or amenities." 
+                : "Share your flat, room or house with verified renters."} 
+            Fields marked with <span className="text-red-500">*</span> are required.
           </p>
         </div>
 
@@ -266,10 +303,6 @@ export default function PostListing({ onGoHome }) {
                   ))}
                 </div>
               )}
-              <p className="mt-1 text-[10px] text-slate-400">
-                Tip: include road/tole + ward + city. Example: &quot;New
-                Baneshwor, Ward 10, near BICC, Kathmandu&quot;.
-              </p>
             </div>
           </div>
 
@@ -312,9 +345,9 @@ export default function PostListing({ onGoHome }) {
             </label>
             <label className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-xs text-slate-500 cursor-pointer hover:border-blue-300 hover:bg-blue-50/40">
               <UploadCloud className="h-6 w-6 text-blue-500" />
-              <span>Click to upload home photos</span>
+              <span>{editId ? "Upload new photos to append" : "Click to upload home photos"}</span>
               <span className="text-[10px] text-slate-400">
-                JPG, PNG. First photo will be used as cover.
+                JPG, PNG. {editId ? "New photos will be added to existing ones." : "First photo will be used as cover."}
               </span>
               <input
                 type="file"
@@ -326,9 +359,13 @@ export default function PostListing({ onGoHome }) {
             </label>
             {mediaFiles.length > 0 && (
               <p className="mt-1 text-[11px] text-slate-500">
-                {mediaFiles.length} file
-                {mediaFiles.length > 1 ? "s" : ""} selected
+                {mediaFiles.length} new file{mediaFiles.length > 1 ? "s" : ""} selected
               </p>
+            )}
+            {editId && existingImages.length > 0 && (
+                <p className="mt-1 text-[11px] text-slate-400">
+                    {existingImages.length} existing photo{existingImages.length > 1 ? "s" : ""} will be kept.
+                </p>
             )}
           </div>
 
@@ -338,7 +375,6 @@ export default function PostListing({ onGoHome }) {
               onClick={onGoHome}
               className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-slate-50"
             >
-              <ArrowLeft className="h-4 w-4 mr-1" />
               Cancel
             </button>
             <button
@@ -346,7 +382,7 @@ export default function PostListing({ onGoHome }) {
               disabled={uploading}
               className="inline-flex items-center justify-center rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
             >
-              {uploading ? "Posting…" : "Post home"}
+              {uploading ? (editId ? "Updating..." : "Posting...") : (editId ? "Update Listing" : "Post home")}
             </button>
           </div>
         </form>
@@ -354,8 +390,6 @@ export default function PostListing({ onGoHome }) {
     </div>
   );
 }
-
-/* ------------------------ Reusable inputs ------------------------ */
 
 function Input({ label, type = "text", ...props }) {
   return (

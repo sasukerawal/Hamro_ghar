@@ -1,5 +1,8 @@
-// src/HomePage.js
 import React, { useState, useEffect } from "react";
+import { apiFetch } from "./api";
+import FilterModal from "./FilterModal";
+// ✅ Import reusable utilities
+import { ListingModal, handleToggleSaveHome } from "./ListingUtils";
 import {
   MapPin,
   Search,
@@ -10,11 +13,8 @@ import {
   Phone,
   Home as HomeIcon,
   Eye,
-  Copy,
-  ChevronLeft,
-  ChevronRight,
+  SlidersHorizontal,
 } from "lucide-react";
-import { toast } from "react-toastify";
 
 // Fallback listings if backend fails
 const FALLBACK_LISTINGS = [
@@ -94,6 +94,7 @@ export default function HomePage({
   const [beds, setBeds] = useState("");
   const [petsOnly, setPetsOnly] = useState(false);
   const [furnishedOnly, setFurnishedOnly] = useState(false);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   // Modal
   const [selectedHome, setSelectedHome] = useState(null);
@@ -108,6 +109,10 @@ export default function HomePage({
 
   // ❤️ Saved homes (for hearts)
   const [savedIds, setSavedIds] = useState([]);
+
+  // Memoize the handler for use in ListingCard and Modal
+  const saveHomeHandler = (listing) =>
+    handleToggleSaveHome(listing, savedIds, setSavedIds, onGoLogin);
 
   // Load listings from backend (with filters)
   const fetchListings = async (opts = {}) => {
@@ -132,16 +137,12 @@ export default function HomePage({
       if (furnished) params.append("furnished", "true");
 
       const qs = params.toString();
-      const res = await fetch(
-        `http://localhost:4000/api/listings/all${qs ? `?${qs}` : ""}`
-      );
+      
+      // ✅ Use apiFetch helper
+      const data = await apiFetch(`/api/listings/all${qs ? `?${qs}` : ""}`, {
+        credentials: "omit", 
+      });
 
-      if (!res.ok) {
-        // Silent fallback: keep demo listings
-        return;
-      }
-
-      const data = await res.json();
       if (Array.isArray(data.listings) && data.listings.length > 0) {
         setListings(data.listings);
       } else {
@@ -149,6 +150,7 @@ export default function HomePage({
       }
     } catch (err) {
       console.error("Error loading listings", err);
+      if (listings.length === 0) setListings(FALLBACK_LISTINGS); 
     } finally {
       setLoadingListings(false);
     }
@@ -157,9 +159,10 @@ export default function HomePage({
   // Load stats for hero box
   const fetchStats = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/listings/stats");
-      if (!res.ok) return;
-      const data = await res.json();
+      // ✅ Use apiFetch helper
+      const data = await apiFetch("/api/listings/stats", {
+        credentials: "omit",
+      });
       setStats({
         totalListings: data.totalListings ?? null,
         citiesCount: data.citiesCount ?? null,
@@ -181,76 +184,21 @@ export default function HomePage({
   useEffect(() => {
     const loadSaved = async () => {
       try {
-        const res = await fetch(
-          "http://localhost:4000/api/listings/saved/me",
-          { credentials: "include" }
-        );
-        if (!res.ok) return;
-        const data = await res.json();
+        // ✅ Use apiFetch helper
+        const data = await apiFetch("/api/listings/saved/me");
+        
         if (Array.isArray(data.saved)) {
           const ids = data.saved.map((h) => h._id || h.id);
           setSavedIds(ids);
         }
       } catch (err) {
+        if (err.message.includes("401")) return;
         console.error("Error loading saved homes for hearts", err);
       }
     };
 
     loadSaved();
   }, []);
-
-  // ❤️ Save / unsave home using your backend routes
-  const handleToggleSaveHome = async (listing) => {
-    const id = listing?._id || listing?.id;
-    if (!id) {
-      toast.error("Listing ID missing");
-      return;
-    }
-
-    // Demo cards can't actually be saved to backend
-    if (String(id).startsWith("demo-")) {
-      toast.info("Demo homes can't be saved. Post a real home to save it.");
-      return;
-    }
-
-    const isSaved = savedIds.includes(id);
-
-    try {
-      const res = await fetch(
-        `http://localhost:4000/api/listings/save/${id}`,
-        {
-          method: isSaved ? "DELETE" : "POST",
-          credentials: "include",
-        }
-      );
-
-      if (res.status === 401) {
-        toast.info("Please log in to save homes.");
-        onGoLogin();
-        return;
-      }
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.error || "Could not update saved status");
-        return;
-      }
-
-      toast.success(
-        isSaved
-          ? "Removed from your favourites"
-          : "Home saved to your favourites ❤️"
-      );
-
-      setSavedIds((prev) =>
-        isSaved ? prev.filter((savedId) => savedId !== id) : [...prev, id]
-      );
-    } catch (err) {
-      console.error(err);
-      toast.error("Server error while updating saved status");
-    }
-  };
 
   // 👁️ Open modal + bump view count
   const openHomeModal = async (home) => {
@@ -261,13 +209,11 @@ export default function HomePage({
     if (!id || String(id).startsWith("demo-")) return;
 
     try {
-      const res = await fetch(
-        `http://localhost:4000/api/listings/${id}/view`,
-        { method: "POST" }
+      // ✅ Use apiFetch helper
+      const data = await apiFetch(
+        `/api/listings/${id}/view`,
+        { method: "PATCH", credentials: "omit" } 
       );
-
-      if (!res.ok) return;
-      const data = await res.json();
 
       if (typeof data.views === "number") {
         setListings((prev) =>
@@ -338,15 +284,17 @@ export default function HomePage({
         setFurnishedOnly={setFurnishedOnly}
         onSearch={handleRunSearch}
         onClear={handleClearFilters}
+        onOpenModal={() => setIsFilterModalOpen(true)}
       />
 
       <FeaturedListings
         listings={listings}
         loading={loadingListings}
-        onToggleSave={handleToggleSaveHome}
+        onToggleSave={saveHomeHandler}
         onOpenHome={openHomeModal}
         savedIds={savedIds}
       />
+      
       <Testimonials />
       <CallToAction
         onGoRegister={onGoRegister}
@@ -357,15 +305,36 @@ export default function HomePage({
         <ListingModal
           home={selectedHome}
           onClose={closeHomeModal}
-          onToggleSave={handleToggleSaveHome}
+          onToggleSave={saveHomeHandler}
           isSaved={savedIds.includes(selectedHome._id || selectedHome.id)}
         />
       )}
+      
+      <FilterModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        searchCity={searchCity}
+        setSearchCity={setSearchCity}
+        minPrice={minPrice}
+        setMinPrice={setMinPrice}
+        maxPrice={maxPrice}
+        setMaxPrice={setMaxPrice}
+        beds={beds}
+        setBeds={setBeds}
+        petsOnly={petsOnly}
+        setPetsOnly={setPetsOnly}
+        furnishedOnly={furnishedOnly}
+        setFurnishedOnly={setFurnishedOnly}
+        onApply={handleRunSearch}
+        onClear={handleClearFilters}
+      />
     </>
   );
 }
 
-// ───────────────── Hero section ─────────────────
+/* -------------------------------------------------------------------
+   UI COMPONENTS (RESTORED)
+------------------------------------------------------------------- */
 
 const HeroSection = ({
   searchCity,
@@ -379,7 +348,7 @@ const HeroSection = ({
   const avgViews = stats.avgViews ?? "9+";
 
   return (
-    <section className="bg-gradient.to-br from-blue-50 via-white to-blue-100">
+    <section className="bg-gradient-to-br from-blue-50 via-white to-blue-100">
       <div className="max-w-6xl mx-auto px-4 py-16 lg:py-24 grid gap-10 lg:grid-cols-2 items-center">
         <div>
           <p className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 border border-blue-100 mb-4">
@@ -431,18 +400,20 @@ const HeroSection = ({
           </div>
         </div>
 
+        {/* ✅ Mobile optimization: HeroStatsCard is hidden on small screens */}
         <HeroStatsCard
           totalListings={total}
           cities={cities}
           avgViews={avgViews}
+          className="hidden lg:block" 
         />
       </div>
     </section>
   );
 };
 
-const HeroStatsCard = ({ totalListings, cities, avgViews }) => (
-  <div className="relative">
+const HeroStatsCard = ({ totalListings, cities, avgViews, className = "" }) => (
+  <div className={`relative ${className}`}>
     <div className="relative rounded-3xl bg-gradient-to-tr from-blue-600 to-sky-500 text-white p-6 sm:p-8 shadow-xl overflow-hidden">
       <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10" />
       <div className="absolute -bottom-8 -left-12 h-32 w-32 rounded-full bg.white/10" />
@@ -487,8 +458,6 @@ const AvatarInitial = ({ label }) => (
   </div>
 );
 
-// ───────────── Filters bar ─────────────
-
 const FiltersBar = ({
   searchCity,
   setSearchCity,
@@ -504,59 +473,78 @@ const FiltersBar = ({
   setFurnishedOnly,
   onSearch,
   onClear,
+  onOpenModal,
 }) => (
   <section className="bg-white border-y border-blue-50">
-    <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div className="grid gap-3 sm:grid-cols-4 flex-1">
-        <FilterInput
-          label="City / Area"
-          placeholder="Baneshwor"
-          value={searchCity}
-          onChange={(e) => setSearchCity(e.target.value)}
-        />
-        <FilterInput
-          label="Min rent (Rs)"
-          type="number"
-          value={minPrice}
-          onChange={(e) => setMinPrice(e.target.value)}
-        />
-        <FilterInput
-          label="Max rent (Rs)"
-          type="number"
-          value={maxPrice}
-          onChange={(e) => setMaxPrice(e.target.value)}
-        />
-        <FilterInput
-          label="Min beds"
-          type="number"
-          value={beds}
-          onChange={(e) => setBeds(e.target.value)}
-        />
+    <div className="max-w-6xl mx-auto px-4 py-4">
+      {/* Desktop layout */}
+      <div className="hidden sm:flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="grid gap-3 sm:grid-cols-4 flex-1">
+          <FilterInput
+            label="City / Area"
+            placeholder="Baneshwor"
+            value={searchCity}
+            onChange={(e) => setSearchCity(e.target.value)}
+          />
+          <FilterInput
+            label="Min rent (Rs)"
+            type="number"
+            value={minPrice}
+            onChange={(e) => setMinPrice(e.target.value)}
+          />
+          <FilterInput
+            label="Max rent (Rs)"
+            type="number"
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(e.target.value)}
+          />
+          <FilterInput
+            label="Min beds"
+            type="number"
+            value={beds}
+            onChange={(e) => setBeds(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-wrap gap-2 mt-2 sm:mt-0 sm:ml-4">
+          <FilterCheckbox
+            label="Pets allowed"
+            checked={petsOnly}
+            onChange={(e) => setPetsOnly(e.target.checked)}
+          />
+          <FilterCheckbox
+            label="Furnished only"
+            checked={furnishedOnly}
+            onChange={(e) => setFurnishedOnly(e.target.checked)}
+          />
+          <button
+            type="button"
+            onClick={onSearch}
+            className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+          >
+            Apply filters
+          </button>
+          <button
+            type="button"
+            onClick={onClear}
+            className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
+          >
+            Clear
+          </button>
+        </div>
       </div>
-      <div className="flex flex-wrap gap-2 mt-2 sm:mt-0 sm:ml-4">
-        <FilterCheckbox
-          label="Pets allowed"
-          checked={petsOnly}
-          onChange={(e) => setPetsOnly(e.target.checked)}
-        />
-        <FilterCheckbox
-          label="Furnished only"
-          checked={furnishedOnly}
-          onChange={(e) => setFurnishedOnly(e.target.checked)}
-        />
+
+      {/* Mobile layout */}
+      <div className="sm:hidden flex items-center justify-between">
+        <p className="text-sm font-semibold text-slate-700">
+          Showing {beds ? `${beds}+ bed ` : ""}homes in {searchCity || "All Areas"}
+        </p>
         <button
           type="button"
-          onClick={onSearch}
-          className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+          onClick={onOpenModal}
+          className="inline-flex items-center justify-center gap-1 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 border border-blue-200 hover:bg-blue-100"
         >
-          Apply filters
-        </button>
-        <button
-          type="button"
-          onClick={onClear}
-          className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
-        >
-          Clear
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          Filter
         </button>
       </div>
     </div>
@@ -583,8 +571,6 @@ const FilterCheckbox = ({ label, ...props }) => (
     <span>{label}</span>
   </label>
 );
-
-// ───────────── Highlight strip ─────────────
 
 const HighlightStrip = () => (
   <section className="bg-white border-y border-blue-50">
@@ -619,8 +605,6 @@ const HighlightItem = ({ icon, title, text }) => (
     </div>
   </div>
 );
-
-// ───────────── Featured listings ─────────────
 
 const FeaturedListings = ({
   listings,
@@ -682,7 +666,7 @@ const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved }) => {
 
   return (
     <div
-      className="group rounded-2xl border border-blue-50 bg-white shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer"
+      className="group rounded-2xl border border-blue-50 bg-white shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer flex flex-col sm:block" 
       onClick={() => onOpenHome(home)}
     >
       <div className="relative h-40 w-full overflow-hidden">
@@ -733,8 +717,6 @@ const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved }) => {
   );
 };
 
-// ───────────── Testimonials ─────────────
-
 const Testimonials = () => (
   <section className="bg-white py-12">
     <div className="max-w-6xl mx-auto px-4">
@@ -772,8 +754,6 @@ const Testimonials = () => (
   </section>
 );
 
-// ───────────── CTA ─────────────
-
 const CallToAction = ({ onGoRegister, onGoMembership }) => (
   <section className="bg-gradient-to-r from-blue-600 to-sky-500 text-white py-12">
     <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -808,334 +788,4 @@ const CallToAction = ({ onGoRegister, onGoMembership }) => (
       </div>
     </div>
   </section>
-);
-
-// ───────────── Listing Modal with message templates + gallery ─────────────
-
-const messageTemplates = [
-  "Hi, I saw your listing on HamroGhar. Is this home still available?",
-  "Hello, I’m interested in your listing. Can we schedule a viewing this week?",
-  "Hi, could you please share more details about utilities, internet and any extra fees?",
-];
-
-const ListingModal = ({ home, onClose, onToggleSave, isSaved }) => {
-  // ✅ Hooks at the top
-  const [activeIndex, setActiveIndex] = useState(0);
-  const homeKey = home ? (home._id || home.id) : null;
-
-  // Reset to first image whenever a different home is opened
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [homeKey]);
-
-  if (!home) return null;
-
-  // 🔹 Handle multiple images
-  const rawImages =
-    (Array.isArray(home.images) && home.images.length > 0
-      ? home.images
-      : home.image
-      ? [home.image]
-      : []) || [];
-
-  const fallbackImg =
-    "https://placehold.co/800x500/eff6ff/0f172a?text=Home";
-
-  const images = rawImages.length > 0 ? rawImages : [fallbackImg];
-  const currentImage = images[activeIndex] || fallbackImg;
-
-  const mapsUrl =
-    home?.location?.lat && home?.location?.lng
-      ? `https://www.google.com/maps/search/?api=1&query=${home.location.lat},${home.location.lng}`
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-          `${home.address || ""} ${home.city || ""}`
-        )}`;
-
-  const postedDate = home.createdAt
-    ? new Date(home.createdAt).toLocaleDateString()
-    : null;
-
-  const priceLabel =
-    typeof home.price === "number" ? `Rs. ${home.price}` : home.price;
-
-  const handleCopyTemplate = async (text) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success("Message copied. You can paste it in chat or SMS.");
-    } catch (err) {
-      console.error("Clipboard error", err);
-      toast.error("Could not copy message, please copy manually.");
-    }
-  };
-
-  const handleToggleSaveClick = (e) => {
-    e.stopPropagation();
-    onToggleSave(home);
-  };
-
-  // ✅ Close when tapping on the dark backdrop
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
-  const goPrev = (e) => {
-    e.stopPropagation();
-    setActiveIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
-
-  const goNext = (e) => {
-    e.stopPropagation();
-    setActiveIndex((prev) => (prev + 1) % images.length);
-  };
-
-  const handleThumbClick = (e, idx) => {
-    e.stopPropagation();
-    setActiveIndex(idx);
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4 py-6"
-      onClick={handleBackdropClick}
-    >
-      {/* Scrollable panel with max height */}
-      <div className="w-full max-w-xl max-h-[90vh] rounded-3xl bg-white shadow-2xl overflow-y-auto">
-        {/* Top image + gallery */}
-        <div className="relative w-full overflow-hidden">
-          <div className="relative h-48 sm:h-64 w-full">
-            <img
-              src={currentImage}
-              alt={home.title || home.address || "Home"}
-              className="h-full w-full object-cover"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = fallbackImg;
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/5 to-transparent" />
-            <button
-              type="button"
-              onClick={onClose}
-              className="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-slate-800 hover:bg-white shadow-sm"
-            >
-              Close
-            </button>
-            {priceLabel && (
-              <div className="absolute left-4 bottom-4 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-900 shadow">
-                {priceLabel}
-                <span className="ml-1 text-[10px] font-normal text-slate-500">
-                  / month
-                </span>
-              </div>
-            )}
-
-            {/* ⬅️➡️ arrows if multiple images */}
-            {images.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  onClick={goPrev}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white hover:bg-black/60"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={goNext}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white hover:bg-black/60"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Thumbnails */}
-          {images.length > 1 && (
-            <div className="flex gap-2 px-4 py-3 bg-white/95 border-t border-slate-100 overflow-x-auto">
-              {images.map((img, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={(e) => handleThumbClick(e, idx)}
-                  className={`h-14 w-20 rounded-xl overflow-hidden border ${
-                    idx === activeIndex
-                      ? "border-blue-500"
-                      : "border-slate-200"
-                  } flex-shrink-0`}
-                >
-                  <img
-                    src={img}
-                    alt={`Thumbnail ${idx + 1}`}
-                    className="h-full w-full object-cover"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = fallbackImg;
-                    }}
-                  />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="p-5 sm:p-6 space-y-4 text-sm">
-          {/* Header row */}
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-            <div>
-              <p className="text-[11px] font-semibold uppercase text-blue-500 tracking-[0.16em] mb-1">
-                {home.city || "Listed home"}
-              </p>
-              <h3 className="text-lg sm:text-xl font-bold text-slate-900">
-                {home.title || home.address || "Home for rent"}
-              </h3>
-              {home.address && (
-                <p className="text-xs text-slate-500 mt-1">{home.address}</p>
-              )}
-            </div>
-            <div className="text-right text-[11px] text-slate-500">
-              {postedDate && (
-                <p>
-                  Posted on <span className="font-medium">{postedDate}</span>
-                </p>
-              )}
-              {home._id && (
-                <p className="mt-0.5">ID: {String(home._id).slice(-6)}</p>
-              )}
-              <p className="mt-1 flex items-center justify-end gap-1">
-                <Eye className="h-3 w-3" />
-                {home.views ?? 0} views
-              </p>
-            </div>
-          </div>
-
-          {/* Specs */}
-          <div className="flex flex-wrap gap-2 text-[11px]">
-            <SpecPill>{home.beds} beds</SpecPill>
-            <SpecPill>{home.baths} baths</SpecPill>
-            <SpecPill>{home.sqft} sqft</SpecPill>
-          </div>
-
-          {/* Amenities */}
-          <div className="space-y-1.5">
-            <p className="text-[11px] font-semibold text-slate-700 uppercase tracking-[0.14em]">
-              Amenities
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <AmenityTag active={!!home.furnished}>Furnished</AmenityTag>
-              <AmenityTag active={!!home.internet}>Internet</AmenityTag>
-              <AmenityTag active={!!home.parking}>Parking</AmenityTag>
-              <AmenityTag
-                active={home.petsAllowed !== undefined && home.petsAllowed}
-              >
-                Pets allowed
-              </AmenityTag>
-            </div>
-          </div>
-
-          {/* Description */}
-          {home.description && (
-            <div className="space-y-1.5">
-              <p className="text-[11px] font-semibold text-slate-700 uppercase tracking-[0.14em]">
-                Description
-              </p>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                {home.description}
-              </p>
-            </div>
-          )}
-
-          {/* Quick contact templates */}
-          <div className="space-y-1.5">
-            <p className="text-[11px] font-semibold text-slate-700 uppercase tracking-[0.14em]">
-              Message templates
-            </p>
-            <p className="text-[11px] text-slate-500 mb-1">
-              Copy a ready-made message to send on WhatsApp, Messenger or SMS.
-            </p>
-            <div className="space-y-1.5">
-              {messageTemplates.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
-                >
-                  <p className="flex-1 text-[11px] text-slate-700">{msg}</p>
-                  <button
-                    type="button"
-                    onClick={() => handleCopyTemplate(msg)}
-                    className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-blue-700 hover:bg-blue-50"
-                  >
-                    <Copy className="h-3 w-3 mr-1" />
-                    Copy
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Location / map + save */}
-          <div className="mt-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="text-[11px] text-slate-500">
-              <p className="font-semibold text-slate-700 mb-0.5">Location</p>
-              {home.location?.lat && home.location?.lng ? (
-                <p>
-                  Lat: {home.location.lat.toFixed(4)}, Lng:{" "}
-                  {home.location.lng.toFixed(4)}
-                </p>
-              ) : (
-                <p>Map is based on the address you see above.</p>
-              )}
-            </div>
-            <div className="flex gap-2 flex-wrap justify-end">
-              <button
-                type="button"
-                onClick={handleToggleSaveClick}
-                className={`inline-flex items-center justify-center rounded-full border px-3 py-1.5 text-[11px] font-semibold ${
-                  isSaved
-                    ? "border-red-200 bg-red-50 text-red-600"
-                    : "border-blue-200 bg-blue-50 text-blue-700"
-                }`}
-              >
-                <Heart
-                  className="h-3.5 w-3.5 mr-1"
-                  fill={isSaved ? "currentColor" : "none"}
-                />
-                {isSaved ? "Saved" : "Save"}
-              </button>
-              <a
-                href={mapsUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-[11px] font-semibold text-blue-700 hover:bg-blue-100"
-              >
-                View on Google Maps
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const SpecPill = ({ children }) => (
-  <span className="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 border border-slate-200">
-    {children}
-  </span>
-);
-
-const AmenityTag = ({ active, children }) => (
-  <span
-    className={
-      "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium border " +
-      (active
-        ? "border-blue-200 bg-blue-50 text-blue-700"
-        : "border-slate-200 bg-white text-slate-500")
-    }
-  >
-    {children}
-  </span>
 );

@@ -1,71 +1,123 @@
 // models/Listing.js
 import mongoose from "mongoose";
 
-const { Schema } = mongoose;
-
-const listingSchema = new Schema(
+const listingSchema = new mongoose.Schema(
   {
     ownerId: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
 
     // Basic info
-    title: { type: String, required: true },
-    description: { type: String, required: true },
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    description: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
-    price: { type: Number, required: true }, // monthly rent
+    // Pricing
+    price: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
 
-    address: { type: String, required: true },
-    city: { type: String, required: true },
+    // Every time price changes we append a new entry here
+    priceHistory: [
+      {
+        price: { type: Number, required: true },
+        changedAt: { type: Date, default: Date.now },
+      },
+    ],
 
-    beds: { type: Number, default: 1 },
-    baths: { type: Number, default: 1 },
-    sqft: { type: Number, default: 0 },
+    // Property details
+    beds: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    baths: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    sqft: {
+      type: Number,
+      min: 0,
+    },
+
+    // Address / location
+    address: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    city: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
+    },
+    location: {
+      lat: { type: Number },
+      lng: { type: Number },
+    },
 
     // Amenities
-    furnished: { type: Boolean, default: false },
-    parking: { type: Boolean, default: false },
-    internet: { type: Boolean, default: false },
-    petsAllowed: { type: Boolean, default: false },
+    furnished: {
+      type: Boolean,
+      default: false,
+    },
+    internet: {
+      type: Boolean,
+      default: false,
+    },
+    parking: {
+      type: Boolean,
+      default: false,
+    },
+    petsAllowed: {
+      type: Boolean,
+      default: false,
+    },
 
-    // Listing status
+    // Media
+    images: [
+      {
+        type: String,
+      },
+    ],
+    video: {
+      type: String,
+      default: "",
+    },
+
+    // Status / meta
     status: {
       type: String,
       enum: ["active", "unavailable"],
       default: "active",
       index: true,
     },
-
-    // Geo location (from geocoding, if available)
-    location: {
-      lat: { type: Number },
-      lng: { type: Number },
-    },
-
-    // Images (Cloudinary URLs)
-    images: [
-      {
-        type: String,
-      },
-    ],
-
-    // Optional video URL
-    video: {
-      type: String,
-      default: "",
-    },
-
-    featured: { type: Boolean, default: false },
-
-    // 🔢 View counter
     views: {
       type: Number,
       default: 0,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-export default mongoose.model("Listing", listingSchema);
+// For future "near me" and map features
+listingSchema.index({ "location.lat": 1, "location.lng": 1 });
+
+const Listing = mongoose.model("Listing", listingSchema);
+
+export default Listing;

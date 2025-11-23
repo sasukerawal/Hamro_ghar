@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { LogIn, Mail, Lock } from 'lucide-react';
 import { toast } from "react-toastify";
-
+import { apiFetch } from "./api"; // ✅ Updated import
 
 const AuthInput = ({ id, type, label, placeholder, Icon, value, onChange }) => (
   <div className="space-y-1">
@@ -39,26 +39,24 @@ export default function Login({ onLogin, onGoRegister }) {
     setError('');
 
     try {
-      const res = await fetch('http://localhost:4000/api/auth/login', {
+      // ✅ Use apiFetch helper
+      await apiFetch('/api/auth/login', {
         method: 'POST',
-        credentials: 'include', // important for cookie-based auth
+        // credentials: 'include' is handled inside apiFetch
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || 'Invalid email or password');
-        return;
-      }
+      // If apiFetch throws an error, it is caught below.
+      // If it succeeds, we proceed.
       toast.success("Login successful!");
 
       onLogin(); // success: tell App.js to update state + go membership
     } catch (err) {
-      setError('Server error. Is your backend running?');
+      // The error message comes from the backend or the default "Request failed"
+      setError(err.message || 'Invalid email or password');
     }
   };
 

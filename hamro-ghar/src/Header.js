@@ -13,6 +13,8 @@ import {
 export default function Header({
   isLoggedIn,
   onGoHome,
+  onGoBuy,
+  onGoRent,
   onGoLogin,
   onGoRegister,
   onGoProfile,
@@ -33,6 +35,7 @@ export default function Header({
     <header className="fixed top-0 inset-x-0 z-40 bg-white/90 backdrop-blur-md border-b border-blue-100">
       {/* TOP BAR */}
       <div className="max-w-6xl mx-auto h-16 lg:h-20 flex items-center justify-between px-4 lg:px-6 max-[425px]:px-3">
+        
         {/* LEFT: LOGO */}
         <button
           type="button"
@@ -52,15 +55,14 @@ export default function Header({
           </div>
         </button>
 
-        {/* MIDDLE NAV – DESKTOP ONLY */}
+        {/* DESKTOP NAV */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
           <NavLink label="Home" onClick={() => handleNav(onGoHome)} />
-          <NavLink label="Buy" onClick={() => handleNav(onGoHome)} />
-          <NavLink label="Rent" onClick={() => handleNav(onGoHome)} />
-          <NavLink label="Agents" onClick={() => handleNav(onGoHome)} />
+          <NavLink label="Buy" onClick={() => handleNav(onGoBuy)} />
+          <NavLink label="Rent" onClick={() => handleNav(onGoRent)} />
         </nav>
 
-        {/* RIGHT – DESKTOP ACTIONS */}
+        {/* DESKTOP RIGHT ACTIONS */}
         <div className="hidden md:flex items-center gap-3">
           {!isLoggedIn ? (
             <>
@@ -78,7 +80,7 @@ export default function Header({
                 className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
               >
                 Join free
-            </button>
+              </button>
             </>
           ) : (
             <>
@@ -90,6 +92,7 @@ export default function Header({
                 <PlusCircle className="h-3.5 w-3.5 mr-1" />
                 Post a home
               </button>
+
               <button
                 type="button"
                 onClick={() => handleNav(onGoMembership)}
@@ -98,6 +101,7 @@ export default function Header({
                 <Crown className="h-3.5 w-3.5 mr-1" />
                 Membership
               </button>
+
               <button
                 type="button"
                 onClick={() => handleNav(onGoProfile)}
@@ -106,6 +110,7 @@ export default function Header({
                 <User className="h-3.5 w-3.5 mr-1" />
                 Profile
               </button>
+
               <button
                 type="button"
                 onClick={() => handleNav(onLogout)}
@@ -117,7 +122,7 @@ export default function Header({
           )}
         </div>
 
-        {/* RIGHT – MOBILE ACTIONS (<= md) */}
+        {/* MOBILE RIGHT SIDE */}
         <div className="flex md:hidden items-center gap-2 max-[425px]:gap-1">
           {isLoggedIn && (
             <button
@@ -129,6 +134,7 @@ export default function Header({
               <PlusCircle className="h-4 w-4 text-blue-600" />
             </button>
           )}
+
           <button
             type="button"
             onClick={toggleMobile}
@@ -143,14 +149,25 @@ export default function Header({
         </div>
       </div>
 
-      {/* MOBILE DROPDOWN MENU */}
+      {/* MOBILE MENU */}
       {isMobileMenuOpen && (
         <div className="md:hidden border-t border-blue-100 bg-white">
           <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-3 text-sm max-[425px]:px-3">
+
             <MobileItem
               icon={HomeIcon}
               label="Home"
               onClick={() => handleNav(onGoHome)}
+            />
+            <MobileItem
+              icon={HomeIcon}
+              label="Buy"
+              onClick={() => handleNav(onGoBuy)}
+            />
+            <MobileItem
+              icon={HomeIcon}
+              label="Rent"
+              onClick={() => handleNav(onGoRent)}
             />
 
             {isLoggedIn && (
