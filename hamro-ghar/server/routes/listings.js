@@ -1,23 +1,25 @@
 // routes/listings.js
 import express from "express";
 import Listing from "../models/Listing.js";
-// ✅ We now import the Multer instance configured with Cloudinary Storage
 import { uploadListingMedia } from "../config/multer.js";
-
 import cloudinary from "../config/cloudinary.js";
 import { requireAuth } from "../middleware/auth.js";
-import User from "../models/User.js"; // Need User model for saved/wishlist routes
+import User from "../models/User.js";
 
 const router = express.Router();
 
-// Helper: safely parse numbers
+/* =========================================
+   Helpers
+========================================= */
+
+// Safely parse numbers
 function toNumber(value, fallback = undefined) {
   if (value === undefined || value === null || value === "") return fallback;
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 }
 
-// Helper: get user id from request (cookie / token)
+// Get user id from request (supports multiple auth styles)
 function getUserId(req) {
   if (req.user && req.user.id) return req.user.id;
   if (req.user && req.user._id) return req.user._id;
@@ -25,18 +27,18 @@ function getUserId(req) {
   return req.body.userId || req.headers["x-user-id"] || null;
 }
 
-/* -----------------------------------------
-   Simple geocoding helper (Nominatim / OSM)
------------------------------------------- */
+/* =========================================
+   Geocoding (Nominatim / OSM)
+========================================= */
 
-const GEOCODE_ENDPOINT =
-  "https://nominatim.openstreetmap.org/search?format=json&limit=1";
+const GEOCODE_ENDPOINT = "https://nominatim.openstreetmap.org/search?format=json";
 
+// Server-side geocoding used when creating a listing (limit = 1)
 async function forwardGeocode(address, city) {
   const q = [address, city].filter(Boolean).join(", ");
   if (!q) return null;
 
-  const url = `${GEOCODE_ENDPOINT}&q=${encodeURIComponent(q)}`;
+  const url = `${GEOCODE_ENDPOINT}&limit=1&q=${encodeURIComponent(q)}`;
 
   try {
     const res = await fetch(url, {
@@ -66,70 +68,10 @@ async function forwardGeocode(address, city) {
   }
 }
 
-/* -----------------------------------------
-   PUT /api/listings/:id
-   Update an existing listing (Owner Only)
------------------------------------------- */
-router.put(
-  "/:id",
-  requireAuth,
-  uploadListingMedia.array("images", 10),
-  async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const listingId = req.params.id;
-
-      const listing = await Listing.findById(listingId);
-      if (!listing) return res.status(404).json({ error: "Listing not found" });
-
-      if (String(listing.ownerId) !== String(userId)) {
-        return res.status(403).json({ error: "Unauthorized" });
-      }
-
-      const {
-        title, description, price, beds, baths, sqft,
-        address, city, furnished, internet, parking, petsAllowed
-      } = req.body;
-
-      // Parse numbers
-      if (price) listing.price = Number(price);
-      if (beds) listing.beds = Number(beds);
-      if (baths) listing.baths = Number(baths);
-      if (sqft) listing.sqft = Number(sqft);
-
-      // Update strings
-      if (title) listing.title = title.trim();
-      if (description) listing.description = description.trim();
-      if (address) listing.address = address.trim();
-      if (city) listing.city = city.trim();
-
-      // Update booleans (ensure they are booleans)
-      if (furnished !== undefined) listing.furnished = furnished === 'true' || furnished === true;
-      if (internet !== undefined) listing.internet = internet === 'true' || internet === true;
-      if (parking !== undefined) listing.parking = parking === 'true' || parking === true;
-      if (petsAllowed !== undefined) listing.petsAllowed = petsAllowed === 'true' || petsAllowed === true;
-
-      // Handle Images: New images are appended. 
-      // (In a real app you might want logic to remove specific old images, 
-      // but here we just append for simplicity or you can implement replace logic).
-      if (req.files && req.files.length > 0) {
-        const newImages = req.files.map(f => f.path);
-        listing.images = [...listing.images, ...newImages];
-      }
-
-      await listing.save();
-      res.json({ message: "Listing updated", listing });
-
-    } catch (err) {
-      console.error("Update error:", err);
-      res.status(500).json({ error: "Update failed" });
-    }
-  }
-);
-/* -----------------------------------------
-   ✅ NEW ROUTE: GET /api/listings/geo/search
-   Proxies geocoding requests for frontend address suggestions.
------------------------------------------- */
+/* =========================================
+   1. GET /geo/search
+   Address suggestions (limit = 5)
+========================================= */
 
 router.get("/geo/search", async (req, res) => {
   try {
@@ -141,7 +83,8 @@ router.get("/geo/search", async (req, res) => {
 
     const fullQuery = [q, city].filter(Boolean).join(", ");
 
-    const url = `${GEOCODE_ENDPOINT}&q=${encodeURIComponent(fullQuery)}`;
+    // For frontend suggestions, we want multiple results
+    const url = `${GEOCODE_ENDPOINT}&limit=5&q=${encodeURIComponent(fullQuery)}`;
 
     const fetchRes = await fetch(url, {
       headers: {
@@ -150,7 +93,6 @@ router.get("/geo/search", async (req, res) => {
     });
 
     if (!fetchRes.ok) {
-      // Proxy the status and error from Nominatim if it fails
       return res.status(fetchRes.status).json({
         error: "Geocoding service unavailable or query failed.",
       });
@@ -167,19 +109,16 @@ router.get("/geo/search", async (req, res) => {
     }));
 
     res.json({ suggestions });
-
   } catch (err) {
-    // IMPORTANT: Log the error on the server side for debugging
     console.error("Geosearch route error:", err);
     res.status(500).json({ error: "Server failed to process geocoding request" });
   }
 });
 
-
-/* -----------------------------------------
-   POST /api/listings/create
+/* =========================================
+   2. POST /create
    Create a new listing (with images)
------------------------------------------- */
+========================================= */
 
 router.post(
   "/create",
@@ -226,19 +165,17 @@ router.post(
           .json({ error: "price must be a positive number" });
       }
 
-      // ✅ SIMPLIFIED IMAGE HANDLING: Multer with CloudinaryStorage
-      // req.files will now contain the response from Cloudinary
+      // Images handled by Multer + CloudinaryStorage
       const uploadedImages = [];
       if (Array.isArray(req.files) && req.files.length > 0) {
-        // Collect the secure_url which is provided by CloudinaryStorage
         for (const file of req.files) {
-          if (file.path) { // file.path holds the secure_url from CloudinaryStorage
-            uploadedImages.push(file.path);
+          if (file.path) {
+            uploadedImages.push(file.path); // file.path is secure_url from Cloudinary
           }
         }
       }
 
-      // Geo-code the address (best effort, not required)
+      // Geo-code the address (best-effort)
       const geo = await forwardGeocode(address, city);
 
       const listing = new Listing({
@@ -257,6 +194,7 @@ router.post(
               lng: geo.lng,
             }
           : undefined,
+        // booleans – kept same as your working setup
         furnished: !!furnished,
         internet: !!internet,
         parking: !!parking,
@@ -267,7 +205,7 @@ router.post(
         status: "active",
       });
 
-      // 🧾 Initialize price history with the first price entry
+      // Initialize price history with the first price entry
       if (typeof listing.price === "number" && !listing.priceHistory?.length) {
         listing.priceHistory = [
           {
@@ -284,17 +222,91 @@ router.post(
         listing,
       });
     } catch (err) {
-      // This is where the 500 error was being generated. 
-      // The image upload should now be handled robustly by Multer.
       console.error("Create listing error:", err);
       res.status(500).json({ error: "Failed to create listing" });
     }
   }
 );
 
+/* =========================================
+   3. PUT /:id
+   Update an existing listing (owner only)
+========================================= */
 
-// GET /api/listings/stats
-// Simple stats for hero card etc.
+router.put(
+  "/:id",
+  requireAuth,
+  uploadListingMedia.array("images", 10),
+  async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const listingId = req.params.id;
+
+      const listing = await Listing.findById(listingId);
+      if (!listing) return res.status(404).json({ error: "Listing not found" });
+
+      if (String(listing.ownerId) !== String(userId)) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+
+      const {
+        title,
+        description,
+        price,
+        beds,
+        baths,
+        sqft,
+        address,
+        city,
+        furnished,
+        internet,
+        parking,
+        petsAllowed,
+      } = req.body;
+
+      // Parse numbers
+      if (price) listing.price = Number(price);
+      if (beds) listing.beds = Number(beds);
+      if (baths) listing.baths = Number(baths);
+      if (sqft) listing.sqft = Number(sqft);
+
+      // Update strings
+      if (title) listing.title = title.trim();
+      if (description) listing.description = description.trim();
+      if (address) listing.address = address.trim();
+      if (city) listing.city = city.trim();
+
+      // Update booleans
+      if (furnished !== undefined)
+        listing.furnished = furnished === "true" || furnished === true;
+      if (internet !== undefined)
+        listing.internet = internet === "true" || internet === true;
+      if (parking !== undefined)
+        listing.parking = parking === "true" || parking === true;
+      if (petsAllowed !== undefined)
+        listing.petsAllowed =
+          petsAllowed === "true" || petsAllowed === true;
+
+      // Append new images
+      if (req.files && req.files.length > 0) {
+        const newImages = req.files.map((f) => f.path);
+        listing.images = [...listing.images, ...newImages];
+      }
+
+      await listing.save();
+      res.json({ message: "Listing updated", listing });
+    } catch (err) {
+      console.error("Update error:", err);
+      res.status(500).json({ error: "Update failed" });
+    }
+  }
+);
+
+/* =========================================
+   4. GET /stats
+   Simple stats for hero card etc.
+========================================= */
+
 router.get("/stats", async (req, res) => {
   try {
     const activeFilter = { status: "active" };
@@ -303,7 +315,7 @@ router.get("/stats", async (req, res) => {
 
     const recent = await Listing.find(activeFilter)
       .sort({ createdAt: -1 })
-      .limit(50); // last 50 active listings
+      .limit(50);
 
     const avgPrice =
       recent.length > 0
@@ -312,7 +324,6 @@ router.get("/stats", async (req, res) => {
           )
         : 0;
 
-    // optional: average views
     const avgViews =
       recent.length > 0
         ? Math.round(
@@ -331,12 +342,10 @@ router.get("/stats", async (req, res) => {
   }
 });
 
-
-
-/* -----------------------------------------
-   GET /api/listings/all
-   Public listings with simple filters
------------------------------------------- */
+/* =========================================
+   5. GET /all
+   Public listings with filters
+========================================= */
 
 router.get("/all", async (req, res) => {
   try {
@@ -356,8 +365,13 @@ router.get("/all", async (req, res) => {
 
     const query = {};
 
-    if (city) {
-      query.city = new RegExp(city.trim(), "i");
+    // 🔍 Address + city search using same input (supports full address text too)
+    if (city && city.trim()) {
+      const pattern = new RegExp(city.trim(), "i");
+      query.$or = [
+        { city: pattern },
+        { address: pattern },
+      ];
     }
 
     const priceQuery = {};
@@ -381,11 +395,7 @@ router.get("/all", async (req, res) => {
     if (parking === "true") query.parking = true;
     if (petsAllowed === "true") query.petsAllowed = true;
 
-    if (status) {
-      query.status = status;
-    } else {
-      query.status = "active";
-    }
+    query.status = status || "active";
 
     const limitN = toNumber(limit, 30);
 
@@ -400,10 +410,9 @@ router.get("/all", async (req, res) => {
   }
 });
 
-/* -----------------------------------------
-   GET /api/listings/featured
-   Simple featured listing subset
------------------------------------------- */
+/* =========================================
+   6. GET /featured
+========================================= */
 
 router.get("/featured", async (req, res) => {
   try {
@@ -418,10 +427,10 @@ router.get("/featured", async (req, res) => {
   }
 });
 
-/* -----------------------------------------
-   GET /api/listings/:id
-   Single listing details (+view count)
------------------------------------------- */
+/* =========================================
+   7. GET /:id
+   Single listing
+========================================= */
 
 router.get("/:id", async (req, res) => {
   try {
@@ -438,10 +447,10 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-/* -----------------------------------------
-   PATCH /api/listings/:id/view
-   Increment views for analytics
------------------------------------------- */
+/* =========================================
+   8. PATCH /:id/view
+   Increment views
+========================================= */
 
 router.patch("/:id/view", async (req, res) => {
   try {
@@ -462,10 +471,10 @@ router.patch("/:id/view", async (req, res) => {
   }
 });
 
-/* -----------------------------------------
-   GET /api/listings/saved/me
-   Get listings saved by current user
------------------------------------------- */
+/* =========================================
+   9. GET /saved/me
+   Get saved listings for current user
+========================================= */
 
 router.get("/saved/me", requireAuth, async (req, res) => {
   try {
@@ -486,10 +495,10 @@ router.get("/saved/me", requireAuth, async (req, res) => {
   }
 });
 
-/* -----------------------------------------
-   POST /api/listings/save/:id
-   Save a listing to user's wishlist
------------------------------------------- */
+/* =========================================
+   10. POST /save/:id
+   Save listing to wishlist
+========================================= */
 
 router.post("/save/:id", requireAuth, async (req, res) => {
   try {
@@ -504,7 +513,12 @@ router.post("/save/:id", requireAuth, async (req, res) => {
 
     const listingId = req.params.id;
 
-    if (!user.savedHomes.includes(listingId)) {
+    // Use String comparison for safety (ObjectId vs string)
+    const alreadySaved = user.savedHomes
+      .map((id) => String(id))
+      .includes(String(listingId));
+
+    if (!alreadySaved) {
       user.savedHomes.push(listingId);
       await user.save();
     }
@@ -516,10 +530,10 @@ router.post("/save/:id", requireAuth, async (req, res) => {
   }
 });
 
-/* -----------------------------------------
-   DELETE /api/listings/save/:id
+/* =========================================
+   11. DELETE /save/:id
    Remove listing from wishlist
------------------------------------------- */
+========================================= */
 
 router.delete("/save/:id", requireAuth, async (req, res) => {
   try {
@@ -548,10 +562,10 @@ router.delete("/save/:id", requireAuth, async (req, res) => {
   }
 });
 
-/* -----------------------------------------
-   GET /api/listings/mine/all
+/* =========================================
+   12. GET /mine/all
    Listings created by current user
------------------------------------------- */
+========================================= */
 
 router.get("/mine/all", requireAuth, async (req, res) => {
   try {
@@ -572,10 +586,10 @@ router.get("/mine/all", requireAuth, async (req, res) => {
   }
 });
 
-/* -----------------------------------------
-   PATCH /api/listings/:id/status
+/* =========================================
+   13. PATCH /:id/status
    Toggle active/unavailable
------------------------------------------- */
+========================================= */
 
 router.patch("/:id/status", requireAuth, async (req, res) => {
   try {
@@ -615,10 +629,10 @@ router.patch("/:id/status", requireAuth, async (req, res) => {
   }
 });
 
-/* -----------------------------------------
-   PATCH /api/listings/:id/price
+/* =========================================
+   14. PATCH /:id/price
    Update price + record price history
------------------------------------------- */
+========================================= */
 
 router.patch("/:id/price", requireAuth, async (req, res) => {
   try {
@@ -647,7 +661,6 @@ router.patch("/:id/price", requireAuth, async (req, res) => {
       });
     }
 
-    // Update price and push to history
     listing.price = numericPrice;
 
     if (!Array.isArray(listing.priceHistory)) {
@@ -671,10 +684,10 @@ router.patch("/:id/price", requireAuth, async (req, res) => {
   }
 });
 
-/* -----------------------------------------
-   DELETE /api/listings/:id
+/* =========================================
+   15. DELETE /:id
    Delete listing (owner only)
------------------------------------------- */
+========================================= */
 
 router.delete("/:id", requireAuth, async (req, res) => {
   try {
