@@ -16,6 +16,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 
+
 // Fallback listings if backend fails
 const FALLBACK_LISTINGS = [
   {
@@ -96,6 +97,10 @@ export default function HomePage({
   const [furnishedOnly, setFurnishedOnly] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
+  // Address Suggestions
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
   // Modal
   const [selectedHome, setSelectedHome] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -114,7 +119,7 @@ export default function HomePage({
   const saveHomeHandler = (listing) =>
     handleToggleSaveHome(listing, savedIds, setSavedIds, onGoLogin);
 
-  // Load listings from backend (with filters)
+  // Load listings from backend
   const fetchListings = async (opts = {}) => {
     const {
       city = searchCity,
@@ -138,7 +143,6 @@ export default function HomePage({
 
       const qs = params.toString();
       
-      // ✅ Use apiFetch helper
       const data = await apiFetch(`/api/listings/all${qs ? `?${qs}` : ""}`, {
         credentials: "omit", 
       });
@@ -156,10 +160,9 @@ export default function HomePage({
     }
   };
 
-  // Load stats for hero box
+  // Load stats
   const fetchStats = async () => {
     try {
-      // ✅ Use apiFetch helper
       const data = await apiFetch("/api/listings/stats", {
         credentials: "omit",
       });
@@ -173,34 +176,70 @@ export default function HomePage({
     }
   };
 
-  // Initial load: listings + stats
+  // Initial load
   useEffect(() => {
     fetchListings();
     fetchStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load saved homes once so hearts reflect real saved state
+  // Load saved homes
   useEffect(() => {
     const loadSaved = async () => {
       try {
-        // ✅ Use apiFetch helper
         const data = await apiFetch("/api/listings/saved/me");
-        
         if (Array.isArray(data.saved)) {
           const ids = data.saved.map((h) => h._id || h.id);
           setSavedIds(ids);
         }
       } catch (err) {
         if (err.message.includes("401")) return;
-        console.error("Error loading saved homes for hearts", err);
+        console.error("Error loading saved homes", err);
       }
     };
-
     loadSaved();
   }, []);
 
-  // 👁️ Open modal + bump view count
+  // 🟢 Address Auto-Suggestion Effect
+  useEffect(() => {
+    const query = searchCity.trim();
+    if (query.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
+    // Debounce
+    const timer = setTimeout(async () => {
+      try {
+        // NOTE: apiFetch is used here, credentials should be omitted in the helper if possible, 
+        // but since we can't change the helper, we rely on the backend /geo/search being public.
+        const data = await apiFetch(
+          `/api/listings/geo/search?q=${encodeURIComponent(query)}`, 
+          { credentials: "omit" }
+        );
+        if (data && Array.isArray(data.suggestions)) {
+          setSuggestions(data.suggestions);
+          // Only show suggestions if data is available
+          setShowSuggestions(data.suggestions.length > 0);
+        }
+      } catch (err) {
+        console.error("Geo search error", err);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchCity]);
+
+  const handleSelectSuggestion = (suggestion) => {
+    // Set the search field to the suggested city name for clean filtering
+    const val = suggestion.city || suggestion.label.split(",")[0];
+    setSearchCity(val);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    handleRunSearch(); // Run search immediately upon selecting a city
+  };
+
+  // Modal handlers
   const openHomeModal = async (home) => {
     setSelectedHome(home);
     setIsModalOpen(true);
@@ -209,7 +248,6 @@ export default function HomePage({
     if (!id || String(id).startsWith("demo-")) return;
 
     try {
-      // ✅ Use apiFetch helper
       const data = await apiFetch(
         `/api/listings/${id}/view`,
         { method: "PATCH", credentials: "omit" } 
@@ -238,6 +276,7 @@ export default function HomePage({
   };
 
   const handleRunSearch = () => {
+    setShowSuggestions(false); // hide suggestions when searching
     fetchListings();
   };
 
@@ -248,6 +287,7 @@ export default function HomePage({
     setBeds("");
     setPetsOnly(false);
     setFurnishedOnly(false);
+    setSuggestions([]);
     fetchListings({
       city: "",
       min: "",
@@ -266,6 +306,10 @@ export default function HomePage({
         onSearch={handleRunSearch}
         onGoLogin={onGoLogin}
         stats={stats}
+        suggestions={suggestions}
+        showSuggestions={showSuggestions}
+        onSelectSuggestion={handleSelectSuggestion}
+        setShowSuggestions={setShowSuggestions}
       />
       <HighlightStrip />
 
@@ -285,6 +329,11 @@ export default function HomePage({
         onSearch={handleRunSearch}
         onClear={handleClearFilters}
         onOpenModal={() => setIsFilterModalOpen(true)}
+        // Pass suggestion props to filters bar too (for desktop city input)
+        suggestions={suggestions}
+        showSuggestions={showSuggestions}
+        onSelectSuggestion={handleSelectSuggestion}
+        setShowSuggestions={setShowSuggestions}
       />
 
       <FeaturedListings
@@ -327,14 +376,42 @@ export default function HomePage({
         setFurnishedOnly={setFurnishedOnly}
         onApply={handleRunSearch}
         onClear={handleClearFilters}
+        // Pass suggestion props to the mobile modal
+        suggestions={suggestions}
+        showSuggestions={showSuggestions}
+        onSelectSuggestion={handleSelectSuggestion}
+        setShowSuggestions={setShowSuggestions}
       />
     </>
   );
 }
 
 /* -------------------------------------------------------------------
-   UI COMPONENTS (RESTORED)
+   UI COMPONENTS (FULL IMPLEMENTATION)
 ------------------------------------------------------------------- */
+
+// Helper component for address autocomplete dropdown
+const AddressSuggestionsList = ({ suggestions, onSelect, show }) => {
+  if (!show || suggestions.length === 0) return null;
+  
+  return (
+    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto">
+      {suggestions.map((s) => (
+        <button
+          key={s.id}
+          type="button"
+          onClick={() => onSelect(s)}
+          className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors"
+        >
+          {/* Display the main place name */}
+          <p className="font-medium text-slate-800">{s.label.split(",")[0]}</p>
+          {/* Display the full address for context */}
+          <p className="text-xs text-slate-500 truncate">{s.label}</p>
+        </button>
+      ))}
+    </div>
+  );
+};
 
 const HeroSection = ({
   searchCity,
@@ -342,6 +419,10 @@ const HeroSection = ({
   onSearch,
   onGoLogin,
   stats,
+  suggestions,
+  showSuggestions,
+  onSelectSuggestion,
+  setShowSuggestions,
 }) => {
   const total = stats.totalListings ?? "12,430";
   const cities = stats.citiesCount ?? "32";
@@ -364,15 +445,27 @@ const HeroSection = ({
             spaces across the city in just a few clicks.
           </p>
 
-          <div className="mt-6 rounded-2xl bg-white shadow-lg border border-blue-50 p-3 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50">
+          <div className="mt-6 rounded-2xl bg-white shadow-lg border border-blue-50 p-3 flex flex-col gap-3 sm:flex-row sm:items-center relative z-20">
+            <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 relative">
               <MapPin className="h-4 w-4 text-blue-500" />
               <input
                 type="text"
                 value={searchCity}
-                onChange={(e) => setSearchCity(e.target.value)}
+                onChange={(e) => {
+                  setSearchCity(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                // We delay blur to allow clicking the suggestion
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                 placeholder="Enter area or city, e.g. Baneshwor, Kathmandu"
                 className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
+              />
+              {/* ✅ Suggestions Dropdown */}
+              <AddressSuggestionsList 
+                suggestions={suggestions} 
+                show={showSuggestions} 
+                onSelect={onSelectSuggestion} 
               />
             </div>
             <button
@@ -400,7 +493,6 @@ const HeroSection = ({
           </div>
         </div>
 
-        {/* ✅ Mobile optimization: HeroStatsCard is hidden on small screens */}
         <HeroStatsCard
           totalListings={total}
           cities={cities}
@@ -474,18 +566,40 @@ const FiltersBar = ({
   onSearch,
   onClear,
   onOpenModal,
+  suggestions,
+  showSuggestions,
+  onSelectSuggestion,
+  setShowSuggestions,
 }) => (
-  <section className="bg-white border-y border-blue-50">
+  <section className="bg-white border-y border-blue-50 relative z-10">
     <div className="max-w-6xl mx-auto px-4 py-4">
       {/* Desktop layout */}
       <div className="hidden sm:flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="grid gap-3 sm:grid-cols-4 flex-1">
-          <FilterInput
-            label="City / Area"
-            placeholder="Baneshwor"
-            value={searchCity}
-            onChange={(e) => setSearchCity(e.target.value)}
-          />
+          
+          {/* City Input with Suggestions (Desktop) */}
+          <div className="relative text-xs">
+            <p className="font-semibold text-slate-700 mb-1">City / Area</p>
+            <div className="relative">
+              <input
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                placeholder="Baneshwor"
+                value={searchCity}
+                onChange={(e) => {
+                  setSearchCity(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              />
+              <AddressSuggestionsList 
+                suggestions={suggestions} 
+                show={showSuggestions} 
+                onSelect={onSelectSuggestion} 
+              />
+            </div>
+          </div>
+
           <FilterInput
             label="Min rent (Rs)"
             type="number"

@@ -1,7 +1,7 @@
 // src/PostListing.js
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
-import { Home, UploadCloud, ArrowLeft, Loader } from "lucide-react";
+import { Home, UploadCloud, ArrowLeft, Loader, MapPin } from "lucide-react"; 
 import { apiFetch } from "./api";
 
 export default function PostListing({ onGoHome, editId }) {
@@ -79,8 +79,8 @@ export default function PostListing({ onGoHome, editId }) {
   const handleSelectSuggestion = (suggestion) => {
     setForm((prev) => ({
       ...prev,
-      address: suggestion.label,
-      city: suggestion.city || prev.city,
+      address: suggestion.label.split(',').slice(0, 3).join(', ').trim(), // Use top part of label for address field
+      city: suggestion.city || prev.city, // Prefer explicit city name
     }));
     setAddressSuggestions([]);
   };
@@ -122,7 +122,7 @@ export default function PostListing({ onGoHome, editId }) {
         setAddressSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
       } catch (err) {
         if (err.name !== "AbortError") {
-          // ignore
+          console.error("Geo search failed:", err);
         }
       } finally {
         setAddressLoading(false);
@@ -267,7 +267,7 @@ export default function PostListing({ onGoHome, editId }) {
             />
 
             {/* Address + suggestions */}
-            <div className="relative">
+            <div className="relative z-10">
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Address *{" "}
               </label>
@@ -285,24 +285,25 @@ export default function PostListing({ onGoHome, editId }) {
                 </p>
               )}
               {addressSuggestions.length > 0 && (
-                <div className="absolute z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg max-h-48 overflow-auto">
+                <div className="absolute top-full mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg max-h-48 overflow-auto">
                   {addressSuggestions.map((s) => (
                     <button
                       key={s.id}
                       type="button"
-                      className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50"
+                      className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 border-b border-slate-50 last:border-0"
                       onClick={() => handleSelectSuggestion(s)}
                     >
-                      <p className="text-slate-800">{s.label}</p>
-                      {s.city && (
-                        <p className="text-[10px] text-slate-500 mt-0.5">
-                          {s.city}
-                        </p>
-                      )}
+                      <MapPin className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                      <p className="text-slate-800 flex-1 truncate">
+                          {s.label}
+                      </p>
                     </button>
                   ))}
                 </div>
               )}
+              <p className="mt-1 text-[10px] text-slate-400">
+                Tip: include road/tole + ward + city.
+              </p>
             </div>
           </div>
 
