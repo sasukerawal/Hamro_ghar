@@ -8,7 +8,7 @@ import {
   ChevronRight,
   Edit3,
   Trash2,
-  MapPin, // ✅ Added missing import
+  MapPin,
 } from "lucide-react";
 import { apiFetch } from "./api";
 
@@ -126,18 +126,18 @@ export function ListingModal({
       await navigator.clipboard.writeText(text);
       toast.success("Message copied!");
     } catch (err) {
-        // Fallback for iframes/older browsers
-        const textArea = document.createElement("textarea");
-        textArea.value = text;
-        document.body.appendChild(textArea);
-        textArea.select();
-        try {
-            document.execCommand('copy');
-            toast.success("Message copied!");
-        } catch (e) {
-            toast.error("Manual copy required.");
-        }
-        document.body.removeChild(textArea);
+      // Fallback for iframes/older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand("copy");
+        toast.success("Message copied!");
+      } catch (e) {
+        toast.error("Manual copy required.");
+      }
+      document.body.removeChild(textArea);
     }
   };
 
@@ -161,7 +161,7 @@ export function ListingModal({
     if (onUnsave && isSaved) {
       // Special mode for Membership page (Remove directly)
       onUnsave(home);
-      onClose(); 
+      onClose();
     } else if (onToggleSave) {
       // Standard toggle
       onToggleSave(home);
@@ -184,11 +184,15 @@ export function ListingModal({
   };
 
   return (
+    // ✅ CHANGED z-50 to z-[9999] so it stays above the map
     <div
-      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4 py-6 backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center px-4 py-6 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
-      <div className="w-full max-w-xl max-h-[90vh] rounded-3xl bg-white shadow-2xl overflow-y-auto animate-scale-up-down" style={{animation: 'none'}}>
+      <div
+        className="w-full max-w-xl max-h-[90vh] rounded-3xl bg-white shadow-2xl overflow-y-auto animate-scale-up-down"
+        style={{ animation: "none" }}
+      >
         {/* Image Area */}
         <div className="relative w-full overflow-hidden bg-slate-100">
           <div className="relative h-56 sm:h-64 w-full">
@@ -258,7 +262,9 @@ export function ListingModal({
                   type="button"
                   onClick={(e) => handleThumbClick(e, idx)}
                   className={`h-12 w-16 rounded-lg overflow-hidden border flex-shrink-0 ${
-                    idx === activeIndex ? "border-blue-500 ring-2 ring-blue-100" : "border-slate-200 opacity-70 hover:opacity-100"
+                    idx === activeIndex
+                      ? "border-blue-500 ring-2 ring-blue-100"
+                      : "border-slate-200 opacity-70 hover:opacity-100"
                   }`}
                 >
                   <img
@@ -365,24 +371,24 @@ export function ListingModal({
 
             {/* Save/Unsave Logic */}
             {!isOwner && (
-                <button
+              <button
                 onClick={handleHeartClick}
                 className={`flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold border transition-colors ${
-                    isSaved
+                  isSaved
                     ? "bg-red-50 border-red-100 text-red-600 hover:bg-red-100"
                     : "bg-blue-600 border-blue-600 text-white hover:bg-blue-700"
                 }`}
-                >
+              >
                 {isSaved ? (
-                    <>
+                  <>
                     <Trash2 className="h-3.5 w-3.5" /> Unsave
-                    </>
+                  </>
                 ) : (
-                    <>
+                  <>
                     <Heart className="h-3.5 w-3.5" /> Save Home
-                    </>
+                  </>
                 )}
-                </button>
+              </button>
             )}
           </div>
         </div>

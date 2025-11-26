@@ -2,7 +2,7 @@
 import express from "express";
 import Listing from "../models/Listing.js";
 import { uploadListingMedia } from "../config/multer.js";
-import cloudinary from "../config/cloudinary.js";
+import cloudinary from "../config/cloudinary.js"; // still imported in case you use it later
 import { requireAuth } from "../middleware/auth.js";
 import User from "../models/User.js";
 
@@ -31,9 +31,10 @@ function getUserId(req) {
    Geocoding (Nominatim / OSM)
 ========================================= */
 
-const GEOCODE_ENDPOINT = "https://nominatim.openstreetmap.org/search?format=json";
+const GEOCODE_ENDPOINT =
+  "https://nominatim.openstreetmap.org/search?format=json";
 
-// Server-side geocoding used when creating a listing (limit = 1)
+// Server-side geocoding used when creating/updating a listing (limit = 1)
 async function forwardGeocode(address, city) {
   const q = [address, city].filter(Boolean).join(", ");
   if (!q) return null;
@@ -83,8 +84,9 @@ router.get("/geo/search", async (req, res) => {
 
     const fullQuery = [q, city].filter(Boolean).join(", ");
 
-    // For frontend suggestions, we want multiple results
-    const url = `${GEOCODE_ENDPOINT}&limit=5&q=${encodeURIComponent(fullQuery)}`;
+    const url = `${GEOCODE_ENDPOINT}&limit=5&q=${encodeURIComponent(
+      fullQuery
+    )}`;
 
     const fetchRes = await fetch(url, {
       headers: {
@@ -103,7 +105,11 @@ router.get("/geo/search", async (req, res) => {
     const suggestions = data.map((item) => ({
       id: item.place_id,
       label: item.display_name,
-      city: item.address?.city || item.address?.town || item.address?.village,
+      city:
+        item.address?.city ||
+        item.address?.town ||
+        item.address?.village ||
+        null,
       lat: Number(item.lat),
       lng: Number(item.lon),
     }));
@@ -111,7 +117,9 @@ router.get("/geo/search", async (req, res) => {
     res.json({ suggestions });
   } catch (err) {
     console.error("Geosearch route error:", err);
-    res.status(500).json({ error: "Server failed to process geocoding request" });
+    res
+      .status(500)
+      .json({ error: "Server failed to process geocoding request" });
   }
 });
 
@@ -178,7 +186,7 @@ router.post(
       // Geo-code the address (best-effort)
       const geo = await forwardGeocode(address, city);
 
-      const listing = new Listing({
+      const listingData = {
         ownerId: userId,
         title: title?.trim() || "Untitled listing",
         description: description?.trim(),
@@ -188,12 +196,6 @@ router.post(
         sqft: numericSqft,
         address: address?.trim(),
         city: city?.trim(),
-        location: geo
-          ? {
-              lat: geo.lat,
-              lng: geo.lng,
-            }
-          : undefined,
         // booleans – kept same as your working setup
         furnished: !!furnished,
         internet: !!internet,
@@ -203,7 +205,19 @@ router.post(
         images: uploadedImages,
         video: video || "",
         status: "active",
-      });
+      };
+
+      // Attach GeoJSON location if geocode succeeded
+      if (geo) {
+        listingData.location = {
+          type: "Point",
+          coordinates: [geo.lng, geo.lat],
+          lat: geo.lat,
+          lng: geo.lng,
+        };
+      }
+
+      const listing = new Listing(listingData);
 
       // Initialize price history with the first price entry
       if (typeof listing.price === "number" && !listing.priceHistory?.length) {
@@ -262,10 +276,31 @@ router.put(
         internet,
         parking,
         petsAllowed,
+        video,
       } = req.body;
 
+      let addressChanged = false;
+      let cityChanged = false;
+
       // Parse numbers
-      if (price) listing.price = Number(price);
+      if (price) {
+        const numericPrice = toNumber(price);
+        if (!numericPrice || numericPrice <= 0) {
+          return res
+            .status(400)
+            .json({ error: "price must be a positive number" });
+        }
+        listing.price = numericPrice;
+
+        // record price change
+        if (!Array.isArray(listing.priceHistory)) {
+          listing.priceHistory = [];
+        }
+        listing.priceHistory.push({
+          price: numericPrice,
+          changedAt: new Date(),
+        });
+      }
       if (beds) listing.beds = Number(beds);
       if (baths) listing.baths = Number(baths);
       if (sqft) listing.sqft = Number(sqft);
@@ -273,8 +308,20 @@ router.put(
       // Update strings
       if (title) listing.title = title.trim();
       if (description) listing.description = description.trim();
-      if (address) listing.address = address.trim();
-      if (city) listing.city = city.trim();
+      if (address) {
+        const trimmedAddress = address.trim();
+        if (trimmedAddress && trimmedAddress !== listing.address) {
+          addressChanged = true;
+        }
+        listing.address = trimmedAddress;
+      }
+      if (city) {
+        const trimmedCity = city.trim();
+        if (trimmedCity && trimmedCity !== listing.city) {
+          cityChanged = true;
+        }
+        listing.city = trimmedCity;
+      }
 
       // Update booleans
       if (furnished !== undefined)
@@ -287,10 +334,27 @@ router.put(
         listing.petsAllowed =
           petsAllowed === "true" || petsAllowed === true;
 
+      if (video !== undefined) {
+        listing.video = video || "";
+      }
+
       // Append new images
       if (req.files && req.files.length > 0) {
         const newImages = req.files.map((f) => f.path);
-        listing.images = [...listing.images, ...newImages];
+        listing.images = [...(listing.images || []), ...newImages];
+      }
+
+      // If address or city changed, re-geocode
+      if ((addressChanged || cityChanged) && listing.address && listing.city) {
+        const geo = await forwardGeocode(listing.address, listing.city);
+        if (geo) {
+          listing.location = {
+            type: "Point",
+            coordinates: [geo.lng, geo.lat],
+            lat: geo.lat,
+            lng: geo.lng,
+          };
+        }
       }
 
       await listing.save();
@@ -368,10 +432,7 @@ router.get("/all", async (req, res) => {
     // 🔍 Address + city search using same input (supports full address text too)
     if (city && city.trim()) {
       const pattern = new RegExp(city.trim(), "i");
-      query.$or = [
-        { city: pattern },
-        { address: pattern },
-      ];
+      query.$or = [{ city: pattern }, { address: pattern }];
     }
 
     const priceQuery = {};
@@ -513,7 +574,6 @@ router.post("/save/:id", requireAuth, async (req, res) => {
 
     const listingId = req.params.id;
 
-    // Use String comparison for safety (ObjectId vs string)
     const alreadySaved = user.savedHomes
       .map((id) => String(id))
       .includes(String(listingId));

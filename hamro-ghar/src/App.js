@@ -19,6 +19,7 @@ import Membership from "./Membership";
 import Footer from "./Footer";
 import UserProfile from "./UserProfile";
 import PostListing from "./PostListing";
+import "leaflet/dist/leaflet.css";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);

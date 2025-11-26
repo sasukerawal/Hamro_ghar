@@ -64,9 +64,26 @@ const listingSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
+
+    // GeoJSON location for map + "near me"
+    // coordinates = [lng, lat]
     location: {
-      lat: { type: Number },
-      lng: { type: Number },
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        default: undefined,
+      },
+      // Optional: keep plain lat/lng for easier use in frontend if you want
+      lat: {
+        type: Number,
+      },
+      lng: {
+        type: Number,
+      },
     },
 
     // Amenities
@@ -115,8 +132,11 @@ const listingSchema = new mongoose.Schema(
   }
 );
 
-// For future "near me" and map features
-listingSchema.index({ "location.lat": 1, "location.lng": 1 });
+// ✅ Full 2D geospatial index for "near me" / map search
+listingSchema.index({ location: "2dsphere" });
+
+// (Optional) If you ever want simple numeric index too, you could add:
+// listingSchema.index({ "location.lat": 1, "location.lng": 1 });
 
 const Listing = mongoose.model("Listing", listingSchema);
 

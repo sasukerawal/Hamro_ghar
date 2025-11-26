@@ -1,9 +1,12 @@
+// src/HomePage.js
 import React, { useState, useEffect } from "react";
 import { apiFetch } from "./api";
 import FilterModal from "./FilterModal";
 // ✅ Import reusable utilities
 import { ListingModal, handleToggleSaveHome } from "./ListingUtils";
 import AddressSuggestionsList from "./AddressSuggestionsList";
+import ListingMapView from "./ListingMapView"; // ✅ NEW
+
 import {
   MapPin,
   Search,
@@ -87,6 +90,9 @@ export default function HomePage({
 }) {
   const [listings, setListings] = useState(FALLBACK_LISTINGS);
   const [loadingListings, setLoadingListings] = useState(false);
+
+  // 🔄 List vs Map toggle
+  const [showMap, setShowMap] = useState(false);
 
   // Filters
   const [searchCity, setSearchCity] = useState("");
@@ -328,15 +334,38 @@ export default function HomePage({
         showSuggestions={showSuggestions}
         onSelectSuggestion={handleSelectSuggestion}
         setShowSuggestions={setShowSuggestions}
+        // ✅ Map toggle props
+        showMap={showMap}
+        onToggleMap={() => setShowMap((prev) => !prev)}
       />
 
-      <FeaturedListings
-        listings={listings}
-        loading={loadingListings}
-        onToggleSave={saveHomeHandler}
-        onOpenHome={openHomeModal}
-        savedIds={savedIds}
-      />
+      {/* ✅ Either show Map or Featured list */}
+      {showMap ? (
+        <section className="bg-slate-50 py-10">
+          <div className="max-w-6xl mx-auto px-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+                Map view
+              </h2>
+              <p className="text-xs text-slate-500">
+                Tap a pin or card to see full details.
+              </p>
+            </div>
+            <ListingMapView
+              listings={listings}
+              onSelectListing={openHomeModal}
+            />
+          </div>
+        </section>
+      ) : (
+        <FeaturedListings
+          listings={listings}
+          loading={loadingListings}
+          onToggleSave={saveHomeHandler}
+          onOpenHome={openHomeModal}
+          savedIds={savedIds}
+        />
+      )}
 
       <Testimonials />
       <CallToAction
@@ -544,6 +573,9 @@ const FiltersBar = ({
   showSuggestions,
   onSelectSuggestion,
   setShowSuggestions,
+  // ✅ Map toggle
+  showMap,
+  onToggleMap,
 }) => (
   <section className="bg.white border-y border-blue-50 relative z-10">
     <div className="max-w-6xl mx-auto px-4 py-4">
@@ -617,23 +649,42 @@ const FiltersBar = ({
           >
             Clear
           </button>
+          {/* ✅ Desktop Map toggle */}
+          <button
+            type="button"
+            onClick={onToggleMap}
+            className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-700 hover:bg-blue-100"
+          >
+            {showMap ? "Show list" : "Show map"}
+          </button>
         </div>
       </div>
 
       {/* Mobile layout */}
-      <div className="sm:hidden flex items-center justify-between">
-        <p className="text-sm font-semibold text-slate-700">
-          Showing {beds ? `${beds}+ bed ` : ""}homes in{" "}
-          {searchCity || "All Areas"}
-        </p>
-        <button
-          type="button"
-          onClick={onOpenModal}
-          className="inline-flex items-center justify-center gap-1 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 border border-blue-200 hover:bg-blue-100"
-        >
-          <SlidersHorizontal className="h-3.5 w-3.5" />
-          Filter
-        </button>
+      <div className="sm:hidden flex items-center justify-between gap-2">
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-slate-700">
+            Showing {beds ? `${beds}+ bed ` : ""}homes in{" "}
+            {searchCity || "All Areas"}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onToggleMap}
+            className="inline-flex items-center justify-center gap-1 rounded-full bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-700 border border-blue-200 hover:bg-blue-100"
+          >
+            {showMap ? "List" : "Map"}
+          </button>
+          <button
+            type="button"
+            onClick={onOpenModal}
+            className="inline-flex items-center justify-center gap-1 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 border border-blue-200 hover:bg-blue-100"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            Filter
+          </button>
+        </div>
       </div>
     </div>
   </section>
