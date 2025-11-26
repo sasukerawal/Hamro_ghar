@@ -1,4 +1,4 @@
-// User.js
+// server/models/User.js
 import mongoose from "mongoose";
 
 const { Schema } = mongoose;
@@ -47,7 +47,17 @@ const userSchema = new Schema(
       default: "member",
     },
 
-    // ⭐ New: wishlist
+    // ⭐ Verification fields
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationCode: {
+      type: String,
+      select: false, // Don't return this by default in queries
+    },
+
+    // ⭐ Wishlist
     savedHomes: [
       {
         type: Schema.Types.ObjectId,

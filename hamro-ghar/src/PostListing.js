@@ -1,10 +1,23 @@
 // src/PostListing.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "react-toastify";
-import { Home, UploadCloud, ArrowLeft, Loader, MapPin } from "lucide-react"; 
+import { Home, UploadCloud, ArrowLeft, Loader } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
 import { apiFetch } from "./api";
+import AddressSuggestionsList from "./AddressSuggestionsList";
 
-export default function PostListing({ onGoHome, editId }) {
+export default function PostListing() {
+  const { id } = useParams(); // /listings/:id/edit → id, /listings/new → undefined
+  const editId = id || null;
+
+  const navigate = useNavigate();
+
+  // safe callback for goBack (fixes useEffect dependency error)
+  const goBack = useCallback(() => {
+    navigate("/membership");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [navigate]);
+
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -21,14 +34,14 @@ export default function PostListing({ onGoHome, editId }) {
   });
 
   const [mediaFiles, setMediaFiles] = useState([]);
-  const [existingImages, setExistingImages] = useState([]); // For edit mode
+  const [existingImages, setExistingImages] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [fetching, setFetching] = useState(!!editId);
 
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [addressLoading, setAddressLoading] = useState(false);
 
-  // 🆕 If editId is present, fetch the listing data
+  // Load listing data for edit mode
   useEffect(() => {
     if (!editId) return;
 
@@ -36,6 +49,7 @@ export default function PostListing({ onGoHome, editId }) {
       try {
         setFetching(true);
         const data = await apiFetch(`/api/listings/${editId}`);
+
         if (data.listing) {
           const l = data.listing;
           setForm({
@@ -56,17 +70,19 @@ export default function PostListing({ onGoHome, editId }) {
         }
       } catch (err) {
         toast.error("Could not load listing for editing");
-        onGoHome();
+        goBack();
       } finally {
         setFetching(false);
       }
     };
 
     fetchListing();
-  }, [editId, onGoHome]);
+  }, [editId, goBack]);
 
   const handleChange = (field) => (e) => {
-    const value = e.target.type === "checkbox" ? e.target.checked : e.target.value;
+    const value =
+      e.target.type === "checkbox" ? e.target.checked : e.target.value;
+
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -79,13 +95,13 @@ export default function PostListing({ onGoHome, editId }) {
   const handleSelectSuggestion = (suggestion) => {
     setForm((prev) => ({
       ...prev,
-      address: suggestion.label.split(',').slice(0, 3).join(', ').trim(), // Use top part of label for address field
-      city: suggestion.city || prev.city, // Prefer explicit city name
+      address: suggestion.label.split(",").slice(0, 3).join(", ").trim(),
+      city: suggestion.city || prev.city,
     }));
     setAddressSuggestions([]);
   };
 
-  // Address auto-suggestions
+  // Address Auto-Suggestions
   useEffect(() => {
     const address = form.address?.trim();
     if (!address || address.length < 4) {
@@ -99,14 +115,10 @@ export default function PostListing({ onGoHome, editId }) {
         setAddressLoading(true);
         const params = new URLSearchParams();
         params.append("q", address);
-        if (form.city?.trim()) {
-          params.append("city", form.city.trim());
-        }
+        if (form.city?.trim()) params.append("city", form.city.trim());
 
         const API_BASE =
-          (process.env.REACT_APP_API_BASE &&
-            process.env.REACT_APP_API_BASE.trim()) ||
-          "http://localhost:4000";
+          process.env.REACT_APP_API_BASE?.trim() || "http://localhost:4000";
 
         const res = await fetch(
           `${API_BASE}/api/listings/geo/search?${params.toString()}`,
@@ -119,11 +131,11 @@ export default function PostListing({ onGoHome, editId }) {
         }
 
         const data = await res.json();
-        setAddressSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
+        setAddressSuggestions(
+          Array.isArray(data.suggestions) ? data.suggestions : []
+        );
       } catch (err) {
-        if (err.name !== "AbortError") {
-          console.error("Geo search failed:", err);
-        }
+        if (err.name !== "AbortError") console.error(err);
       } finally {
         setAddressLoading(false);
       }
@@ -138,13 +150,21 @@ export default function PostListing({ onGoHome, editId }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.title || !form.description || !form.price || !form.address || !form.city) {
+    // required fields
+    if (
+      !form.title ||
+      !form.description ||
+      !form.price ||
+      !form.address ||
+      !form.city
+    ) {
       toast.error("Please fill in all required fields marked with *");
       return;
     }
 
     try {
       setUploading(true);
+
       const fd = new FormData();
       Object.entries(form).forEach(([key, value]) => {
         fd.append(key, value);
@@ -153,7 +173,6 @@ export default function PostListing({ onGoHome, editId }) {
         fd.append("images", file);
       });
 
-      // 🆕 Determine URL and Method based on edit mode
       const url = editId ? `/api/listings/${editId}` : "/api/listings/create";
       const method = editId ? "PUT" : "POST";
 
@@ -162,12 +181,13 @@ export default function PostListing({ onGoHome, editId }) {
         body: fd,
       });
 
-      toast.success(editId ? "Listing updated successfully!" : "Listing posted successfully!");
-      onGoHome();
+      toast.success(editId ? "Listing updated!" : "Listing posted!");
+      goBack();
     } catch (err) {
       console.error(err);
       if (err.message.includes("401")) {
-         toast.info("Please log in.");
+        toast.info("Please log in.");
+        navigate("/login");
       } else {
         toast.error(err.message || "Operation failed");
       }
@@ -178,13 +198,13 @@ export default function PostListing({ onGoHome, editId }) {
 
   if (fetching) {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50">
-            <div className="text-center">
-                <Loader className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
-                <p className="text-sm text-slate-500">Loading listing data...</p>
-            </div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <Loader className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
+          <p className="text-sm text-slate-500">Loading listing data...</p>
         </div>
-    )
+      </div>
+    );
   }
 
   return (
@@ -193,7 +213,7 @@ export default function PostListing({ onGoHome, editId }) {
         <div className="flex items-center justify-between gap-3 mb-6">
           <button
             type="button"
-            onClick={onGoHome}
+            onClick={goBack}
             className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-blue-700"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -207,10 +227,11 @@ export default function PostListing({ onGoHome, editId }) {
             {editId ? "Edit your home" : "Post a home"}
           </h1>
           <p className="text-sm text-slate-600">
-            {editId 
-                ? "Update details, price, or amenities." 
-                : "Share your flat, room or house with verified renters."} 
-            Fields marked with <span className="text-red-500">*</span> are required.
+            {editId
+              ? "Update details, price, or amenities."
+              : "Share your flat, room or house with verified renters."}{" "}
+            Fields marked with <span className="text-red-500">*</span> are
+            required.
           </p>
         </div>
 
@@ -228,7 +249,7 @@ export default function PostListing({ onGoHome, editId }) {
             </label>
             <textarea
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 min-h-[90px]"
-              placeholder="Short description about the home, nearby landmarks, who it is suitable for..."
+              placeholder="Short description about the home..."
               value={form.description}
               onChange={handleChange("description")}
             />
@@ -266,44 +287,31 @@ export default function PostListing({ onGoHome, editId }) {
               onChange={handleChange("city")}
             />
 
-            {/* Address + suggestions */}
+            {/* Address + shared suggestions UI */}
             <div className="relative z-10">
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Address *{" "}
+                Address *
               </label>
               <input
                 type="text"
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-                placeholder="Sifal Road, Ward 7, near police station"
+                placeholder="Sifal Road, Ward 7..."
                 value={form.address}
                 onChange={handleChange("address")}
                 autoComplete="off"
               />
               {addressLoading && (
-                <p className="mt-1 text-[10px] text-slate-400">
+                <p className="text-[11px] text-slate-500 mt-1">
                   Searching suggestions…
                 </p>
               )}
-              {addressSuggestions.length > 0 && (
-                <div className="absolute top-full mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg max-h-48 overflow-auto">
-                  {addressSuggestions.map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 border-b border-slate-50 last:border-0"
-                      onClick={() => handleSelectSuggestion(s)}
-                    >
-                      <MapPin className="h-3.5 w-3.5 text-blue-500 shrink-0" />
-                      <p className="text-slate-800 flex-1 truncate">
-                          {s.label}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              )}
-              <p className="mt-1 text-[10px] text-slate-400">
-                Tip: include road/tole + ward + city.
-              </p>
+
+              {/* ✅ Shared AddressSuggestionsList component */}
+              <AddressSuggestionsList
+                suggestions={addressSuggestions}
+                show={addressSuggestions.length > 0}
+                onSelect={handleSelectSuggestion}
+              />
             </div>
           </div>
 
@@ -315,7 +323,6 @@ export default function PostListing({ onGoHome, editId }) {
             onChange={handleChange("sqft")}
           />
 
-          {/* Amenities */}
           <div className="grid gap-2 sm:grid-cols-2 text-xs text-slate-700">
             <Checkbox
               label="Furnished"
@@ -339,17 +346,21 @@ export default function PostListing({ onGoHome, editId }) {
             />
           </div>
 
-          {/* Media upload */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Photos (up to 10)
             </label>
-            <label className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-xs text-slate-500 cursor-pointer hover:border-blue-300 hover:bg-blue-50/40">
+            <label className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 cursor-pointer hover:border-blue-400 hover:bg-blue-50">
               <UploadCloud className="h-6 w-6 text-blue-500" />
-              <span>{editId ? "Upload new photos to append" : "Click to upload home photos"}</span>
-              <span className="text-[10px] text-slate-400">
-                JPG, PNG. {editId ? "New photos will be added to existing ones." : "First photo will be used as cover."}
+              <span>
+                {editId
+                  ? "Upload new photos to append"
+                  : "Click to upload home photos"}
               </span>
+              <span className="text-[10px] text-slate-400">
+                JPG, PNG only. First photo will be used as cover.
+              </span>
+
               <input
                 type="file"
                 multiple
@@ -358,32 +369,40 @@ export default function PostListing({ onGoHome, editId }) {
                 className="hidden"
               />
             </label>
+
             {mediaFiles.length > 0 && (
-              <p className="mt-1 text-[11px] text-slate-500">
-                {mediaFiles.length} new file{mediaFiles.length > 1 ? "s" : ""} selected
+              <p className="text-[11px] text-slate-500 mt-1">
+                {mediaFiles.length} new file(s) selected
               </p>
             )}
+
             {editId && existingImages.length > 0 && (
-                <p className="mt-1 text-[11px] text-slate-400">
-                    {existingImages.length} existing photo{existingImages.length > 1 ? "s" : ""} will be kept.
-                </p>
+              <p className="text-[11px] text-slate-400 mt-1">
+                {existingImages.length} existing photo(s) will be kept
+              </p>
             )}
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
-              onClick={onGoHome}
-              className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-slate-50"
+              onClick={goBack}
+              className="px-4 py-2 text-sm bg-white border border-blue-200 rounded-full font-semibold text-blue-700 hover:bg-slate-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={uploading}
-              className="inline-flex items-center justify-center rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+              className="px-5 py-2 text-sm bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 disabled:opacity-60"
             >
-              {uploading ? (editId ? "Updating..." : "Posting...") : (editId ? "Update Listing" : "Post home")}
+              {uploading
+                ? editId
+                  ? "Updating..."
+                  : "Posting..."
+                : editId
+                ? "Update Listing"
+                : "Post Home"}
             </button>
           </div>
         </form>
@@ -400,7 +419,7 @@ function Input({ label, type = "text", ...props }) {
       </label>
       <input
         type={type}
-        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
         {...props}
       />
     </div>

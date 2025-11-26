@@ -1,5 +1,6 @@
 import React from "react";
-import { X, Search, MapPin } from "lucide-react"; 
+import { X, Search } from "lucide-react";
+import AddressSuggestionsList from "./AddressSuggestionsList";
 
 /**
  * FilterModal component displayed on mobile to provide a clean,
@@ -39,27 +40,6 @@ export default function FilterModal({
     onClear();
     onClose();
   };
-  
-  // Helper component for address autocomplete dropdown (Defined locally for reuse)
-  const AddressSuggestionsList = ({ suggestions, onSelect, show }) => {
-    if (!show || suggestions.length === 0) return null;
-    
-    return (
-      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto">
-        {suggestions.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => onSelect(s)}
-            className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors flex items-center gap-2"
-          >
-            <MapPin className="h-3.5 w-3.5 text-blue-500 shrink-0" />
-            <p className="font-medium text-slate-800 flex-1 truncate">{s.label.split(",")[0]}</p>
-          </button>
-        ))}
-      </div>
-    );
-  };
 
   return (
     <div className="fixed inset-0 z-50 bg-white sm:hidden overflow-y-auto">
@@ -77,9 +57,8 @@ export default function FilterModal({
       {/* Modal Content - Full set of filters */}
       <div className="p-4 space-y-6">
         <div className="grid gap-4">
-          
           {/* City Input with Suggestions */}
-          <div className="relative text-sm z-20"> 
+          <div className="relative text-sm z-20">
             <p className="font-semibold text-slate-700 mb-1">City / Area</p>
             <input
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
@@ -92,11 +71,11 @@ export default function FilterModal({
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             />
-            {/* ✅ Suggestions Dropdown for mobile modal */}
-            <AddressSuggestionsList 
-              suggestions={suggestions} 
-              show={showSuggestions} 
-              onSelect={onSelectSuggestion} 
+            {/* ✅ Shared Suggestions Dropdown for mobile modal */}
+            <AddressSuggestionsList
+              suggestions={suggestions}
+              show={showSuggestions}
+              onSelect={onSelectSuggestion}
             />
           </div>
 
@@ -115,16 +94,16 @@ export default function FilterModal({
             onChange={(e) => setMaxPrice(e.target.value)}
           />
         </div>
-        
+
         <div className="grid gap-4">
-            <FilterInput
-              label="Min beds"
-              type="number"
-              placeholder="1"
-              value={beds}
-              onChange={(e) => setBeds(e.target.value)}
-            />
-            <InputSpacer /> 
+          <FilterInput
+            label="Min beds"
+            type="number"
+            placeholder="1"
+            value={beds}
+            onChange={(e) => setBeds(e.target.value)}
+          />
+          <InputSpacer />
         </div>
 
         {/* Checkboxes */}

@@ -3,6 +3,7 @@ import { apiFetch } from "./api";
 import FilterModal from "./FilterModal";
 // ✅ Import reusable utilities
 import { ListingModal, handleToggleSaveHome } from "./ListingUtils";
+import AddressSuggestionsList from "./AddressSuggestionsList";
 import {
   MapPin,
   Search,
@@ -15,7 +16,6 @@ import {
   Eye,
   SlidersHorizontal,
 } from "lucide-react";
-
 
 // Fallback listings if backend fails
 const FALLBACK_LISTINGS = [
@@ -142,9 +142,9 @@ export default function HomePage({
       if (furnished) params.append("furnished", "true");
 
       const qs = params.toString();
-      
+
       const data = await apiFetch(`/api/listings/all${qs ? `?${qs}` : ""}`, {
-        credentials: "omit", 
+        credentials: "omit",
       });
 
       if (Array.isArray(data.listings) && data.listings.length > 0) {
@@ -154,7 +154,7 @@ export default function HomePage({
       }
     } catch (err) {
       console.error("Error loading listings", err);
-      if (listings.length === 0) setListings(FALLBACK_LISTINGS); 
+      if (listings.length === 0) setListings(FALLBACK_LISTINGS);
     } finally {
       setLoadingListings(false);
     }
@@ -208,18 +208,14 @@ export default function HomePage({
       return;
     }
 
-    // Debounce
     const timer = setTimeout(async () => {
       try {
-        // NOTE: apiFetch is used here, credentials should be omitted in the helper if possible, 
-        // but since we can't change the helper, we rely on the backend /geo/search being public.
         const data = await apiFetch(
-          `/api/listings/geo/search?q=${encodeURIComponent(query)}`, 
+          `/api/listings/geo/search?q=${encodeURIComponent(query)}`,
           { credentials: "omit" }
         );
         if (data && Array.isArray(data.suggestions)) {
           setSuggestions(data.suggestions);
-          // Only show suggestions if data is available
           setShowSuggestions(data.suggestions.length > 0);
         }
       } catch (err) {
@@ -231,12 +227,11 @@ export default function HomePage({
   }, [searchCity]);
 
   const handleSelectSuggestion = (suggestion) => {
-    // Set the search field to the suggested city name for clean filtering
     const val = suggestion.city || suggestion.label.split(",")[0];
     setSearchCity(val);
     setSuggestions([]);
     setShowSuggestions(false);
-    handleRunSearch(); // Run search immediately upon selecting a city
+    handleRunSearch();
   };
 
   // Modal handlers
@@ -248,10 +243,10 @@ export default function HomePage({
     if (!id || String(id).startsWith("demo-")) return;
 
     try {
-      const data = await apiFetch(
-        `/api/listings/${id}/view`,
-        { method: "PATCH", credentials: "omit" } 
-      );
+      const data = await apiFetch(`/api/listings/${id}/view`, {
+        method: "PATCH",
+        credentials: "omit",
+      });
 
       if (typeof data.views === "number") {
         setListings((prev) =>
@@ -276,7 +271,7 @@ export default function HomePage({
   };
 
   const handleRunSearch = () => {
-    setShowSuggestions(false); // hide suggestions when searching
+    setShowSuggestions(false);
     fetchListings();
   };
 
@@ -329,7 +324,6 @@ export default function HomePage({
         onSearch={handleRunSearch}
         onClear={handleClearFilters}
         onOpenModal={() => setIsFilterModalOpen(true)}
-        // Pass suggestion props to filters bar too (for desktop city input)
         suggestions={suggestions}
         showSuggestions={showSuggestions}
         onSelectSuggestion={handleSelectSuggestion}
@@ -343,7 +337,7 @@ export default function HomePage({
         onOpenHome={openHomeModal}
         savedIds={savedIds}
       />
-      
+
       <Testimonials />
       <CallToAction
         onGoRegister={onGoRegister}
@@ -358,7 +352,7 @@ export default function HomePage({
           isSaved={savedIds.includes(selectedHome._id || selectedHome.id)}
         />
       )}
-      
+
       <FilterModal
         isOpen={isFilterModalOpen}
         onClose={() => setIsFilterModalOpen(false)}
@@ -376,7 +370,6 @@ export default function HomePage({
         setFurnishedOnly={setFurnishedOnly}
         onApply={handleRunSearch}
         onClear={handleClearFilters}
-        // Pass suggestion props to the mobile modal
         suggestions={suggestions}
         showSuggestions={showSuggestions}
         onSelectSuggestion={handleSelectSuggestion}
@@ -387,31 +380,8 @@ export default function HomePage({
 }
 
 /* -------------------------------------------------------------------
-   UI COMPONENTS (FULL IMPLEMENTATION)
+   UI COMPONENTS
 ------------------------------------------------------------------- */
-
-// Helper component for address autocomplete dropdown
-const AddressSuggestionsList = ({ suggestions, onSelect, show }) => {
-  if (!show || suggestions.length === 0) return null;
-  
-  return (
-    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto">
-      {suggestions.map((s) => (
-        <button
-          key={s.id}
-          type="button"
-          onClick={() => onSelect(s)}
-          className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors"
-        >
-          {/* Display the main place name */}
-          <p className="font-medium text-slate-800">{s.label.split(",")[0]}</p>
-          {/* Display the full address for context */}
-          <p className="text-xs text-slate-500 truncate">{s.label}</p>
-        </button>
-      ))}
-    </div>
-  );
-};
 
 const HeroSection = ({
   searchCity,
@@ -456,16 +426,15 @@ const HeroSection = ({
                   setShowSuggestions(true);
                 }}
                 onFocus={() => setShowSuggestions(true)}
-                // We delay blur to allow clicking the suggestion
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                 placeholder="Enter area or city, e.g. Baneshwor, Kathmandu"
                 className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
               />
-              {/* ✅ Suggestions Dropdown */}
-              <AddressSuggestionsList 
-                suggestions={suggestions} 
-                show={showSuggestions} 
-                onSelect={onSelectSuggestion} 
+              {/* ✅ Shared Address Suggestions */}
+              <AddressSuggestionsList
+                suggestions={suggestions}
+                show={showSuggestions}
+                onSelect={onSelectSuggestion}
               />
             </div>
             <button
@@ -479,7 +448,7 @@ const HeroSection = ({
           </div>
 
           <div className="mt-4 flex items-center gap-4 text-xs text-slate-500">
-            <div className="flex.items-center gap-1">
+            <div className="flex items-center gap-1">
               <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
               <span>4.9/5 from 2k+ users</span>
             </div>
@@ -497,18 +466,23 @@ const HeroSection = ({
           totalListings={total}
           cities={cities}
           avgViews={avgViews}
-          className="hidden lg:block" 
+          className="hidden lg:block"
         />
       </div>
     </section>
   );
 };
 
-const HeroStatsCard = ({ totalListings, cities, avgViews, className = "" }) => (
+const HeroStatsCard = ({
+  totalListings,
+  cities,
+  avgViews,
+  className = "",
+}) => (
   <div className={`relative ${className}`}>
     <div className="relative rounded-3xl bg-gradient-to-tr from-blue-600 to-sky-500 text-white p-6 sm:p-8 shadow-xl overflow-hidden">
       <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10" />
-      <div className="absolute -bottom-8 -left-12 h-32 w-32 rounded-full bg.white/10" />
+      <div className="absolute -bottom-8 -left-12 h-32 w-32 rounded-full bg-white/10" />
 
       <p className="text-xs uppercase tracking-[0.2em] text-blue-100 mb-2">
         Live listings
@@ -571,12 +545,11 @@ const FiltersBar = ({
   onSelectSuggestion,
   setShowSuggestions,
 }) => (
-  <section className="bg-white border-y border-blue-50 relative z-10">
+  <section className="bg.white border-y border-blue-50 relative z-10">
     <div className="max-w-6xl mx-auto px-4 py-4">
       {/* Desktop layout */}
       <div className="hidden sm:flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="grid gap-3 sm:grid-cols-4 flex-1">
-          
           {/* City Input with Suggestions (Desktop) */}
           <div className="relative text-xs">
             <p className="font-semibold text-slate-700 mb-1">City / Area</p>
@@ -592,10 +565,10 @@ const FiltersBar = ({
                 onFocus={() => setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               />
-              <AddressSuggestionsList 
-                suggestions={suggestions} 
-                show={showSuggestions} 
-                onSelect={onSelectSuggestion} 
+              <AddressSuggestionsList
+                suggestions={suggestions}
+                show={showSuggestions}
+                onSelect={onSelectSuggestion}
               />
             </div>
           </div>
@@ -650,7 +623,8 @@ const FiltersBar = ({
       {/* Mobile layout */}
       <div className="sm:hidden flex items-center justify-between">
         <p className="text-sm font-semibold text-slate-700">
-          Showing {beds ? `${beds}+ bed ` : ""}homes in {searchCity || "All Areas"}
+          Showing {beds ? `${beds}+ bed ` : ""}homes in{" "}
+          {searchCity || "All Areas"}
         </p>
         <button
           type="button"
@@ -729,7 +703,7 @@ const FeaturedListings = ({
 }) => (
   <section className="bg-slate-50 py-10">
     <div className="max-w-6xl mx-auto px-4">
-      <div className="flex items-end justify-between gap-4 mb-6">
+      <div className="flex items.end justify-between gap-4 mb-6">
         <div>
           <p className="text-[11px] font-semibold tracking-[0.2em] text-blue-500 uppercase">
             Featured
@@ -780,7 +754,7 @@ const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved }) => {
 
   return (
     <div
-      className="group rounded-2xl border border-blue-50 bg-white shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer flex flex-col sm:block" 
+      className="group rounded-2xl border border-blue-50 bg-white shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer flex flex-col sm:block"
       onClick={() => onOpenHome(home)}
     >
       <div className="relative h-40 w-full overflow-hidden">
@@ -859,7 +833,9 @@ const Testimonials = () => (
               ))}
             </div>
             <p className="text-sm text-slate-700 mb-4">“{item.quote}”</p>
-            <p className="text-xs font-semibold text-slate-900">{item.name}</p>
+            <p className="text-xs font-semibold text-slate-900">
+              {item.name}
+            </p>
             <p className="text-[11px] text-slate-500">{item.role}</p>
           </div>
         ))}
@@ -869,7 +845,7 @@ const Testimonials = () => (
 );
 
 const CallToAction = ({ onGoRegister, onGoMembership }) => (
-  <section className="bg-gradient-to-r from-blue-600 to-sky-500 text-white py-12">
+  <section className="bg-gradient-to-r from-blue-600 to-sky-500 text.white py-12">
     <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
       <div>
         <p className="text-xs uppercase tracking-[0.2em] text-blue-100 mb-1">
@@ -894,7 +870,7 @@ const CallToAction = ({ onGoRegister, onGoMembership }) => (
         <button
           type="button"
           onClick={onGoMembership}
-          className="inline-flex items-center justify-center rounded-full border border-blue-100 bg-blue-500/20 px-4 py-2.5 text-xs font-semibold text.white hover:bg-blue-500/40"
+          className="inline-flex items-center justify-center rounded-full border border-blue-100 bg-blue-500/20 px-4 py-2.5 text-xs font-semibold text-white hover:bg-blue-500/40"
         >
           View member dashboard
           <ArrowRight className="ml-1.5 h-3.5 w-3.5" />

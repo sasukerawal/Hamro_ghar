@@ -1,5 +1,6 @@
 // src/Header.js
 import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Menu,
   X,
@@ -10,24 +11,22 @@ import {
   PlusCircle,
 } from "lucide-react";
 
-export default function Header({
-  isLoggedIn,
-  onGoHome,
-  onGoBuy,
-  onGoRent,
-  onGoLogin,
-  onGoRegister,
-  onGoProfile,
-  onGoMembership,
-  onGoPostListing,
-  onLogout,
-}) {
+export default function Header({ isLoggedIn, onLogout }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const toggleMobile = () => setIsMobileMenuOpen((prev) => !prev);
 
-  const handleNav = (fn) => {
-    if (typeof fn === "function") fn();
+  const handleMobileNav = (path) => {
+    navigate(path);
+    setIsMobileMenuOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleLogoutClick = () => {
+    if (typeof onLogout === "function") {
+      onLogout();
+    }
     setIsMobileMenuOpen(false);
   };
 
@@ -37,10 +36,12 @@ export default function Header({
       <div className="max-w-6xl mx-auto h-16 lg:h-20 flex items-center justify-between px-4 lg:px-6 max-[425px]:px-3">
         
         {/* LEFT: LOGO */}
-        <button
-          type="button"
-          onClick={() => handleNav(onGoHome)}
+        <Link
+          to="/"
           className="flex items-center gap-2 max-[425px]:gap-1 cursor-pointer"
+          onClick={() =>
+            window.scrollTo({ top: 0, behavior: "smooth" })
+          }
         >
           <div className="h-9 w-9 max-[425px]:h-8 max-[425px]:w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
             HG
@@ -53,67 +54,78 @@ export default function Header({
               Blue &amp; White Homes
             </p>
           </div>
-        </button>
+        </Link>
 
         {/* DESKTOP NAV */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-          <NavLink label="Home" onClick={() => handleNav(onGoHome)} />
-          <NavLink label="Buy" onClick={() => handleNav(onGoBuy)} />
-          <NavLink label="Rent" onClick={() => handleNav(onGoRent)} />
+        <nav className="hidden md:flex items-center gap-6 text-sm font.medium">
+          <NavLink label="Home" to="/" />
+          {/* For now these both go home; later you can create /buy and /rent routes */}
+          <NavLink label="Buy" to="/" />
+          <NavLink label="Rent" to="/" />
         </nav>
 
         {/* DESKTOP RIGHT ACTIONS */}
         <div className="hidden md:flex items-center gap-3">
           {!isLoggedIn ? (
             <>
-              <button
-                type="button"
-                onClick={() => handleNav(onGoLogin)}
+              <Link
+                to="/login"
                 className="inline-flex items-center gap-1 text-sm font-medium text-slate-700 hover:text-blue-700"
+                onClick={() =>
+                  window.scrollTo({ top: 0, behavior: "smooth" })
+                }
               >
                 <LogIn className="h-4 w-4" />
                 <span>Sign in</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleNav(onGoRegister)}
+              </Link>
+              <Link
+                to="/register"
                 className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                onClick={() =>
+                  window.scrollTo({ top: 0, behavior: "smooth" })
+                }
               >
                 Join free
-              </button>
+              </Link>
             </>
           ) : (
             <>
-              <button
-                type="button"
-                onClick={() => handleNav(onGoPostListing)}
+              <Link
+                to="/listings/new"
                 className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                onClick={() =>
+                  window.scrollTo({ top: 0, behavior: "smooth" })
+                }
               >
                 <PlusCircle className="h-3.5 w-3.5 mr-1" />
                 Post a home
-              </button>
+              </Link>
 
-              <button
-                type="button"
-                onClick={() => handleNav(onGoMembership)}
+              <Link
+                to="/membership"
                 className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                onClick={() =>
+                  window.scrollTo({ top: 0, behavior: "smooth" })
+                }
               >
                 <Crown className="h-3.5 w-3.5 mr-1" />
                 Membership
-              </button>
+              </Link>
 
-              <button
-                type="button"
-                onClick={() => handleNav(onGoProfile)}
+              <Link
+                to="/profile"
                 className="inline-flex items-center justify-center rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                onClick={() =>
+                  window.scrollTo({ top: 0, behavior: "smooth" })
+                }
               >
                 <User className="h-3.5 w-3.5 mr-1" />
                 Profile
-              </button>
+              </Link>
 
               <button
                 type="button"
-                onClick={() => handleNav(onLogout)}
+                onClick={handleLogoutClick}
                 className="text-sm text-slate-500 hover:text-red-500"
               >
                 Logout
@@ -127,7 +139,7 @@ export default function Header({
           {isLoggedIn && (
             <button
               type="button"
-              onClick={() => handleNav(onGoPostListing)}
+              onClick={() => handleMobileNav("/listings/new")}
               className="inline-flex items-center justify-center rounded-full bg-blue-50 border border-blue-100 h-8 w-8 max-[425px]:h-7 max-[425px]:w-7"
               title="Post a home"
             >
@@ -157,17 +169,17 @@ export default function Header({
             <MobileItem
               icon={HomeIcon}
               label="Home"
-              onClick={() => handleNav(onGoHome)}
+              onClick={() => handleMobileNav("/")}
             />
             <MobileItem
               icon={HomeIcon}
               label="Buy"
-              onClick={() => handleNav(onGoBuy)}
+              onClick={() => handleMobileNav("/")}
             />
             <MobileItem
               icon={HomeIcon}
               label="Rent"
-              onClick={() => handleNav(onGoRent)}
+              onClick={() => handleMobileNav("/")}
             />
 
             {isLoggedIn && (
@@ -175,17 +187,17 @@ export default function Header({
                 <MobileItem
                   icon={PlusCircle}
                   label="Post a home"
-                  onClick={() => handleNav(onGoPostListing)}
+                  onClick={() => handleMobileNav("/listings/new")}
                 />
                 <MobileItem
                   icon={Crown}
                   label="Membership"
-                  onClick={() => handleNav(onGoMembership)}
+                  onClick={() => handleMobileNav("/membership")}
                 />
                 <MobileItem
                   icon={User}
                   label="Profile"
-                  onClick={() => handleNav(onGoProfile)}
+                  onClick={() => handleMobileNav("/profile")}
                 />
               </>
             )}
@@ -195,11 +207,11 @@ export default function Header({
                 <MobileItem
                   icon={LogIn}
                   label="Sign in"
-                  onClick={() => handleNav(onGoLogin)}
+                  onClick={() => handleMobileNav("/login")}
                 />
                 <button
                   type="button"
-                  onClick={() => handleNav(onGoRegister)}
+                  onClick={() => handleMobileNav("/register")}
                   className="w-full rounded-full bg-blue-600 py-2 text-sm font-semibold text-white mt-2"
                 >
                   Join free
@@ -208,7 +220,7 @@ export default function Header({
             ) : (
               <button
                 type="button"
-                onClick={() => handleNav(onLogout)}
+                onClick={handleLogoutClick}
                 className="w-full rounded-full border border-slate-200 py-2 text-sm text-slate-700 mt-2 hover:bg-slate-50"
               >
                 Logout
@@ -221,15 +233,17 @@ export default function Header({
   );
 }
 
-function NavLink({ label, onClick }) {
+function NavLink({ label, to }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <Link
+      to={to}
       className="relative px-1 py-0.5 text-sm text-slate-600 hover:text-blue-700"
+      onClick={() =>
+        window.scrollTo({ top: 0, behavior: "smooth" })
+      }
     >
       {label}
-    </button>
+    </Link>
   );
 }
 
