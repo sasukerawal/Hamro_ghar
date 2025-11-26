@@ -6,7 +6,7 @@ import {
   X,
   User,
   LogIn,
-  Home as HomeIcon,
+  // Home as HomeIcon, // No longer needed if we just have one home link
   Crown,
   PlusCircle,
 } from "lucide-react";
@@ -34,14 +34,11 @@ export default function Header({ isLoggedIn, onLogout }) {
     <header className="fixed top-0 inset-x-0 z-40 bg-white/90 backdrop-blur-md border-b border-blue-100">
       {/* TOP BAR */}
       <div className="max-w-6xl mx-auto h-16 lg:h-20 flex items-center justify-between px-4 lg:px-6 max-[425px]:px-3">
-        
-        {/* LEFT: LOGO */}
+        {/* LOGO */}
         <Link
           to="/"
           className="flex items-center gap-2 max-[425px]:gap-1 cursor-pointer"
-          onClick={() =>
-            window.scrollTo({ top: 0, behavior: "smooth" })
-          }
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         >
           <div className="h-9 w-9 max-[425px]:h-8 max-[425px]:w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
             HG
@@ -56,12 +53,11 @@ export default function Header({ isLoggedIn, onLogout }) {
           </div>
         </Link>
 
-        {/* DESKTOP NAV */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font.medium">
-          <NavLink label="Home" to="/" />
-          {/* For now these both go home; later you can create /buy and /rent routes */}
-          <NavLink label="Buy" to="/" />
-          <NavLink label="Rent" to="/" />
+        {/* -----------------------------------------------------------
+            ✅ UPDATED: Removed "Home" & "Buy" & "Rent" links.
+           ----------------------------------------------------------- */}
+        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+          {/* You can add future top-level links here if needed */}
         </nav>
 
         {/* DESKTOP RIGHT ACTIONS */}
@@ -98,7 +94,7 @@ export default function Header({ isLoggedIn, onLogout }) {
                 }
               >
                 <PlusCircle className="h-3.5 w-3.5 mr-1" />
-                Post a home
+                Post / Request
               </Link>
 
               <Link
@@ -165,28 +161,13 @@ export default function Header({ isLoggedIn, onLogout }) {
       {isMobileMenuOpen && (
         <div className="md:hidden border-t border-blue-100 bg-white">
           <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-3 text-sm max-[425px]:px-3">
+            {/* ✅ UPDATED: No Home/Buy/Rent links here */}
 
-            <MobileItem
-              icon={HomeIcon}
-              label="Home"
-              onClick={() => handleMobileNav("/")}
-            />
-            <MobileItem
-              icon={HomeIcon}
-              label="Buy"
-              onClick={() => handleMobileNav("/")}
-            />
-            <MobileItem
-              icon={HomeIcon}
-              label="Rent"
-              onClick={() => handleMobileNav("/")}
-            />
-
-            {isLoggedIn && (
+            {isLoggedIn ? (
               <>
                 <MobileItem
                   icon={PlusCircle}
-                  label="Post a home"
+                  label="Post or Request a Home"
                   onClick={() => handleMobileNav("/listings/new")}
                 />
                 <MobileItem
@@ -199,10 +180,15 @@ export default function Header({ isLoggedIn, onLogout }) {
                   label="Profile"
                   onClick={() => handleMobileNav("/profile")}
                 />
+                <button
+                  type="button"
+                  onClick={handleLogoutClick}
+                  className="w-full rounded-full border border-slate-200 py-2 text-sm text-slate-700 mt-2 hover:bg-slate-50"
+                >
+                  Logout
+                </button>
               </>
-            )}
-
-            {!isLoggedIn ? (
+            ) : (
               <>
                 <MobileItem
                   icon={LogIn}
@@ -217,14 +203,6 @@ export default function Header({ isLoggedIn, onLogout }) {
                   Join free
                 </button>
               </>
-            ) : (
-              <button
-                type="button"
-                onClick={handleLogoutClick}
-                className="w-full rounded-full border border-slate-200 py-2 text-sm text-slate-700 mt-2 hover:bg-slate-50"
-              >
-                Logout
-              </button>
             )}
           </div>
         </div>
@@ -233,26 +211,12 @@ export default function Header({ isLoggedIn, onLogout }) {
   );
 }
 
-function NavLink({ label, to }) {
-  return (
-    <Link
-      to={to}
-      className="relative px-1 py-0.5 text-sm text-slate-600 hover:text-blue-700"
-      onClick={() =>
-        window.scrollTo({ top: 0, behavior: "smooth" })
-      }
-    >
-      {label}
-    </Link>
-  );
-}
-
 function MobileItem({ icon: Icon, label, onClick }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-2 text-sm text-slate-700 hover:text-blue-700"
+      className="flex items-center gap-2 text-sm text-slate-700 hover:text-blue-700 py-1"
     >
       <Icon className="h-4 w-4 text-blue-500" />
       <span>{label}</span>

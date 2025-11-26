@@ -9,6 +9,16 @@ const listingSchema = new mongoose.Schema(
       required: true,
     },
 
+    // ✅ Is this an offer or a request?
+    // 'offer'  = I have a home to rent
+    // 'wanted' = I need a home (budget, requirements, etc.)
+    type: {
+      type: String,
+      enum: ["offer", "wanted"],
+      default: "offer",
+      index: true,
+    },
+
     // Basic info
     title: {
       type: String,
@@ -22,6 +32,7 @@ const listingSchema = new mongoose.Schema(
     },
 
     // Pricing
+    // For 'wanted', this can be treated as Budget
     price: {
       type: Number,
       required: true,
@@ -49,7 +60,7 @@ const listingSchema = new mongoose.Schema(
     },
     sqft: {
       type: Number,
-      min: 0,
+      min: 0, // optional, especially for "wanted"
     },
 
     // Address / location
@@ -109,7 +120,7 @@ const listingSchema = new mongoose.Schema(
       {
         type: String,
       },
-    ],
+    ], // can be empty for "wanted"
     video: {
       type: String,
       default: "",

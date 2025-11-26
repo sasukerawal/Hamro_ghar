@@ -140,6 +140,7 @@ router.post(
       }
 
       const {
+        type,          // ✅ NEW: offer vs wanted
         title,
         description,
         price,
@@ -188,6 +189,7 @@ router.post(
 
       const listingData = {
         ownerId: userId,
+        type: type === "wanted" ? "wanted" : "offer", // ✅ Save listing type
         title: title?.trim() || "Untitled listing",
         description: description?.trim(),
         price: numericPrice,
@@ -414,6 +416,7 @@ router.get("/stats", async (req, res) => {
 router.get("/all", async (req, res) => {
   try {
     const {
+      type,        // ✅ NEW: filter by offer/wanted
       city,
       minPrice,
       maxPrice,
@@ -428,6 +431,17 @@ router.get("/all", async (req, res) => {
     } = req.query;
 
     const query = {};
+
+    // ✅ Filter by type
+    if (type === "wanted") {
+      query.type = "wanted";
+    } else if (type === "offer") {
+      query.type = "offer";
+    } else {
+      // If you want homepage to show only offers by default, uncomment:
+      // query.type = "offer";
+      // Otherwise, leaving it unset will return both.
+    }
 
     // 🔍 Address + city search using same input (supports full address text too)
     if (city && city.trim()) {

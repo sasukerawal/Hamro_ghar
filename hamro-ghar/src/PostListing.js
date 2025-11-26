@@ -19,6 +19,7 @@ export default function PostListing() {
   }, [navigate]);
 
   const [form, setForm] = useState({
+    type: "offer", // ✅ NEW: Default to offering a home
     title: "",
     description: "",
     price: "",
@@ -41,6 +42,9 @@ export default function PostListing() {
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [addressLoading, setAddressLoading] = useState(false);
 
+  // Helper to check if we are in "Wanted" mode
+  const isWanted = form.type === "wanted";
+
   // Load listing data for edit mode
   useEffect(() => {
     if (!editId) return;
@@ -53,6 +57,7 @@ export default function PostListing() {
         if (data.listing) {
           const l = data.listing;
           setForm({
+            type: l.type || "offer",
             title: l.title || "",
             description: l.description || "",
             price: l.price || "",
@@ -181,7 +186,13 @@ export default function PostListing() {
         body: fd,
       });
 
-      toast.success(editId ? "Listing updated!" : "Listing posted!");
+      toast.success(
+        editId
+          ? "Listing updated!"
+          : isWanted
+          ? "Request posted!"
+          : "Listing posted!"
+      );
       goBack();
     } catch (err) {
       console.error(err);
@@ -222,34 +233,96 @@ export default function PostListing() {
           <Home className="h-8 w-8 text-blue-600" />
         </div>
 
-        <div className="mb-6">
+        <div className="mb-4">
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1">
-            {editId ? "Edit your home" : "Post a home"}
-          </h1>
-          <p className="text-sm text-slate-600">
             {editId
-              ? "Update details, price, or amenities."
-              : "Share your flat, room or house with verified renters."}{" "}
-            Fields marked with <span className="text-red-500">*</span> are
-            required.
-          </p>
+              ? form.type === "wanted"
+                ? "Edit your request"
+                : "Edit your home"
+              : "What would you like to do?"}
+          </h1>
+          {!editId && (
+            <p className="text-sm text-slate-600">
+              Post a home you have available, or request a home you&apos;re
+              looking for. Fields marked with{" "}
+              <span className="text-red-500">*</span> are required.
+            </p>
+          )}
+          {editId && (
+            <p className="text-sm text-slate-600">
+              Update details, price, or amenities. Fields marked with{" "}
+              <span className="text-red-500">*</span> are required.
+            </p>
+          )}
         </div>
+
+        {/* ✅ TYPE TOGGLE SWITCH (only when creating) */}
+        {!editId && (
+          <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
+            <button
+              type="button"
+              onClick={() =>
+                setForm((prev) => ({
+                  ...prev,
+                  type: "offer",
+                }))
+              }
+              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
+                !isWanted
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Post a Home (Offer)
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setForm((prev) => ({
+                  ...prev,
+                  type: "wanted",
+                }))
+              }
+              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
+                isWanted
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Request a Home (Wanted)
+            </button>
+          </div>
+        )}
 
         <form className="space-y-5" onSubmit={handleSubmit}>
           <Input
-            label="Title *"
-            placeholder="Modern 2BHK near New Baneshwor"
+            label={
+              isWanted
+                ? "Title (e.g., Couple looking for 1BHK in Lazimpat) *"
+                : "Title (e.g., Modern 2BHK near New Baneshwor) *"
+            }
+            placeholder={
+              isWanted
+                ? "Student looking for room in Kathmandu..."
+                : "Modern 2BHK near New Baneshwor"
+            }
             value={form.title}
             onChange={handleChange("title")}
           />
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Description *
+              {isWanted
+                ? "Describe what kind of home you need *"
+                : "Description *"}
             </label>
             <textarea
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 min-h-[90px]"
-              placeholder="Short description about the home..."
+              placeholder={
+                isWanted
+                  ? "Briefly explain your situation, preferred location, move-in date, etc."
+                  : "Short description about the home..."
+              }
               value={form.description}
               onChange={handleChange("description")}
             />
@@ -257,23 +330,25 @@ export default function PostListing() {
 
           <div className="grid gap-3 sm:grid-cols-3">
             <Input
-              label="Monthly rent (Rs.) *"
+              label={
+                isWanted ? "Max budget (Rs.) *" : "Monthly rent (Rs.) *"
+              }
               type="number"
-              placeholder="45000"
+              placeholder={isWanted ? "40000" : "45000"}
               value={form.price}
               onChange={handleChange("price")}
             />
             <Input
-              label="Beds"
+              label={isWanted ? "Min beds" : "Beds"}
               type="number"
-              placeholder="2"
+              placeholder={isWanted ? "1" : "2"}
               value={form.beds}
               onChange={handleChange("beds")}
             />
             <Input
-              label="Baths"
+              label={isWanted ? "Min baths" : "Baths"}
               type="number"
-              placeholder="1"
+              placeholder={isWanted ? "1" : "1"}
               value={form.baths}
               onChange={handleChange("baths")}
             />
@@ -290,12 +365,18 @@ export default function PostListing() {
             {/* Address + shared suggestions UI */}
             <div className="relative z-10">
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Address *
+                {isWanted
+                  ? "Preferred area / address *"
+                  : "Address *"}
               </label>
               <input
                 type="text"
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-                placeholder="Sifal Road, Ward 7..."
+                placeholder={
+                  isWanted
+                    ? "Sifal, Baneshwor, Lazimpat..."
+                    : "Sifal Road, Ward 7..."
+                }
                 value={form.address}
                 onChange={handleChange("address")}
                 autoComplete="off"
@@ -306,7 +387,6 @@ export default function PostListing() {
                 </p>
               )}
 
-              {/* ✅ Shared AddressSuggestionsList component */}
               <AddressSuggestionsList
                 suggestions={addressSuggestions}
                 show={addressSuggestions.length > 0}
@@ -316,7 +396,7 @@ export default function PostListing() {
           </div>
 
           <Input
-            label="Area (sqft)"
+            label={isWanted ? "Approx. area needed (sqft)" : "Area (sqft)"}
             type="number"
             placeholder="900"
             value={form.sqft}
@@ -324,18 +404,21 @@ export default function PostListing() {
           />
 
           <div className="grid gap-2 sm:grid-cols-2 text-xs text-slate-700">
+            <p className="col-span-full font-semibold mb-1">
+              {isWanted ? "Requirements / Preferences" : "Amenities"}
+            </p>
             <Checkbox
-              label="Furnished"
+              label={isWanted ? "Need furnished" : "Furnished"}
               checked={form.furnished}
               onChange={handleChange("furnished")}
             />
             <Checkbox
-              label="Parking available"
+              label={isWanted ? "Need parking" : "Parking available"}
               checked={form.parking}
               onChange={handleChange("parking")}
             />
             <Checkbox
-              label="Internet included"
+              label={isWanted ? "Need internet" : "Internet included"}
               checked={form.internet}
               onChange={handleChange("internet")}
             />
@@ -348,13 +431,17 @@ export default function PostListing() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Photos (up to 10)
+              {isWanted
+                ? "Photos (optional – e.g., reference home or your profile)"
+                : "Photos (up to 10)"}
             </label>
             <label className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 cursor-pointer hover:border-blue-400 hover:bg-blue-50">
               <UploadCloud className="h-6 w-6 text-blue-500" />
               <span>
                 {editId
                   ? "Upload new photos to append"
+                  : isWanted
+                  ? "Click to upload optional reference photos"
                   : "Click to upload home photos"}
               </span>
               <span className="text-[10px] text-slate-400">
@@ -399,10 +486,14 @@ export default function PostListing() {
               {uploading
                 ? editId
                   ? "Updating..."
+                  : isWanted
+                  ? "Posting request..."
                   : "Posting..."
                 : editId
-                ? "Update Listing"
-                : "Post Home"}
+                ? "Update listing"
+                : isWanted
+                ? "Post request"
+                : "Post home"}
             </button>
           </div>
         </form>
