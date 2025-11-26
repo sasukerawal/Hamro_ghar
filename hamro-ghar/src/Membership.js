@@ -1,473 +1,269 @@
-// src/PostListing.js
-import React, { useState, useEffect } from "react";
-import { toast } from "react-toastify";
+import React, { useEffect, useState } from "react";
 import {
   Home,
-  UploadCloud,
   ArrowLeft,
-  Loader,
+  LogIn,
+  Heart,
   MapPin,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
+  MoreHorizontal,
 } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "react-toastify";
 import { apiFetch } from "./api";
+import { ListingModal, handleToggleSaveHome } from "./ListingUtils"; // ✅ Import shared utilities
 
-export default function PostListing() {
-  const { id } = useParams(); // undefined for /listings/new, defined for /listings/:id/edit
-  const editId = id || null;
+export default function Membership({ onLogout, onGoHome, onEditListing }) {
+  const [savedHomes, setSavedHomes] = useState([]);
+  const [loadingSaved, setLoadingSaved] = useState(true);
 
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    price: "",
-    address: "",
-    city: "",
-    beds: "",
-    baths: "",
-    sqft: "",
-    furnished: false,
-    parking: false,
-    internet: false,
-    petsAllowed: false,
-  });
+  const [myListings, setMyListings] = useState([]);
+  const [loadingMyListings, setLoadingMyListings] = useState(true);
 
-  const [mediaFiles, setMediaFiles] = useState([]);
-  const [existingImages, setExistingImages] = useState([]);
-  const [uploading, setUploading] = useState(false);
-  const [fetching, setFetching] = useState(!!editId);
+  const [selectedHome, setSelectedHome] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalContext, setModalContext] = useState("none"); // 'saved' or 'owned'
 
-  const [addressSuggestions, setAddressSuggestions] = useState([]);
-  const [addressLoading, setAddressLoading] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState(null);
 
-  const navigate = useNavigate();
-
-  const goBack = () => {
-    navigate("/membership");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  // If editId is present, fetch the listing data
+  // Check membership
   useEffect(() => {
-    if (!editId) return;
-
-    const fetchListing = async () => {
+    const check = async () => {
       try {
-        setFetching(true);
-        const data = await apiFetch(`/api/listings/${editId}`);
-        if (data.listing) {
-          const l = data.listing;
-          setForm({
-            title: l.title || "",
-            description: l.description || "",
-            price: l.price || "",
-            address: l.address || "",
-            city: l.city || "",
-            beds: l.beds || "",
-            baths: l.baths || "",
-            sqft: l.sqft || "",
-            furnished: !!l.furnished,
-            parking: !!l.parking,
-            internet: !!l.internet,
-            petsAllowed: !!l.petsAllowed,
-          });
-          setExistingImages(l.images || []);
+        await apiFetch("/api/membership");
+      } catch (e) {
+        if (e.message.includes("401") || e.message.includes("Unauthorized")) {
+          onGoHome();
+        } else {
+          console.error("Membership check failed", e);
         }
-      } catch (err) {
-        toast.error("Could not load listing for editing");
-        goBack();
-      } finally {
-        setFetching(false);
       }
     };
+    check();
+  }, [onGoHome]);
 
-    fetchListing();
-  }, [editId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleChange = (field) => (e) => {
-    const value =
-      e.target.type === "checkbox" ? e.target.checked : e.target.value;
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleMediaChange = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    setMediaFiles(files.slice(0, 10));
-  };
-
-  const handleSelectSuggestion = (suggestion) => {
-    setForm((prev) => ({
-      ...prev,
-      address: suggestion.label
-        .split(",")
-        .slice(0, 3)
-        .join(", ")
-        .trim(),
-      city: suggestion.city || prev.city,
-    }));
-    setAddressSuggestions([]);
-  };
-
-  // Address auto-suggestions
+  // Load saved homes
   useEffect(() => {
-    const address = form.address?.trim();
-    if (!address || address.length < 4) {
-      setAddressSuggestions([]);
-      return;
-    }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(async () => {
+    const loadSaved = async () => {
       try {
-        setAddressLoading(true);
-        const params = new URLSearchParams();
-        params.append("q", address);
-        if (form.city?.trim()) {
-          params.append("city", form.city.trim());
-        }
-
-        const API_BASE =
-          (process.env.REACT_APP_API_BASE &&
-            process.env.REACT_APP_API_BASE.trim()) ||
-          "http://localhost:4000";
-
-        const res = await fetch(
-          `${API_BASE}/api/listings/geo/search?${params.toString()}`,
-          { signal: controller.signal, credentials: "omit" }
-        );
-
-        if (!res.ok) {
-          setAddressSuggestions([]);
-          return;
-        }
-
-        const data = await res.json();
-        setAddressSuggestions(
-          Array.isArray(data.suggestions) ? data.suggestions : []
-        );
+        setLoadingSaved(true);
+        const data = await apiFetch("/api/listings/saved/me");
+        setSavedHomes(Array.isArray(data.saved) ? data.saved : []);
       } catch (err) {
-        if (err.name !== "AbortError") {
-          console.error("Geo search failed:", err);
+        if (!err.message.includes("401")) {
+          toast.error("Could not load saved homes");
         }
       } finally {
-        setAddressLoading(false);
+        setLoadingSaved(false);
       }
-    }, 400);
-
-    return () => {
-      clearTimeout(timeoutId);
-      controller.abort();
     };
-  }, [form.address, form.city]);
+    loadSaved();
+  }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // Load my listings
+  useEffect(() => {
+    const loadMyListings = async () => {
+      try {
+        setLoadingMyListings(true);
+        const data = await apiFetch("/api/listings/mine/all");
+        setMyListings(Array.isArray(data.listings) ? data.listings : []);
+      } catch (err) {
+        if (!err.message.includes("401")) {
+          toast.error("Could not load your posted homes");
+        }
+      } finally {
+        setLoadingMyListings(false);
+      }
+    };
+    loadMyListings();
+  }, []);
 
-    if (
-      !form.title ||
-      !form.description ||
-      !form.price ||
-      !form.address ||
-      !form.city
-    ) {
-      toast.error("Please fill in all required fields marked with *");
-      return;
-    }
+  // Open Modal
+  const openHomeModal = (home, context) => {
+    setSelectedHome(home);
+    setModalContext(context);
+    setIsModalOpen(true);
+  };
+
+  const closeHomeModal = () => {
+    setSelectedHome(null);
+    setIsModalOpen(false);
+  };
+
+  // Delete listing
+  const handleDeleteListing = async (listingId) => {
+    if (!listingId) return;
+    const confirmDelete = window.confirm("Are you sure? This cannot be undone.");
+    if (!confirmDelete) return;
 
     try {
-      setUploading(true);
-      const fd = new FormData();
-      Object.entries(form).forEach(([key, value]) => {
-        fd.append(key, value);
-      });
-      mediaFiles.forEach((file) => {
-        fd.append("images", file);
-      });
-
-      const url = editId
-        ? `/api/listings/${editId}`
-        : "/api/listings/create";
-      const method = editId ? "PUT" : "POST";
-
-      await apiFetch(url, {
-        method,
-        body: fd,
-      });
-
-      toast.success(
-        editId
-          ? "Listing updated successfully!"
-          : "Listing posted successfully!"
-      );
-      goBack();
+      await apiFetch(`/api/listings/${listingId}`, { method: "DELETE" });
+      toast.success("Listing deleted");
+      setMyListings((prev) => prev.filter((l) => l._id !== listingId));
+      setOpenMenuId(null);
     } catch (err) {
-      console.error(err);
-      if (err.message.includes("401")) {
-        toast.info("Please log in.");
-        navigate("/login");
-      } else {
-        toast.error(err.message || "Operation failed");
-      }
-    } finally {
-      setUploading(false);
+      toast.error(err.message || "Failed to delete listing");
     }
   };
 
-  if (fetching) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <Loader className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
-          <p className="text-sm text-slate-500">Loading listing data...</p>
-        </div>
-      </div>
-    );
-  }
+  // Toggle Status
+  const handleToggleStatus = async (listingId, currentStatus) => {
+    if (!listingId) return;
+    const nextStatus = currentStatus === "active" ? "unavailable" : "active";
+
+    try {
+      await apiFetch(`/api/listings/${listingId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+
+      toast.success(`Listing marked as ${nextStatus}`);
+      setMyListings((prev) =>
+        prev.map((l) => (l._id === listingId ? { ...l, status: nextStatus } : l))
+      );
+      setOpenMenuId(null);
+    } catch (err) {
+      toast.error(err.message || "Failed to update status");
+    }
+  };
+
+  // 🆕 Unsave handler specifically for the Saved Homes list
+  // This removes the card from the UI immediately upon unsaving
+  const onUnsaveHandler = async (listing) => {
+    const savedIds = savedHomes.map(h => h._id);
+    // Use the shared handler, but we need to provide a setter that updates the object list
+    // So we wrap it manually or just call apiFetch directly for cleaner UI update
+    
+    try {
+        await apiFetch(`/api/listings/save/${listing._id}`, { method: "DELETE" });
+        toast.success("Removed from favourites");
+        setSavedHomes(prev => prev.filter(h => h._id !== listing._id));
+    } catch (err) {
+        toast.error("Failed to unsave");
+    }
+  };
 
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-slate-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-3xl rounded-3xl bg-white border border-blue-100 shadow-md px-6 py-7 sm:px-8 sm:py-9">
+      <div className="w-full max-w-4xl rounded-3xl bg-white border border-blue-100 shadow-md px-6 py-7 sm:px-8 sm:py-9">
         <div className="flex items-center justify-between gap-3 mb-6">
-          <button
-            type="button"
-            onClick={goBack}
-            className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-blue-700"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Cancel
+          <button type="button" onClick={onGoHome} className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-blue-700">
+            <ArrowLeft className="h-4 w-4" /> Back to home
           </button>
           <Home className="h-8 w-8 text-blue-600" />
         </div>
 
-        <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1">
-            {editId ? "Edit your home" : "Post a home"}
-          </h1>
-          <p className="text-sm text-slate-600">
-            {editId
-              ? "Update details, price, or amenities."
-              : "Share your flat, room or house with verified renters."}{" "}
-            Fields marked with{" "}
-            <span className="text-red-500">*</span> are required.
-          </p>
+        <div className="text-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1">Membership dashboard</h1>
+          <p className="text-sm text-slate-600">Manage your posted homes and favourites.</p>
         </div>
 
-        <form className="space-y-5" onSubmit={handleSubmit}>
-          <Input
-            label="Title *"
-            placeholder="Modern 2BHK near New Baneshwor"
-            value={form.title}
-            onChange={handleChange("title")}
-          />
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Description *
-            </label>
-            <textarea
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text.sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 min-h-[90px]"
-              placeholder="Short description about the home, nearby landmarks, who it is suitable for..."
-              value={form.description}
-              onChange={handleChange("description")}
-            />
+        {/* Your posted homes */}
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-slate-900">Your posted homes</h2>
+            {myListings.length > 0 && <p className="text-[11px] text-slate-500">{myListings.length} listings</p>}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Input
-              label="Monthly rent (Rs.) *"
-              type="number"
-              placeholder="45000"
-              value={form.price}
-              onChange={handleChange("price")}
-            />
-            <Input
-              label="Beds"
-              type="number"
-              placeholder="2"
-              value={form.beds}
-              onChange={handleChange("beds")}
-            />
-            <Input
-              label="Baths"
-              type="number"
-              placeholder="1"
-              value={form.baths}
-              onChange={handleChange("baths")}
-            />
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Input
-              label="City *"
-              placeholder="Kathmandu"
-              value={form.city}
-              onChange={handleChange("city")}
-            />
-
-            {/* Address + suggestions */}
-            <div className="relative z-10">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Address *{" "}
-              </label>
-              <input
-                type="text"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-                placeholder="Sifal Road, Ward 7, near police station"
-                value={form.address}
-                onChange={handleChange("address")}
-                autoComplete="off"
-              />
-              {addressLoading && (
-                <p className="mt-1 text-[10px] text-slate-400">
-                  Searching suggestions…
-                </p>
-              )}
-              {addressSuggestions.length > 0 && (
-                <div className="absolute top.full mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg max-h-48 overflow-auto">
-                  {addressSuggestions.map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 border-b border-slate-50 last:border-0"
-                      onClick={() => handleSelectSuggestion(s)}
-                    >
-                      <MapPin className="h-3.5 w-3.5 text-blue-500 shrink-0" />
-                      <p className="text-slate-800 flex-1 truncate">
-                        {s.label}
-                      </p>
-                    </button>
-                  ))}
+          {loadingMyListings ? <p className="text-xs text-slate-500">Loading...</p> : myListings.length === 0 ? <p className="text-xs text-slate-500">No listings yet.</p> : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {myListings.map((home) => (
+                <div key={home._id} className="relative flex flex-col sm:flex-row sm:gap-3 rounded-2xl border border-blue-50 bg-slate-50 p-4 sm:p-3">
+                  <div className="h-24 sm:h-16 w-full sm:w-20 rounded-xl overflow-hidden bg-slate-200 shrink-0 cursor-pointer mb-2 sm:mb-0" onClick={() => openHomeModal(home, 'owned')}>
+                    <img src={home.images?.[0] || "https://placehold.co/200x150"} alt="home" className="h-full w-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0 pr-6 sm:pr-0">
+                    <p className="text-sm font-semibold text-slate-900 truncate">{home.title}</p>
+                    <p className="text-[11px] text-blue-700 font-semibold mt-1">{home.price}</p>
+                    <p className="mt-1"><StatusBadge status={home.status} /></p>
+                  </div>
+                  <button onClick={() => setOpenMenuId(prev => prev === home._id ? null : home._id)} className="absolute top-2 right-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white border border-slate-200 shadow-sm">
+                    <MoreHorizontal className="h-3.5 w-3.5 text-slate-600" />
+                  </button>
+                  {openMenuId === home._id && (
+                    <div className="absolute right-2 top-9 z-10 w-44 rounded-2xl bg-white border border-slate-200 shadow-lg py-1 text-[11px]">
+                      <button onClick={() => handleToggleStatus(home._id, home.status)} className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-slate-50 text-slate-700">
+                        {home.status === "active" ? <ToggleRight className="h-3.5 w-3.5 text-emerald-600" /> : <ToggleLeft className="h-3.5 w-3.5 text-slate-500" />}
+                        {home.status === "active" ? "Mark unavailable" : "Mark active"}
+                      </button>
+                      {/* 🆕 Edit Button in Dropdown */}
+                      <button onClick={() => onEditListing(home._id)} className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-blue-50 text-blue-600">
+                        <Home className="h-3.5 w-3.5" /> Edit Listing
+                      </button>
+                      <button onClick={() => handleDeleteListing(home._id)} className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-red-50 text-red-600">
+                        <Trash2 className="h-3.5 w-3.5" /> Delete
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-              <p className="mt-1 text-[10px] text-slate-400">
-                Tip: include road/tole + ward + city.
-              </p>
+              ))}
             </div>
+          )}
+        </section>
+
+        {/* Saved Homes */}
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Heart className="h-4 w-4 text-pink-500" />
+              <h2 className="text-sm font-semibold text-slate-900">Your saved homes</h2>
+            </div>
+            {savedHomes.length > 0 && <p className="text-[11px] text-slate-500">{savedHomes.length} saved</p>}
           </div>
 
-          <Input
-            label="Area (sqft)"
-            type="number"
-            placeholder="900"
-            value={form.sqft}
-            onChange={handleChange("sqft")}
-          />
+          {loadingSaved ? <p className="text-xs text-slate-500">Loading...</p> : savedHomes.length === 0 ? <p className="text-xs text-slate-500">No saved homes.</p> : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {savedHomes.map((home) => (
+                <div key={home._id} className="flex gap-3 rounded-2xl border border-blue-50 bg-slate-50 p-3 cursor-pointer w-full" onClick={() => openHomeModal(home, 'saved')}>
+                  <div className="h-16 w-20 rounded-xl overflow-hidden bg-slate-200 shrink-0">
+                    <img src={home.images?.[0] || "https://placehold.co/200x150"} alt="home" className="h-full w-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-slate-900 truncate">{home.title}</p>
+                    <p className="text-[11px] text-blue-700 font-semibold mt-1">{home.price}</p>
+                  </div>
+                  {/* 🆕 Quick remove button on the card itself */}
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); onUnsaveHandler(home); }}
+                    className="shrink-0 p-2 rounded-full text-slate-400 hover:text-red-500 hover:bg-white transition-colors self-center"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
 
-          {/* Amenities */}
-          <div className="grid gap-2 sm:grid-cols-2 text-xs text-slate-700">
-            <Checkbox
-              label="Furnished"
-              checked={form.furnished}
-              onChange={handleChange("furnished")}
-            />
-            <Checkbox
-              label="Parking available"
-              checked={form.parking}
-              onChange={handleChange("parking")}
-            />
-            <Checkbox
-              label="Internet included"
-              checked={form.internet}
-              onChange={handleChange("internet")}
-            />
-            <Checkbox
-              label="Pets allowed"
-              checked={form.petsAllowed}
-              onChange={handleChange("petsAllowed")}
-            />
-          </div>
-
-          {/* Media upload */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Photos (up to 10)
-            </label>
-            <label className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-xs text-slate-500 cursor-pointer hover:border-blue-300 hover:bg-blue-50/40">
-              <UploadCloud className="h-6 w-6 text-blue-500" />
-              <span>
-                {editId
-                  ? "Upload new photos to append"
-                  : "Click to upload home photos"}
-              </span>
-              <span className="text-[10px] text-slate-400">
-                JPG, PNG.{" "}
-                {editId
-                  ? "New photos will be added to existing ones."
-                  : "First photo will be used as cover."}
-              </span>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handleMediaChange}
-                className="hidden"
-              />
-            </label>
-            {mediaFiles.length > 0 && (
-              <p className="mt-1 text-[11px] text-slate-500">
-                {mediaFiles.length} new file
-                {mediaFiles.length > 1 ? "s" : ""} selected
-              </p>
-            )}
-            {editId && existingImages.length > 0 && (
-              <p className="mt-1 text-[11px] text-slate-400">
-                {existingImages.length} existing photo
-                {existingImages.length > 1 ? "s" : ""} will be kept.
-              </p>
-            )}
-          </div>
-
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={goBack}
-              className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-slate-50"
-            >
-              Cancel
+        <div className="flex justify-center">
+            <button onClick={onLogout} className="inline-flex items-center justify-center rounded-full bg-red-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-600 w-full sm:w-auto">
+                <LogIn className="mr-1.5 h-4 w-4 rotate-180" /> Log out
             </button>
-            <button
-              type="submit"
-              disabled={uploading}
-              className="inline-flex items.center justify-center rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
-            >
-              {uploading
-                ? editId
-                  ? "Updating..."
-                  : "Posting..."
-                : editId
-                ? "Update Listing"
-                : "Post home"}
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
+
+      {/* Shared Modal */}
+      {isModalOpen && (
+        <ListingModal 
+            home={selectedHome} 
+            onClose={closeHomeModal}
+            isOwner={modalContext === 'owned'} // Show Edit button if owned
+            isSaved={modalContext === 'saved'} // Show Unsave if saved
+            onEdit={(home) => onEditListing(home._id)} // Handle edit click from modal
+            onUnsave={onUnsaveHandler} // Handle unsave click from modal
+        />
+      )}
     </div>
   );
 }
 
-function Input({ label, type = "text", ...props }) {
+const StatusBadge = ({ status }) => {
+  const isActive = status === "active";
   return (
-    <div>
-      <label className="block text-xs font-semibold text-slate-700 mb-1">
-        {label}
-      </label>
-      <input
-        type={type}
-        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-        {...props}
-      />
-    </div>
+    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold border ${isActive ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-500"}`}>
+      {isActive ? "Active" : "Unavailable"}
+    </span>
   );
-}
-
-function Checkbox({ label, ...props }) {
-  return (
-    <label className="inline-flex items-center gap-2 cursor-pointer">
-      <input
-        type="checkbox"
-        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-        {...props}
-      />
-      <span>{label}</span>
-    </label>
-  );
-}
+};
