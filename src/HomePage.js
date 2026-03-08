@@ -27,8 +27,6 @@ import {
   Loader,
   AlertTriangle,
 } from "lucide-react";
-import { Grid } from "react-window";
-import { AutoSizer } from "react-virtualized-auto-sizer";
 
 // ---------------------------------------------------------------------------
 // 🌐 Full page translation map — add more strings here as needed
@@ -944,64 +942,22 @@ const FeaturedListings = ({
         </div>
       ) : (
         <>
-          <div className="h-[600px] w-full">
-            <AutoSizer>
-              {({ height, width }) => {
-                // Determine layout based on width
-                let columnCount = 1;
-                if (width >= 1024) columnCount = 3;
-                else if (width >= 640) columnCount = 2;
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {listings.map((home) => {
+              const id = home._id || home.id;
+              const isSaved = savedIds.includes(id);
 
-                const rowCount = Math.ceil(listings.length / columnCount);
-                
-                // Card dimensions
-                // width minus 16px total gap per card gap (approx)
-                const columnWidth = (width - ((columnCount - 1) * 16)) / columnCount;
-                const rowHeight = 300; // Fixed card height + bottom gap
-
-                return (
-                  <Grid
-                    columnCount={columnCount}
-                    columnWidth={columnWidth}
-                    rowCount={rowCount}
-                    rowHeight={rowHeight}
-                    height={height}
-                    width={width}
-                    style={{ overflowX: "hidden" }}
-                  >
-                    {({ columnIndex, rowIndex, style }) => {
-                      const index = rowIndex * columnCount + columnIndex;
-                      if (index >= listings.length) return null;
-                      
-                      const home = listings[index];
-                      const id = home._id || home.id;
-                      const isSaved = savedIds.includes(id);
-
-                      // Add right/bottom margin to simulate Tailwind gaps
-                      const padStyle = {
-                        ...style,
-                        left: style.left + (columnIndex * 16), // 16px col gap
-                        top: style.top + (rowIndex * 16),      // 16px row gap
-                        width: style.width - 2, // minor adjustment for borders
-                        height: style.height - 16,
-                      };
-
-                      return (
-                        <div style={padStyle}>
-                          <ListingCard
-                            home={home}
-                            onToggleSave={onToggleSave}
-                            onOpenHome={onOpenHome}
-                            isSaved={isSaved}
-                            isVirtualized={true}
-                          />
-                        </div>
-                      );
-                    }}
-                  </Grid>
-                );
-              }}
-            </AutoSizer>
+              return (
+                <ListingCard
+                  key={id}
+                  home={home}
+                  onToggleSave={onToggleSave}
+                  onOpenHome={onOpenHome}
+                  isSaved={isSaved}
+                  isVirtualized={false}
+                />
+              );
+            })}
           </div>
           {/* Pagination */}
           {totalPages > 1 && (
