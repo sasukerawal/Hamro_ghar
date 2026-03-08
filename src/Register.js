@@ -93,7 +93,7 @@ export default function Register({ onGoLogin }) {
     setLoading(true);
 
     try {
-      await apiFetch('/api/auth/verify', {
+      const data = await apiFetch('/api/auth/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -101,6 +101,10 @@ export default function Register({ onGoLogin }) {
           code: verificationCode
         }),
       });
+
+      if (data && data.token) {
+        localStorage.setItem('token', data.token);
+      }
 
       toast.success('Email verified! Logging you in...');
       // The backend sets the auth cookie on success, so we can just go to login/dashboard

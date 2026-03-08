@@ -28,11 +28,14 @@ export default function Login({ onLogin, onGoRegister, onForgotPassword }) {
     e.preventDefault();
     setError('');
     try {
-      await apiFetch('/api/auth/login', {
+      const data = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
+      if (data && data.token) {
+        localStorage.setItem('token', data.token);
+      }
       toast.success("Login successful!");
       onLogin();
     } catch (err) {

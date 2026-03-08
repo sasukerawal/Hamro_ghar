@@ -45,6 +45,13 @@ function App() {
   // Check Login Status once on load — also silently refresh the JWT so it stays valid
   useEffect(() => {
     const checkUser = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setIsLoggedIn(false);
+        setAuthChecked(true);
+        return;
+      }
+
       try {
         // 1. Verify we have a session
         const data = await apiFetch("/api/auth/me");
@@ -76,6 +83,7 @@ function App() {
   };
 
   const handleLogout = async () => {
+    localStorage.removeItem("token");
     try {
       await apiFetch("/api/auth/logout", { method: "POST" });
     } catch (err) {

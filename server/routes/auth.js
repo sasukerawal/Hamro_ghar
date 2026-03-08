@@ -21,20 +21,13 @@ const transporter = nodemailer.createTransport({
 // Helper: Generate 6-digit code
 const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// Helper: Issue Cookie
-const issueCookie = (res, user) => {
-  const token = jwt.sign(
+// Helper: Generate Token
+const generateToken = (user) => {
+  return jwt.sign(
     { id: user._id, email: user.email, role: user.role },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   );
-
-  res.cookie('token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // true in production
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
 };
 
 // POST /api/auth/register
@@ -127,13 +120,12 @@ router.post('/verify', async (req, res) => {
     user.verificationCode = undefined; // Clear the code
     await user.save();
 
-    // Automatically log them in after verification?
-    // Or just return success and make them login manually.
-    // Let's auto-login for better UX.
-    issueCookie(res, user);
+    // Automatically log them in after verification
+    const token = generateToken(user);
 
     return res.json({
       message: 'Email verified successfully!',
+      token,
       user: {
         id: user._id,
         name: user.name,
@@ -169,9 +161,10 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    issueCookie(res, user);
+    const token = generateToken(user);
 
     return res.json({
+      token,
       id: user._id,
       name: user.name,
       email: user.email,
@@ -185,18 +178,18 @@ router.post('/login', async (req, res) => {
 
 // POST /api/auth/logout
 router.post('/logout', (req, res) => {
-  res.clearCookie('token', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-  });
+  // Frontend will clear localStorage
   return res.json({ ok: true });
 });
 
 // GET /api/auth/me
 router.get('/me', async (req, res) => {
   try {
-    const token = req.cookies?.token;
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.startsWith('Bearer ') 
+      ? authHeader.split(' ')[1] 
+      : req.cookies?.token;
+
     if (!token) return res.status(401).json({ error: 'No token' });
 
     const payload = jwt.verify(token, process.env.JWT_SECRET);

@@ -10,9 +10,16 @@ const API_BASE =
  * Centralized API helper using fetch.
  */
 export async function apiFetch(path, options = {}) {
+  const token = localStorage.getItem("token");
+  const headers = { ...options.headers };
+  
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${API_BASE}${path}`, {
-    credentials: "include", // important for cookie-based auth
     ...options,
+    headers,
   });
 
   let data = null;
@@ -23,6 +30,10 @@ export async function apiFetch(path, options = {}) {
   }
 
   if (!res.ok) {
+    if (res.status === 401) {
+      localStorage.removeItem("token");
+    }
+
     const message = data?.error || data?.message || `Request failed (${res.status})`;
     const err = new Error(message);
     err.status = res.status;
