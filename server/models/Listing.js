@@ -149,8 +149,11 @@ const listingSchema = new mongoose.Schema(
 // ✅ Full 2D geospatial index for "near me" / map search
 listingSchema.index({ location: "2dsphere" });
 
-// (Optional) If you ever want simple numeric index too, you could add:
-// listingSchema.index({ "location.lat": 1, "location.lng": 1 });
+// 🔥 Compound indexes for scaling / performance
+listingSchema.index({ status: 1, createdAt: -1 });        // pagination
+listingSchema.index({ status: 1, city: 1, price: 1 });    // city+price filter
+listingSchema.index({ status: 1, type: 1 });              // offer/wanted toggle
+listingSchema.index({ ownerId: 1, status: 1 });           // /mine/all
 
 const Listing = mongoose.model("Listing", listingSchema);
 

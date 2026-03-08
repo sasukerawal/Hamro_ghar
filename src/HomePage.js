@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "./api";
 import { toast } from "react-toastify";
+import useSWR from "swr";
 
 import FilterModal from "./FilterModal";
 import { ListingModal, handleToggleSaveHome } from "./ListingUtils";
@@ -26,6 +27,8 @@ import {
   Loader,
   AlertTriangle,
 } from "lucide-react";
+import { Grid } from "react-window";
+import { AutoSizer } from "react-virtualized-auto-sizer";
 
 // ---------------------------------------------------------------------------
 // 🌐 Full page translation map — add more strings here as needed
@@ -174,8 +177,6 @@ export default function HomePage({
   lang = "en",
 }) {
   const t = PAGE_LANG[lang] || PAGE_LANG.en;
-  const [listings, setListings] = useState([]);
-  const [loadingListings, setLoadingListings] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // 🔄 List vs Map toggle
@@ -207,13 +208,6 @@ export default function HomePage({
   const [selectedHome, setSelectedHome] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Hero stats
-  const [stats, setStats] = useState({
-    totalListings: null,
-    citiesCount: null,
-    avgViews: null,
-  });
-
   // ❤️ Saved homes (for hearts)
   const [savedIds, setSavedIds] = useState([]);
 
@@ -235,73 +229,59 @@ export default function HomePage({
       .catch(() => setIsLoggedIn(false));
   }, []);
 
-  // Load listings from backend
-  const fetchListings = useCallback(async (opts = {}) => {
-    const {
-      city = searchCity,
-      min = minPrice,
-      max = maxPrice,
-      minBeds = beds,
-      pets = petsOnly,
-      furnished = furnishedOnly,
-      type = listingType,
-      pageNum = 1,
-    } = opts;
-
-    try {
-      setLoadingListings(true);
-
-      const params = new URLSearchParams();
-      if (city.trim()) params.append("city", city.trim());
-      if (min) params.append("minPrice", min);
-      if (max) params.append("maxPrice", max);
-      if (minBeds) params.append("beds", minBeds);
-      if (pets) params.append("petsAllowed", "true");
-      if (furnished) params.append("furnished", "true");
-      if (type) params.append("type", type);
-      params.append("page", pageNum);
-      params.append("limit", LISTINGS_PER_PAGE);
-
-      const qs = params.toString();
-
-      const data = await apiFetch(`/api/listings/all${qs ? `?${qs}` : ""}`, {
-        credentials: "omit",
-      });
-
-      setListings(Array.isArray(data.listings) ? data.listings : []);
-      if (data.totalPages) setTotalPages(data.totalPages);
-      if (data.page) setPage(data.page);
-    } catch (err) {
-      console.error("Error loading listings", err);
-      setListings([]);
-    } finally {
-      setLoadingListings(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchCity, minPrice, maxPrice, beds, petsOnly, furnishedOnly, listingType]);
-
-  // Load stats — API returns totalActive; we also get it aliased as totalListings
-  const fetchStats = async () => {
-    try {
-      const data = await apiFetch("/api/listings/stats", {
-        credentials: "omit",
-      });
-      setStats({
-        totalListings: data.totalListings ?? data.totalActive ?? null,
-        citiesCount: data.citiesCount ?? null,
-        avgViews: data.avgViews ?? null,
-      });
-    } catch (err) {
-      console.error("Error loading listing stats", err);
-    }
+  // Fetcher for SWR
+  const swrFetcher = async (url) => {
+    const res = await apiFetch(url, { credentials: "omit" });
+    return res;
   };
 
-  // Initial load
+  // 1. SWR for Stats
+  const { data: statsData } = useSWR("/api/listings/stats", swrFetcher, {
+    revalidateOnFocus: false, // Don't hammer the DB on every tab switch
+    dedupingInterval: 60000,  // Cache for 1 min
+  });
+
+  const stats = {
+    totalListings: statsData?.totalListings ?? statsData?.totalActive ?? null,
+    citiesCount: statsData?.citiesCount ?? null,
+    avgViews: statsData?.avgViews ?? null,
+  };
+
+  // 2. SWR for Listings
+  // Build query string based on current state
+  const buildListingsUrl = () => {
+    const params = new URLSearchParams();
+    if (searchCity.trim()) params.append("city", searchCity.trim());
+    if (minPrice) params.append("minPrice", minPrice);
+    if (maxPrice) params.append("maxPrice", maxPrice);
+    if (beds) params.append("beds", beds);
+    if (petsOnly) params.append("petsAllowed", "true");
+    if (furnishedOnly) params.append("furnished", "true");
+    if (listingType) params.append("type", listingType);
+    params.append("page", page);
+    params.append("limit", LISTINGS_PER_PAGE);
+    
+    return `/api/listings/all?${params.toString()}`;
+  };
+
+  const { data: listingsData, isLoading: loadingListings } = useSWR(
+    buildListingsUrl(),
+    swrFetcher,
+    {
+      keepPreviousData: true, // Smooth pagination! Keeps old items visible while fetching next page
+      revalidateOnFocus: false,
+    }
+  );
+
+  const listings = Array.isArray(listingsData?.listings) ? listingsData.listings : [];
+  const totalPagesMap = listingsData?.totalPages || 1;
+  
+  // Keep syncing totalPages and resetting exact page if out of bounds (edge case)
   useEffect(() => {
-    fetchListings();
-    fetchStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (listingsData?.totalPages) setTotalPages(listingsData.totalPages);
+    if (listingsData?.page && listingsData.page < page) setPage(listingsData.page);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listingsData]);
 
   // Load saved homes
   useEffect(() => {
@@ -369,11 +349,7 @@ export default function HomePage({
       });
 
       if (typeof data.views === "number") {
-        setListings((prev) =>
-          prev.map((l) =>
-            (l._id || l.id) === id ? { ...l, views: data.views } : l
-          )
-        );
+        // Just update local state for the modal since SWR will revalidate over time
         setSelectedHome((prev) =>
           prev && (prev._id || prev.id) === id
             ? { ...prev, views: data.views }
@@ -392,20 +368,18 @@ export default function HomePage({
 
   const handleRunSearch = () => {
     setShowSuggestions(false);
-    setPage(1);
-    fetchListings({ pageNum: 1 });
+    setPage(1); // Modifying state automatically triggers SWR refetch via buildListingsUrl
   };
 
   const handleTypeFilter = (type) => {
     const newType = listingType === type ? "" : type;
+    // Changing type will trigger SWR refetch automatically
     setListingType(newType);
     setPage(1);
-    fetchListings({ type: newType, pageNum: 1 });
   };
 
   const handlePageChange = (newPage) => {
     setPage(newPage);
-    fetchListings({ pageNum: newPage });
     window.scrollTo({ top: 500, behavior: "smooth" });
   };
 
@@ -419,16 +393,6 @@ export default function HomePage({
     setListingType("");
     setSuggestions([]);
     setPage(1);
-    fetchListings({
-      city: "",
-      min: "",
-      max: "",
-      minBeds: "",
-      pets: false,
-      furnished: false,
-      type: "",
-      pageNum: 1,
-    });
   };
 
   return (
@@ -981,20 +945,64 @@ const FeaturedListings = ({
         </div>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {listings.map((home) => {
-              const id = home._id || home.id;
-              const isSaved = savedIds.includes(id);
-              return (
-                <ListingCard
-                  key={id}
-                  home={home}
-                  onToggleSave={onToggleSave}
-                  onOpenHome={onOpenHome}
-                  isSaved={isSaved}
-                />
-              );
-            })}
+          <div className="h-[600px] w-full">
+            <AutoSizer>
+              {({ height, width }) => {
+                // Determine layout based on width
+                let columnCount = 1;
+                if (width >= 1024) columnCount = 3;
+                else if (width >= 640) columnCount = 2;
+
+                const rowCount = Math.ceil(listings.length / columnCount);
+                
+                // Card dimensions
+                // width minus 16px total gap per card gap (approx)
+                const columnWidth = (width - ((columnCount - 1) * 16)) / columnCount;
+                const rowHeight = 300; // Fixed card height + bottom gap
+
+                return (
+                  <Grid
+                    columnCount={columnCount}
+                    columnWidth={columnWidth}
+                    rowCount={rowCount}
+                    rowHeight={rowHeight}
+                    height={height}
+                    width={width}
+                    style={{ overflowX: "hidden" }}
+                  >
+                    {({ columnIndex, rowIndex, style }) => {
+                      const index = rowIndex * columnCount + columnIndex;
+                      if (index >= listings.length) return null;
+                      
+                      const home = listings[index];
+                      const id = home._id || home.id;
+                      const isSaved = savedIds.includes(id);
+
+                      // Add right/bottom margin to simulate Tailwind gaps
+                      const padStyle = {
+                        ...style,
+                        left: style.left + (columnIndex * 16), // 16px col gap
+                        top: style.top + (rowIndex * 16),      // 16px row gap
+                        width: style.width - 2, // minor adjustment for borders
+                        height: style.height - 16,
+                      };
+
+                      return (
+                        <div style={padStyle}>
+                          <ListingCard
+                            home={home}
+                            onToggleSave={onToggleSave}
+                            onOpenHome={onOpenHome}
+                            isSaved={isSaved}
+                            isVirtualized={true}
+                          />
+                        </div>
+                      );
+                    }}
+                  </Grid>
+                );
+              }}
+            </AutoSizer>
           </div>
           {/* Pagination */}
           {totalPages > 1 && (
@@ -1034,7 +1042,7 @@ const FeaturedListings = ({
   </section>
 );
 
-const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved }) => {
+const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved, isVirtualized }) => {
   const imageSrc =
     home.images?.[0] ||
     home.image ||
@@ -1047,7 +1055,7 @@ const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved }) => {
 
   return (
     <div
-      className="group rounded-2xl border border-blue-50 bg-white shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer flex flex-col sm:block"
+      className={`group rounded-2xl border border-blue-50 bg-white shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer flex flex-col ${isVirtualized ? "h-full" : "sm:block"}`}
       onClick={() => onOpenHome(home)}
     >
       <div className="relative h-40 w-full overflow-hidden">

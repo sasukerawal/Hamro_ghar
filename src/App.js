@@ -1,5 +1,5 @@
 // src/App.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense, lazy } from "react";
 import {
   Routes,
   Route,
@@ -8,21 +8,32 @@ import {
 } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Loader } from "lucide-react";
 
 import { apiFetch } from "./api";
 
+// Core components needed immediately
 import Header from "./Header";
 import HomePage from "./HomePage";
-import Login from "./Login";
-import ForgotPassword from "./ForgotPassword";
-import Register from "./Register";
-import Membership from "./Membership";
 import Footer from "./Footer";
-import UserProfile from "./UserProfile";
-import PostListing from "./PostListing";
-import NotFound from "./NotFound";
-import AdminDashboard from "./AdminDashboard";
 import "leaflet/dist/leaflet.css";
+
+// Lazy-loaded pages (code-split)
+const Login = lazy(() => import("./Login"));
+const ForgotPassword = lazy(() => import("./ForgotPassword"));
+const Register = lazy(() => import("./Register"));
+const Membership = lazy(() => import("./Membership"));
+const UserProfile = lazy(() => import("./UserProfile"));
+const PostListing = lazy(() => import("./PostListing"));
+const NotFound = lazy(() => import("./NotFound"));
+const AdminDashboard = lazy(() => import("./AdminDashboard"));
+
+// Loading fallback for suspended routes
+const FallbackSpinner = () => (
+  <div className="flex-1 flex items-center justify-center min-h-[50vh]">
+    <Loader className="h-8 w-8 animate-spin text-blue-500" />
+  </div>
+);
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -91,111 +102,113 @@ function App() {
         onToggleLang={() => setLang((p) => (p === "en" ? "ne" : "en"))}
       />
 
-      <main className="flex-1 pt-24 lg:pt-28">
-        <Routes>
-          {/* Home */}
-          <Route
-            path="/"
-            element={
-              <HomePage
-                onGoLogin={() => navigate("/login")}
-                onGoRegister={() => navigate("/register")}
-                onGoMembership={() =>
-                  navigate(isLoggedIn ? "/membership" : "/login")
-                }
-                lang={lang}
-              />
-            }
-          />
-
-          {/* Auth */}
-          <Route
-            path="/login"
-            element={
-              <Login
-                onLogin={handleLoginSuccess}
-                onGoRegister={() => navigate("/register")}
-                onForgotPassword={() => navigate("/forgot-password")}
-              />
-            }
-          />
-          <Route
-            path="/forgot-password"
-            element={<ForgotPassword onGoLogin={() => navigate("/login")} />}
-          />
-          <Route
-            path="/register"
-            element={<Register onGoLogin={() => navigate("/login")} />}
-          />
-
-          {/* Profile (protected) */}
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute
-                isLoggedIn={isLoggedIn}
-                authChecked={authChecked}
-              >
-                <UserProfile
-                  onGoHome={goHome}
-                  onLogout={handleLogout}
+      <main className="flex-1 pt-24 lg:pt-28 flex flex-col">
+        <Suspense fallback={<FallbackSpinner />}>
+          <Routes>
+            {/* Home */}
+            <Route
+              path="/"
+              element={
+                <HomePage
+                  onGoLogin={() => navigate("/login")}
+                  onGoRegister={() => navigate("/register")}
+                  onGoMembership={() =>
+                    navigate(isLoggedIn ? "/membership" : "/login")
+                  }
+                  lang={lang}
                 />
-              </ProtectedRoute>
-            }
-          />
+              }
+            />
 
-          {/* Membership dashboard (protected) */}
-          <Route
-            path="/membership"
-            element={
-              <ProtectedRoute
-                isLoggedIn={isLoggedIn}
-                authChecked={authChecked}
-              >
-                <Membership onLogout={handleLogout} />
-              </ProtectedRoute>
-            }
-          />
+            {/* Auth */}
+            <Route
+              path="/login"
+              element={
+                <Login
+                  onLogin={handleLoginSuccess}
+                  onGoRegister={() => navigate("/register")}
+                  onForgotPassword={() => navigate("/forgot-password")}
+                />
+              }
+            />
+            <Route
+              path="/forgot-password"
+              element={<ForgotPassword onGoLogin={() => navigate("/login")} />}
+            />
+            <Route
+              path="/register"
+              element={<Register onGoLogin={() => navigate("/login")} />}
+            />
 
-          {/* New listing (protected) */}
-          <Route
-            path="/listings/new"
-            element={
-              <ProtectedRoute
-                isLoggedIn={isLoggedIn}
-                authChecked={authChecked}
-              >
-                <PostListing />
-              </ProtectedRoute>
-            }
-          />
+            {/* Profile (protected) */}
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute
+                  isLoggedIn={isLoggedIn}
+                  authChecked={authChecked}
+                >
+                  <UserProfile
+                    onGoHome={goHome}
+                    onLogout={handleLogout}
+                  />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Edit listing (protected) */}
-          <Route
-            path="/listings/:id/edit"
-            element={
-              <ProtectedRoute
-                isLoggedIn={isLoggedIn}
-                authChecked={authChecked}
-              >
-                <PostListing />
-              </ProtectedRoute>
-            }
-          />
+            {/* Membership dashboard (protected) */}
+            <Route
+              path="/membership"
+              element={
+                <ProtectedRoute
+                  isLoggedIn={isLoggedIn}
+                  authChecked={authChecked}
+                >
+                  <Membership onLogout={handleLogout} />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Fallback: proper 404 page */}
-          <Route path="*" element={<NotFound />} />
+            {/* New listing (protected) */}
+            <Route
+              path="/listings/new"
+              element={
+                <ProtectedRoute
+                  isLoggedIn={isLoggedIn}
+                  authChecked={authChecked}
+                >
+                  <PostListing />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Admin dashboard */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute isLoggedIn={isLoggedIn} authChecked={authChecked}>
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+            {/* Edit listing (protected) */}
+            <Route
+              path="/listings/:id/edit"
+              element={
+                <ProtectedRoute
+                  isLoggedIn={isLoggedIn}
+                  authChecked={authChecked}
+                >
+                  <PostListing />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Fallback: proper 404 page */}
+            <Route path="*" element={<NotFound />} />
+
+            {/* Admin dashboard */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute isLoggedIn={isLoggedIn} authChecked={authChecked}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Suspense>
       </main>
 
       {/* New Footer (no props) */}

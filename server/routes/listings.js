@@ -6,6 +6,7 @@ import cloudinary from "../config/cloudinary.js";
 import { requireAuth } from "../middleware/auth.js";
 import User from "../models/User.js";
 import sanitizeHtml from "sanitize-html";
+import redis from "../config/redis.js";
 
 const router = express.Router();
 
@@ -245,6 +246,11 @@ router.post("/create", requireAuth, (req, res) => {
 
       await listing.save();
 
+      // Clear caches
+      await redis.del("listings:stats");
+      const keys = await redis.keys("listings:all:*");
+      if (keys.length > 0) await redis.del(...keys);
+
       res.status(201).json({ message: "Listing created", listing });
     } catch (err) {
       console.error("Create listing error:", err);
@@ -369,6 +375,12 @@ router.put(
       }
 
       await listing.save();
+
+      // Clear caches
+      await redis.del("listings:stats");
+      const keys = await redis.keys("listings:all:*");
+      if (keys.length > 0) await redis.del(...keys);
+
       res.json({ message: "Listing updated", listing });
     } catch (err) {
       console.error("Update error:", err);
@@ -384,6 +396,12 @@ router.put(
 
 router.get("/stats", async (req, res) => {
   try {
+    // 1. Check Redis Cache
+    const cachedStats = await redis.get("listings:stats");
+    if (cachedStats) {
+      return res.json(JSON.parse(cachedStats));
+    }
+
     const activeFilter = { status: "active" };
 
     const totalActive = await Listing.countDocuments(activeFilter);
@@ -406,12 +424,17 @@ router.get("/stats", async (req, res) => {
           )
         : 0;
 
-    res.json({
+    const statsData = {
       totalActive,
       totalListings: totalActive, // alias — frontend reads this key
       avgPrice,
       avgViews,
-    });
+    };
+
+    // 2. Save to Cache (TTL 1 minute)
+    await redis.setex("listings:stats", 60, JSON.stringify(statsData));
+
+    res.json(statsData);
   } catch (err) {
     console.error("Stats error:", err);
     res.status(500).json({ error: "Failed to load listing stats" });
@@ -425,6 +448,13 @@ router.get("/stats", async (req, res) => {
 
 router.get("/all", async (req, res) => {
   try {
+    // 1. Check Redis Cache using uniquely hashed query string
+    const cacheKey = `listings:all:${Buffer.from(JSON.stringify(req.query)).toString("base64")}`;
+    const cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+      return res.json(JSON.parse(cachedData));
+    }
+
     const {
       type,        // ✅ NEW: filter by offer/wanted
       city,
@@ -505,7 +535,12 @@ router.get("/all", async (req, res) => {
       return obj;
     });
 
-    res.json({ listings: listingsWithOwner, totalPages, page: pageN, totalCount });
+    const responseData = { listings: listingsWithOwner, totalPages, page: pageN, totalCount };
+
+    // 2. Save result to Cache (TTL 1 minute)
+    await redis.setex(cacheKey, 60, JSON.stringify(responseData));
+
+    res.json(responseData);
   } catch (err) {
     console.error("Get all listings error:", err);
     res.status(500).json({ error: "Failed to load listings" });
@@ -727,6 +762,11 @@ router.patch("/:id/status", requireAuth, async (req, res) => {
     listing.status = status;
     await listing.save();
 
+    // Clear caches
+    await redis.del("listings:stats");
+    const keys = await redis.keys("listings:all:*");
+    if (keys.length > 0) await redis.del(...keys);
+
     res.json({
       message: "Status updated",
       listing,
@@ -782,6 +822,11 @@ router.patch("/:id/price", requireAuth, async (req, res) => {
 
     await listing.save();
 
+    // Clear caches
+    await redis.del("listings:stats");
+    const keys = await redis.keys("listings:all:*");
+    if (keys.length > 0) await redis.del(...keys);
+
     res.json({
       message: "Price updated",
       listing,
@@ -816,6 +861,11 @@ router.delete("/:id", requireAuth, async (req, res) => {
     }
 
     await listing.deleteOne();
+
+    // Clear caches
+    await redis.del("listings:stats");
+    const keys = await redis.keys("listings:all:*");
+    if (keys.length > 0) await redis.del(...keys);
 
     res.json({ message: "Listing deleted" });
   } catch (err) {
@@ -879,6 +929,12 @@ router.delete("/admin/listings/:id", requireAuth, async (req, res) => {
       return res.status(403).json({ error: "Admin access required" });
     }
     await Listing.findByIdAndDelete(req.params.id);
+
+    // Clear caches
+    await redis.del("listings:stats");
+    const keys = await redis.keys("listings:all:*");
+    if (keys.length > 0) await redis.del(...keys);
+
     res.json({ message: "Listing deleted by admin" });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete" });

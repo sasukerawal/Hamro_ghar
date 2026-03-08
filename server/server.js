@@ -31,6 +31,14 @@ const createLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 120, // limit each IP to 120 requests per windowMs
+  message: { error: 'Too many requests, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // --- Middleware
 app.use(express.json());
 app.use(cookieParser());
@@ -58,10 +66,10 @@ app.use('/api/auth/forgot-password', authLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/membership', membershipRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/reviews', reviewsRoutes);
-app.use('/api/site-reviews', siteReviewsRoutes);
+app.use('/api/reviews', apiLimiter, reviewsRoutes);
+app.use('/api/site-reviews', apiLimiter, siteReviewsRoutes);
 app.use("/uploads", express.static("uploads"));
-app.use("/api/listings", listingsRoutes);
+app.use("/api/listings", apiLimiter, listingsRoutes);
 
 // --- Health
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
