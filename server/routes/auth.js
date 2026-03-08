@@ -12,16 +12,19 @@ const router = express.Router();
 // For Gmail, use an App Password if 2FA is enabled.
 const transporter = nodemailer.createTransport({
   service: 'gmail',
-  pool: true, // use pooled connections
-  port: 587,
-  secure: false, // use TLS
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  connectionTimeout: 10000, // 10 seconds
-  greetingTimeout: 10000,   // 10 seconds
-  socketTimeout: 30000,     // 30 seconds
+});
+
+// Verify transporter on boot
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('[NODEMAILER] Verification FAILED:', error.message);
+  } else {
+    console.log('[NODEMAILER] Server is ready to take our messages');
+  }
 });
 
 // Helper: Generate 6-digit code
