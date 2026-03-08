@@ -120,6 +120,23 @@ export default function Register({ onGoLogin }) {
     }
   };
 
+  const [resending, setResending] = useState(false);
+  const handleResendCode = async () => {
+    setResending(true);
+    try {
+      await apiFetch('/api/auth/resend-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      toast.success('New code sent!');
+    } catch (err) {
+      toast.error(err.message || 'Failed to resend code');
+    } finally {
+      setResending(false);
+    }
+  };
+
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-gradient-to-br from-blue-50 via-white to-blue-100 flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md rounded-3xl bg-white border border-blue-100 shadow-lg px-6 py-7 sm:px-8 sm:py-8">
@@ -205,6 +222,15 @@ export default function Register({ onGoLogin }) {
               className="mt-1 w-full rounded-full bg-blue-600 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-70"
             >
               {loading ? 'Verifying...' : 'Verify & Login'}
+            </button>
+
+            <button 
+              type="button"
+              disabled={resending}
+              onClick={handleResendCode}
+              className="w-full text-xs text-blue-600 font-semibold hover:underline mt-4"
+            >
+              {resending ? 'Sending...' : 'Didn\'t get it? Resend code'}
             </button>
 
             <button 

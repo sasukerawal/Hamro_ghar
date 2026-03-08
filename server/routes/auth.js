@@ -71,8 +71,8 @@ router.post('/register', async (req, res) => {
     console.log(`[REGISTER] Saving new user to DB: ${emailLower}`);
     await newUser.save();
 
-    // Send Verification Email
-    console.log(`[REGISTER] Sending verification email to: ${emailLower}`);
+    // Send Verification Email in BACKGROUND (Don't await it here)
+    console.log(`[REGISTER] Queuing verification email for: ${emailLower}`);
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: emailLower,
@@ -86,7 +86,7 @@ router.post('/register', async (req, res) => {
              </div>`,
     };
 
-    // Use a promise with timeout for sendMail
+    // Use a promise with timeout but DON'T await it to respond early
     const sendMailWithTimeout = (options) => {
       return Promise.race([
         transporter.sendMail(options),
@@ -96,9 +96,12 @@ router.post('/register', async (req, res) => {
       ]);
     };
 
-    await sendMailWithTimeout(mailOptions);
-    console.log(`[REGISTER] Registration successful for: ${emailLower}`);
+    // Fire and forget (it will still log to console if it fails eventually)
+    sendMailWithTimeout(mailOptions)
+      .then(() => console.log(`[REGISTER] Background email successfully sent to: ${emailLower}`))
+      .catch((e) => console.error(`[REGISTER] Background email FAILED for ${emailLower}:`, e.message));
 
+    console.log(`[REGISTER] Responding to ${emailLower} while email sends in background...`);
     return res.status(201).json({
       message: 'Account created. Please verify your email.',
       email: emailLower,
@@ -157,6 +160,44 @@ router.post('/verify', async (req, res) => {
   } catch (err) {
     console.error('Verify error:', err);
     return res.status(500).json({ error: 'Verification failed' });
+  }
+});
+
+// POST /api/auth/resend-code
+router.post('/resend-code', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+verificationCode');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.isVerified) return res.status(400).json({ error: 'User is already verified' });
+
+    // Generate new code or reuse old one if it exists
+    const newCode = generateCode();
+    user.verificationCode = newCode;
+    await user.save();
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: user.email,
+      subject: 'HamroGhar - Resend verification code',
+      text: `Your new verification code is: ${newCode}`,
+      html: `<div style="font-family: sans-serif; padding: 20px;">
+               <h2>Resend Verification Code</h2>
+               <p>Use the code below to verify your account:</p>
+               <h1 style="color: #2563EB; letter-spacing: 5px;">${newCode}</h1>
+               <p>This code will expire in 24 hours.</p>
+             </div>`,
+    };
+
+    // Async send
+    transporter.sendMail(mailOptions).catch(e => console.error("[RESEND] Error:", e.message));
+
+    return res.json({ message: 'A new code has been sent to your email.' });
+  } catch (err) {
+    console.error('Resend error:', err);
+    return res.status(500).json({ error: 'Failed to resend code' });
   }
 });
 
