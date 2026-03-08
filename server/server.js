@@ -13,6 +13,7 @@ import siteReviewsRoutes from './routes/siteReviews.js';
 import './services/listingExpiry.js'; // starts cron on boot
 
 const app = express();
+app.set('trust proxy', 1);
 
 // --- Rate Limiters
 const authLimiter = rateLimit({
