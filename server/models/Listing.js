@@ -1,0 +1,157 @@
+// models/Listing.js
+import mongoose from "mongoose";
+
+const listingSchema = new mongoose.Schema(
+  {
+    ownerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    // ✅ Is this an offer or a request?
+    // 'offer'  = I have a home to rent
+    // 'wanted' = I need a home (budget, requirements, etc.)
+    type: {
+      type: String,
+      enum: ["offer", "wanted"],
+      default: "offer",
+      index: true,
+    },
+
+    // Basic info
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    description: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    // Pricing
+    // For 'wanted', this can be treated as Budget
+    price: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
+    // Every time price changes we append a new entry here
+    priceHistory: [
+      {
+        price: { type: Number, required: true },
+        changedAt: { type: Date, default: Date.now },
+      },
+    ],
+
+    // Property details
+    beds: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    baths: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    sqft: {
+      type: Number,
+      min: 0, // optional, especially for "wanted"
+    },
+
+    // Address / location
+    address: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    city: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
+    },
+
+    // GeoJSON location for map + "near me"
+    // Only populated when geocoding succeeds
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        // No default — only set when we have real coordinates
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        default: undefined,
+      },
+      // Optional: keep plain lat/lng for easier use in frontend if you want
+      lat: {
+        type: Number,
+      },
+      lng: {
+        type: Number,
+      },
+    },
+
+    // Original Google Maps URL (if user used Maps URL mode in PostListing)
+    mapsUrl: { type: String, default: "" },
+
+    // Amenities
+    furnished: {
+      type: Boolean,
+      default: false,
+    },
+    internet: {
+      type: Boolean,
+      default: false,
+    },
+    parking: {
+      type: Boolean,
+      default: false,
+    },
+    petsAllowed: {
+      type: Boolean,
+      default: false,
+    },
+
+    // Media
+    images: [
+      {
+        type: String,
+      },
+    ], // can be empty for "wanted"
+    video: {
+      type: String,
+      default: "",
+    },
+
+    // Status / meta
+    status: {
+      type: String,
+      enum: ["active", "unavailable"],
+      default: "active",
+      index: true,
+    },
+    views: {
+      type: Number,
+      default: 0,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// ✅ Full 2D geospatial index for "near me" / map search
+listingSchema.index({ location: "2dsphere" });
+
+// (Optional) If you ever want simple numeric index too, you could add:
+// listingSchema.index({ "location.lat": 1, "location.lng": 1 });
+
+const Listing = mongoose.model("Listing", listingSchema);
+
+export default Listing;
