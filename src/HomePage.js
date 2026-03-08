@@ -1,5 +1,5 @@
 // src/HomePage.js
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { apiFetch } from "./api";
 import { toast } from "react-toastify";
 import useSWR from "swr";
@@ -274,7 +274,6 @@ export default function HomePage({
   );
 
   const listings = Array.isArray(listingsData?.listings) ? listingsData.listings : [];
-  const totalPagesMap = listingsData?.totalPages || 1;
   
   // Keep syncing totalPages and resetting exact page if out of bounds (edge case)
   useEffect(() => {
