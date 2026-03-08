@@ -17,28 +17,44 @@ export async function apiFetch(path, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers,
-  });
+  // ⏱️ Add a timeout (e.g., 25 seconds)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 25000);
 
-  let data = null;
   try {
-    data = await res.json();
-  } catch {
-    // no JSON body (e.g., 204)
-  }
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
 
-  if (!res.ok) {
-    if (res.status === 401) {
-      localStorage.removeItem("token");
+    let data = null;
+    try {
+      data = await res.json();
+    } catch {
+      // no JSON body (e.g., 204)
     }
 
-    const message = data?.error || data?.message || `Request failed (${res.status})`;
-    const err = new Error(message);
-    err.status = res.status;
-    throw err;
-  }
+    if (!res.ok) {
+      if (res.status === 401) {
+        localStorage.removeItem("token");
+      }
 
-  return data;
+      const message = data?.error || data?.message || `Request failed (${res.status})`;
+      const err = new Error(message);
+      err.status = res.status;
+      throw err;
+    }
+
+    return data;
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out. Please try again.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }

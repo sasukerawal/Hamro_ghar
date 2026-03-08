@@ -12,10 +12,16 @@ const router = express.Router();
 // For Gmail, use an App Password if 2FA is enabled.
 const transporter = nodemailer.createTransport({
   service: 'gmail',
+  pool: true, // use pooled connections
+  port: 587,
+  secure: false, // use TLS
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000,   // 10 seconds
+  socketTimeout: 30000,     // 30 seconds
 });
 
 // Helper: Generate 6-digit code
@@ -32,19 +38,22 @@ const generateToken = (user) => {
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
-  try {
-    const { name = '', email = '', password = '' } = req.body;
+  const { name = '', email = '', password = '' } = req.body;
+  console.log(`[REGISTER] Attempting registration for: ${email}`);
 
-    if (!name.trim() || !email.trim() || !password)
+  try {
+    if (!name.trim() || !email.trim() || !password) {
+      console.log(`[REGISTER] Missing fields for: ${email}`);
       return res.status(400).json({ error: 'Name, email and password are required' });
+    }
 
     const emailLower = email.toLowerCase().trim();
 
     // Check if user exists
+    console.log(`[REGISTER] Checking if user exists: ${emailLower}`);
     const exists = await User.findOne({ email: emailLower });
     if (exists) {
-      // If user exists but is NOT verified, we can overwrite/resend code (optional logic)
-      // For simplicity, just return error if email is taken.
+      console.log(`[REGISTER] User already exists: ${emailLower}`);
       return res.status(409).json({ error: 'Email already in use' });
     }
 
@@ -55,13 +64,15 @@ router.post('/register', async (req, res) => {
       name: name.trim(),
       email: emailLower,
       passwordHash,
-      verificationCode, // Store code
-      isVerified: false, // Default false
+      verificationCode, 
+      isVerified: false, 
     });
 
+    console.log(`[REGISTER] Saving new user to DB: ${emailLower}`);
     await newUser.save();
 
     // Send Verification Email
+    console.log(`[REGISTER] Sending verification email to: ${emailLower}`);
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: emailLower,
@@ -75,19 +86,28 @@ router.post('/register', async (req, res) => {
              </div>`,
     };
 
-    await transporter.sendMail(mailOptions);
+    // Use a promise with timeout for sendMail
+    const sendMailWithTimeout = (options) => {
+      return Promise.race([
+        transporter.sendMail(options),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Email send timed out')), 15000)
+        )
+      ]);
+    };
 
-    // Return success but DO NOT log them in yet.
-    // Frontend should move to the verification step.
+    await sendMailWithTimeout(mailOptions);
+    console.log(`[REGISTER] Registration successful for: ${emailLower}`);
+
     return res.status(201).json({
       message: 'Account created. Please verify your email.',
       email: emailLower,
-      requiresVerification: true, // Signal frontend to show verify screen
+      requiresVerification: true,
     });
 
   } catch (err) {
-    console.error('Register error:', err);
-    return res.status(500).json({ error: 'Server error during registration' });
+    console.error('[REGISTER] Error:', err.message);
+    return res.status(500).json({ error: 'Registration failed: ' + err.message });
   }
 });
 
