@@ -45,7 +45,9 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000',
+    // Dynamically reflects the exact incoming origin perfectly, 
+    // guaranteeing credentials (cookies) are accepted cross-domain
+    origin: true, 
     credentials: true,
   })
 );
