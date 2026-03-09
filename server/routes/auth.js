@@ -27,6 +27,27 @@ transporter.verify((error, success) => {
   }
 });
 
+// DEV TEMP: Direct test route to debug email issues
+router.get('/test-email', async (req, res) => {
+  try {
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_USER, // send to self
+      subject: 'HamroGhar - Test Email System',
+      text: 'If you receive this, your email configuration on Render is working perfectly!',
+    });
+    res.json({ success: true, messageId: info.messageId, authMethod: 'Gmail App Password' });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      errorName: error.name,
+      errorMessage: error.message,
+      errorCode: error.code,
+      command: error.command
+    });
+  }
+});
+
 // Helper: Generate 6-digit code
 const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
