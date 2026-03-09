@@ -9,17 +9,26 @@ const listingSchema = new mongoose.Schema(
       required: true,
     },
 
-    // ✅ Is this an offer or a request?
-    // 'offer'  = I have a home to rent
-    // 'wanted' = I need a home (budget, requirements, etc.)
+    // 1. Meta & Status
     type: {
       type: String,
-      enum: ["offer", "wanted"],
-      default: "offer",
+      enum: ["sale", "rent", "offer", "wanted"], // Kept offer/wanted for backward compatibility for now
+      required: true,
+      default: "sale"
+    },
+    propertyType: {
+      type: String,
+      enum: ["land", "house", "apartment", "flat", "room", "commercial"],
+      default: "house"
+    },
+    status: {
+      type: String,
+      enum: ["draft", "pending_approval", "active", "sold", "rented", "archived", "unavailable"],
+      default: "draft",
       index: true,
     },
 
-    // Basic info
+    // 2. Structured Content
     title: {
       type: String,
       required: true,
@@ -30,16 +39,44 @@ const listingSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    highlights: [{ type: String, trim: true }], // Array of bullet points
 
-    // Pricing
-    // For 'wanted', this can be treated as Budget
+    // 3. Nepal Location Model (Embedded)
+    location: {
+      province: { type: Number, enum: [1, 2, 3, 4, 5, 6, 7] },
+      district: { type: String, trim: true, index: true },
+      municipality: { type: String, trim: true, index: true },
+      wardNo: { type: Number, min: 1 },
+      locality: { type: String, trim: true }, // e.g., "Bhaisepati"
+      landmark: { type: String, trim: true },
+      distanceToRingRoadKm: { type: Number },
+      // GeoJSON location for map + "near me"
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point"
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        default: [0, 0]
+      },
+      isApproximate: { type: Boolean, default: false },
+      // Optional explicit lat/lng for easier legacy frontend access
+      lat: { type: Number },
+      lng: { type: Number },
+    },
+    // Keep raw backwards-compatible string address fields
+    address: { type: String, trim: true },
+    city: { type: String, trim: true },
+
+    // 4. Financials
     price: {
       type: Number,
       required: true,
       min: 0,
+      index: true
     },
-
-    // Every time price changes we append a new entry here
+    priceNegotiable: { type: Boolean, default: true },
     priceHistory: [
       {
         price: { type: Number, required: true },
@@ -47,99 +84,44 @@ const listingSchema = new mongoose.Schema(
       },
     ],
 
-    // Property details
-    beds: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-    baths: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-    sqft: {
-      type: Number,
-      min: 0, // optional, especially for "wanted"
+    // 5. Property Specs
+    specs: {
+      landArea: {
+        valueSqFt: { type: Number }, // Raw normalized value (sq.ft) for sorting
+        display: { type: String }    // e.g. "4 Aana 2 Paisa"
+      },
+      builtUpAreaSqFt: { type: Number },
+      bedrooms: { type: Number, min: 0 },
+      bathrooms: { type: Number, min: 0 },
+      parking: { type: Number }, // number of cars
+      floors: { type: Number },
+      facing: { type: String, enum: ["North", "East", "South", "West", "NE", "NW", "SE", "SW", ""] },
+      roadAccessFeet: { type: Number },
+      roadType: { type: String, enum: ["paved", "gravel", "dirt", "alley", ""] },
+      furnishing: { type: String, enum: ["unfurnished", "semi", "fully", ""] }
     },
 
-    // Address / location
-    address: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    city: {
-      type: String,
-      required: true,
-      trim: true,
-      index: true,
-    },
+    // Legacy fields mapped inside specs going forward
+    beds: { type: Number, min: 0 },
+    baths: { type: Number, min: 0 },
+    sqft: { type: Number, min: 0 },
 
-    // GeoJSON location for map + "near me"
-    // Only populated when geocoding succeeds
-    location: {
-      type: {
-        type: String,
-        enum: ["Point"],
-        // No default — only set when we have real coordinates
-      },
-      coordinates: {
-        type: [Number], // [longitude, latitude]
-        default: undefined,
-      },
-      // Optional: keep plain lat/lng for easier use in frontend if you want
-      lat: {
-        type: Number,
-      },
-      lng: {
-        type: Number,
-      },
-    },
-
-    // Original Google Maps URL (if user used Maps URL mode in PostListing)
-    mapsUrl: { type: String, default: "" },
-
-    // Amenities
-    furnished: {
-      type: Boolean,
-      default: false,
-    },
-    internet: {
-      type: Boolean,
-      default: false,
-    },
-    parking: {
-      type: Boolean,
-      default: false,
-    },
-    petsAllowed: {
-      type: Boolean,
-      default: false,
-    },
+    // Amenities (Legacy bools + extensible)
+    furnished: { type: Boolean, default: false },
+    internet: { type: Boolean, default: false },
+    parkingFeature: { type: Boolean, default: false },
+    petsAllowed: { type: Boolean, default: false },
 
     // Media
-    images: [
-      {
-        type: String,
-      },
-    ], // can be empty for "wanted"
-    video: {
-      type: String,
-      default: "",
-    },
+    images: [{ type: String }],
+    video: { type: String, default: "" },
+    mapsUrl: { type: String, default: "" },
 
-    // Status / meta
-    status: {
-      type: String,
-      enum: ["active", "unavailable"],
-      default: "active",
-      index: true,
-    },
-    views: {
-      type: Number,
-      default: 0,
-    },
+    // 6. Trust & Analytics
+    isVerified: { type: Boolean, default: false },
+    completenessScore: { type: Number, default: 0 },
+    views: { type: Number, default: 0 },
+
   },
   {
     timestamps: true,
@@ -147,13 +129,13 @@ const listingSchema = new mongoose.Schema(
 );
 
 // ✅ Full 2D geospatial index for "near me" / map search
-listingSchema.index({ location: "2dsphere" });
+listingSchema.index({ "location.coordinates": "2dsphere" });
 
-// 🔥 Compound indexes for scaling / performance
-listingSchema.index({ status: 1, createdAt: -1 });        // pagination
-listingSchema.index({ status: 1, city: 1, price: 1 });    // city+price filter
-listingSchema.index({ status: 1, type: 1 });              // offer/wanted toggle
-listingSchema.index({ ownerId: 1, status: 1 });           // /mine/all
+// 🔥 Compound indexes for scaling / scaling advanced V2 search
+listingSchema.index({ status: 1, type: 1, propertyType: 1 });
+listingSchema.index({ "location.district": 1, "location.municipality": 1, status: 1 });
+listingSchema.index({ price: 1, status: 1 });
+listingSchema.index({ ownerId: 1, status: 1 });
 
 const Listing = mongoose.model("Listing", listingSchema);
 
