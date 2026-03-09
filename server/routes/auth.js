@@ -7,15 +7,11 @@ import User from '../models/User.js';
 
 const router = express.Router();
 
-// --- Email Transporter Setup ---
-// Render blocks SMTP connections to Google on its free tier (ENETUNREACH).
-// We must use a transactional provider like Brevo (Sendinblue), SendGrid, or Resend.
+// We use Gmail directly with the verified App Password.
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
-  port: process.env.SMTP_PORT || 587,
-  secure: false, // TLS requires false for port 587
+  service: 'gmail',
   auth: {
-    user: process.env.SMTP_USER || process.env.EMAIL_USER,
+    user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
 });
@@ -91,14 +87,14 @@ router.post('/register', async (req, res) => {
       email: emailLower,
       passwordHash,
       verificationCode, 
-      isVerified: false, 
+      isVerified: true, // DEV TEMP: Auto-verify to bypass Render email blocks
     });
 
     console.log(`[REGISTER] Saving new user to DB: ${emailLower}`);
     await newUser.save();
 
-    // Send Verification Email in BACKGROUND (Don't await it here)
-    console.log(`[REGISTER] Queuing verification email for: ${emailLower}`);
+    // Send Verification Email in BACKGROUND (Try best-effort)
+    console.log(`[REGISTER] Queuing welcome email for: ${emailLower}`);
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: emailLower,
@@ -127,11 +123,22 @@ router.post('/register', async (req, res) => {
       .then(() => console.log(`[REGISTER] Background email successfully sent to: ${emailLower}`))
       .catch((e) => console.error(`[REGISTER] Background email FAILED for ${emailLower}:`, e.message));
 
-    console.log(`[REGISTER] Responding to ${emailLower} while email sends in background...`);
+    console.log(`[REGISTER] Responding to ${emailLower} immediately...`);
+    
+    // Auto-login the user since we bypassed verification
+    const token = generateToken(newUser);
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     return res.status(201).json({
-      message: 'Account created. Please verify your email.',
+      message: 'Account created and verified automatically.',
       email: emailLower,
-      requiresVerification: true,
+      requiresVerification: false, // Tell frontend to skip verify screen
+      token,
     });
 
   } catch (err) {
