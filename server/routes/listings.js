@@ -153,96 +153,112 @@ router.post("/create", requireAuth, (req, res) => {
 
       const {
         type,
+        propertyType,
         title,
         description,
         price,
-        beds,
-        baths,
-        sqft,
-        address,
-        city,
-        furnished,
-        internet,
-        parking,
-        petsAllowed,
+        location: locationRaw,
+        specs: specsRaw,
+        highlights: highlightsRaw,
         video,
+        mapsUrl,
+        
+        // Legacy fallback
+        beds, baths, sqft, address, city, furnished, internet, parking, petsAllowed
       } = req.body;
 
-      if (!description || !address || !city || !price) {
-        return res.status(400).json({
-          error: "description, address, city, and price are required",
-        });
+      if (!description || !price) {
+        return res.status(400).json({ error: "description and price are required" });
       }
 
-      // Convert to numbers safely
       const numericPrice = toNumber(price);
-      const numericBeds = toNumber(beds, 0);
-      const numericBaths = toNumber(baths, 0);
-      const numericSqft = toNumber(sqft);
-
       if (!numericPrice || numericPrice <= 0) {
-        return res
-          .status(400)
-          .json({ error: "price must be a positive number" });
+        return res.status(400).json({ error: "price must be a positive number" });
       }
 
-      // Images handled by Multer + CloudinaryStorage
+      let location = {};
+      let specs = {};
+      let highlights = [];
+
+      try {
+        if (locationRaw) location = JSON.parse(locationRaw);
+        if (specsRaw) specs = JSON.parse(specsRaw);
+        if (highlightsRaw) highlights = JSON.parse(highlightsRaw);
+      } catch (err) {
+        return res.status(400).json({ error: "Invalid JSON format for location, specs, or highlights" });
+      }
+
+      // Legacy fallback mapping
+      if (!location.district && city) location.district = city;
+      if (!location.municipality && city) location.municipality = city;
+      if (!location.locality && address) location.locality = address;
+      
+      if (typeof specs.bedrooms !== 'number' && beds) specs.bedrooms = toNumber(beds);
+      if (typeof specs.bathrooms !== 'number' && baths) specs.bathrooms = toNumber(baths);
+      if (typeof specs.builtUpAreaSqFt !== 'number' && sqft) specs.builtUpAreaSqFt = toNumber(sqft);
+      if (!specs.furnishing && parseBool(furnished)) specs.furnishing = "fully";
+
+      const propTypeDisplay = propertyType ? (propertyType.charAt(0).toUpperCase() + propertyType.slice(1)) : 'Property';
+      const typeDisplay = type === 'rent' ? 'Rent' : 'Sale';
+      const bedPrefix = specs.bedrooms ? `${specs.bedrooms}BHK ` : '';
+      const areaDisplay = location.locality || location.municipality || location.district || 'Nepal';
+      const generatedTitle = title || `${bedPrefix}${propTypeDisplay} For ${typeDisplay} in ${areaDisplay}`;
+
       const uploadedImages = [];
       if (Array.isArray(req.files) && req.files.length > 0) {
         for (const file of req.files) {
-          if (file.path) {
-            uploadedImages.push(file.path);
-          }
+          if (file.path) uploadedImages.push(file.path);
         }
       }
 
-      // Use pre-parsed coords from Google Maps URL, or geocode the address
-      const clientLat = toNumber(req.body.lat);
-      const clientLng = toNumber(req.body.lng);
-      const clientMapsUrl = (req.body.mapsUrl || "").trim();
-      const geo =
-        clientLat && clientLng
+      const clientLat = location.lat || toNumber(req.body.lat);
+      const clientLng = location.lng || toNumber(req.body.lng);
+      
+      // Compute geo
+      const geo = (clientLat && clientLng)
           ? { lat: clientLat, lng: clientLng }
-          : await forwardGeocode(address, city);
+          : await forwardGeocode(location.locality || address, location.district || city);
+
+      if (geo) {
+        location.type = "Point";
+        location.coordinates = [geo.lng, geo.lat];
+        location.lat = geo.lat;
+        location.lng = geo.lng;
+        if (!clientLat && !clientLng) location.isApproximate = true;
+      } else if (!location.coordinates) {
+        location.type = "Point";
+        location.coordinates = [0, 0];
+      }
 
       const listingData = {
         ownerId: userId,
-        type: type === "wanted" ? "wanted" : "offer",
-        title: sanitize(title) || "Untitled listing",
+        type: type || "sale",
+        propertyType: propertyType || "house",
+        title: sanitize(generatedTitle),
         description: sanitize(description),
         price: numericPrice,
-        beds: numericBeds,
-        baths: numericBaths,
-        sqft: numericSqft,
-        address: sanitize(address),
-        city: sanitize(city),
-        furnished: parseBool(furnished),
-        internet: parseBool(internet),
-        parking: parseBool(parking),
-        petsAllowed: parseBool(petsAllowed),
+        location,
+        specs,
+        highlights: Array.isArray(highlights) ? highlights.map(h => sanitize(h)) : [],
         images: uploadedImages,
         video: video || "",
-        mapsUrl: clientMapsUrl,
+        mapsUrl: mapsUrl || "",
         status: "active",
-
+        
+        // Legacy redundant fields
+        address: sanitize(location.locality || address || ""),
+        city: sanitize(location.district || city || ""),
+        beds: specs.bedrooms,
+        baths: specs.bathrooms,
+        sqft: specs.builtUpAreaSqFt,
+        furnished: parseBool(furnished),
+        internet: parseBool(internet),
+        parkingFeature: parseBool(parking),
+        petsAllowed: parseBool(petsAllowed),
       };
 
-
-      if (geo) {
-        listingData.location = {
-          type: "Point",
-          coordinates: [geo.lng, geo.lat],
-          lat: geo.lat,
-          lng: geo.lng,
-        };
-      }
-
-
       const listing = new Listing(listingData);
-
-      if (typeof listing.price === "number" && !listing.priceHistory?.length) {
-        listing.priceHistory = [{ price: listing.price, changedAt: new Date() }];
-      }
+      listing.priceHistory = [{ price: listing.price, changedAt: new Date() }];
 
       await listing.save();
 
@@ -281,79 +297,90 @@ router.put(
       }
 
       const {
+        type,
+        propertyType,
         title,
         description,
         price,
-        beds,
-        baths,
-        sqft,
-        address,
-        city,
-        furnished,
-        internet,
-        parking,
-        petsAllowed,
+        location: locationRaw,
+        specs: specsRaw,
+        highlights: highlightsRaw,
         video,
+        mapsUrl,
+        
+        // Legacy fallback
+        beds, baths, sqft, address, city, furnished, internet, parking, petsAllowed
       } = req.body;
 
-      let addressChanged = false;
-      let cityChanged = false;
-
-      // Parse numbers
       if (price) {
         const numericPrice = toNumber(price);
         if (!numericPrice || numericPrice <= 0) {
-          return res
-            .status(400)
-            .json({ error: "price must be a positive number" });
+          return res.status(400).json({ error: "price must be a positive number" });
         }
-        listing.price = numericPrice;
-
-        // record price change
-        if (!Array.isArray(listing.priceHistory)) {
-          listing.priceHistory = [];
+        if (listing.price !== numericPrice) {
+          listing.price = numericPrice;
+          if (!Array.isArray(listing.priceHistory)) listing.priceHistory = [];
+          listing.priceHistory.push({ price: numericPrice, changedAt: new Date() });
         }
-        listing.priceHistory.push({
-          price: numericPrice,
-          changedAt: new Date(),
-        });
       }
-      if (beds) listing.beds = Number(beds);
-      if (baths) listing.baths = Number(baths);
-      if (sqft) listing.sqft = Number(sqft);
 
-      // Update strings
-      if (title) listing.title = title.trim();
-      if (description) listing.description = description.trim();
-      if (address) {
-        const trimmedAddress = address.trim();
-        if (trimmedAddress && trimmedAddress !== listing.address) {
-          addressChanged = true;
+      let newLocation = listing.location || {};
+      let newSpecs = listing.specs || {};
+      let locationChanged = false;
+
+      try {
+        if (locationRaw) {
+           newLocation = { ...newLocation, ...JSON.parse(locationRaw) };
+           locationChanged = true;
         }
-        listing.address = trimmedAddress;
+        if (specsRaw) newSpecs = { ...newSpecs, ...JSON.parse(specsRaw) };
+        if (highlightsRaw) listing.highlights = JSON.parse(highlightsRaw).map(h => sanitize(h));
+      } catch (err) { }
+
+      // Legacy updates
+      if (address) {
+        const trimmed = address.trim();
+        if (trimmed !== listing.address) {
+           listing.address = trimmed;
+           newLocation.locality = trimmed;
+           locationChanged = true;
+        }
       }
       if (city) {
-        const trimmedCity = city.trim();
-        if (trimmedCity && trimmedCity !== listing.city) {
-          cityChanged = true;
+        const trimmed = city.trim();
+        if (trimmed !== listing.city) {
+           listing.city = trimmed;
+           newLocation.district = trimmed;
+           locationChanged = true;
         }
-        listing.city = trimmedCity;
+      }
+      
+      if (beds) { listing.beds = Number(beds); newSpecs.bedrooms = Number(beds); }
+      if (baths) { listing.baths = Number(baths); newSpecs.bathrooms = Number(baths); }
+      if (sqft) { listing.sqft = Number(sqft); newSpecs.builtUpAreaSqFt = Number(sqft); }
+      
+      if (type) listing.type = type;
+      if (propertyType) listing.propertyType = propertyType;
+      if (description) listing.description = sanitize(description);
+      if (video !== undefined) listing.video = video || "";
+      if (mapsUrl !== undefined) listing.mapsUrl = mapsUrl || "";
+      
+      if (furnished !== undefined) listing.furnished = parseBool(furnished);
+      if (internet !== undefined) listing.internet = parseBool(internet);
+      if (parking !== undefined) listing.parkingFeature = parseBool(parking);
+      if (petsAllowed !== undefined) listing.petsAllowed = parseBool(petsAllowed);
+
+      // Regenerate Title if it wasn't manually overridden
+      if (title) {
+         listing.title = sanitize(title);
+      } else if (listing.propertyType && newSpecs.bedrooms) {
+         const propTypeDisplay = listing.propertyType.charAt(0).toUpperCase() + listing.propertyType.slice(1);
+         const typeDisplay = listing.type === 'rent' ? 'Rent' : 'Sale';
+         const areaDisplay = newLocation.locality || newLocation.municipality || newLocation.district || 'Nepal';
+         listing.title = `${newSpecs.bedrooms}BHK ${propTypeDisplay} For ${typeDisplay} in ${areaDisplay}`;
       }
 
-      // Update booleans
-      if (furnished !== undefined)
-        listing.furnished = furnished === "true" || furnished === true;
-      if (internet !== undefined)
-        listing.internet = internet === "true" || internet === true;
-      if (parking !== undefined)
-        listing.parking = parking === "true" || parking === true;
-      if (petsAllowed !== undefined)
-        listing.petsAllowed =
-          petsAllowed === "true" || petsAllowed === true;
-
-      if (video !== undefined) {
-        listing.video = video || "";
-      }
+      listing.specs = newSpecs;
 
       // Append new images
       if (req.files && req.files.length > 0) {
@@ -361,18 +388,24 @@ router.put(
         listing.images = [...(listing.images || []), ...newImages];
       }
 
-      // If address or city changed, re-geocode
-      if ((addressChanged || cityChanged) && listing.address && listing.city) {
-        const geo = await forwardGeocode(listing.address, listing.city);
+      // Re-geocode if location was updated
+      if (locationChanged) {
+        const clientLat = newLocation.lat || toNumber(req.body.lat);
+        const clientLng = newLocation.lng || toNumber(req.body.lng);
+      
+        const geo = (clientLat && clientLng)
+            ? { lat: clientLat, lng: clientLng }
+            : await forwardGeocode(newLocation.locality || listing.address, newLocation.district || listing.city);
+
         if (geo) {
-          listing.location = {
-            type: "Point",
-            coordinates: [geo.lng, geo.lat],
-            lat: geo.lat,
-            lng: geo.lng,
-          };
+          newLocation.type = "Point";
+          newLocation.coordinates = [geo.lng, geo.lat];
+          newLocation.lat = geo.lat;
+          newLocation.lng = geo.lng;
         }
       }
+      
+      listing.location = newLocation;
 
       await listing.save();
 

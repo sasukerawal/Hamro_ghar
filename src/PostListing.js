@@ -1,100 +1,52 @@
-// src/PostListing.js
-import React, { useState, useEffect, useCallback, useRef } from "react";
+/* eslint-disable react-hooks/exhaustive-deps */
+import React, { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
-import {
-  Home,
-  UploadCloud,
-  ArrowLeft,
-  Loader,
-  X,
-  ImageIcon,
-  AlertCircle,
-  MapPin,
-  Link,
-  CheckCircle,
-} from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
+import { 
+  ArrowLeft, ArrowRight, CheckCircle, Home, MapPin, UploadCloud, X, Plus, Trash
+} from "lucide-react";
 import { apiFetch } from "./api";
-import AddressSuggestionsList from "./AddressSuggestionsList";
+import { DISTRICTS_OF_NEPAL, MUNICIPALITIES, FACING_DIRECTIONS } from "./utils/nepalLocations";
 
 export default function PostListing() {
   const { id } = useParams();
   const editId = id || null;
   const navigate = useNavigate();
 
-  const goBack = useCallback(() => {
-    navigate("/membership");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [navigate]);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [fetching, setFetching] = useState(!!editId);
+  const [submitting, setSubmitting] = useState(false);
 
   const [form, setForm] = useState({
-    type: "offer",
+    type: "sale",
+    propertyType: "house",
     title: "",
     description: "",
     price: "",
-    address: "",
-    city: "",
-    beds: "",
-    baths: "",
-    sqft: "",
-    furnished: false,
+    district: "",
+    municipality: "",
+    wardNo: "",
+    locality: "",
+    mapsUrl: "",
+    bedrooms: "",
+    bathrooms: "",
+    builtUpAreaSqFt: "",
+    landAreaAana: "",
+    roadAccessFeet: "",
+    facing: "",
+    furnishing: false,
     parking: false,
     internet: false,
     petsAllowed: false,
+    highlights: [""] // Default one empty highlight
   });
-
-  // New image files selected by user (with preview URLs)
-  const [mediaFiles, setMediaFiles] = useState([]); // [{ file, previewUrl }]
-  // Existing images in edit mode
+  
+  const [mediaFiles, setMediaFiles] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
-  // Tracks which existing images to keep (true = keep)
   const [keepExisting, setKeepExisting] = useState([]);
-
-  const [uploading, setUploading] = useState(false);
-  const [fetching, setFetching] = useState(!!editId);
-  const [errors, setErrors] = useState({});
-
-  // Location mode: 'manual' or 'maps'
-  const [locationMode, setLocationMode] = useState("manual");
-  const [mapsUrl, setMapsUrl] = useState("");
-  const [parsedCoords, setParsedCoords] = useState(null); // { lat, lng }
-
-  const [addressSuggestions, setAddressSuggestions] = useState([]);
-  const [addressLoading, setAddressLoading] = useState(false);
-
   const fileInputRef = useRef(null);
 
-  // Parse Google Maps URL client-side
-  const parseMapsUrl = (url) => {
-    if (!url) return null;
-    // Pattern: ...@lat,lng,zoom or ...@lat,lng
-    const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (atMatch) return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
-    // Pattern: ?q=lat,lng
-    const qMatch = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (qMatch) return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) };
-    // Pattern: /maps/place/.../lat,lng or ll=lat,lng
-    const llMatch = url.match(/[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (llMatch) return { lat: parseFloat(llMatch[1]), lng: parseFloat(llMatch[2]) };
-    return null;
-  };
-
-  const handleMapsUrlChange = (url) => {
-    setMapsUrl(url);
-    const coords = parseMapsUrl(url);
-    setParsedCoords(coords);
-  };
-
-  const isWanted = form.type === "wanted";
-
-  // Cleanup preview URLs on unmount
-  useEffect(() => {
-    return () => {
-      mediaFiles.forEach((f) => URL.revokeObjectURL(f.previewUrl));
-    };
-  }, [mediaFiles]);
-
-  // Load listing for edit mode
+  // loading edit mode
   useEffect(() => {
     if (!editId) return;
     const fetchListing = async () => {
@@ -104,631 +56,492 @@ export default function PostListing() {
         if (data.listing) {
           const l = data.listing;
           setForm({
-            type: l.type || "offer",
+            type: l.type || "sale",
+            propertyType: l.propertyType || "house",
             title: l.title || "",
             description: l.description || "",
             price: l.price || "",
-            address: l.address || "",
-            city: l.city || "",
-            beds: l.beds ?? "",
-            baths: l.baths ?? "",
-            sqft: l.sqft || "",
-            furnished: !!l.furnished,
-            parking: !!l.parking,
+            district: l.location?.district || l.city || "",
+            municipality: l.location?.municipality || "",
+            wardNo: l.location?.wardNo || "",
+            locality: l.location?.locality || l.address || "",
+            mapsUrl: l.mapsUrl || "",
+            bedrooms: l.specs?.bedrooms ?? l.beds ?? "",
+            bathrooms: l.specs?.bathrooms ?? l.baths ?? "",
+            builtUpAreaSqFt: l.specs?.builtUpAreaSqFt ?? l.sqft ?? "",
+            landAreaAana: l.specs?.landAreaAana ?? "",
+            roadAccessFeet: l.specs?.roadAccessFeet ?? "",
+            facing: l.specs?.facing ?? "",
+            furnishing: !!l.furnished || (l.specs?.furnishing === 'fully'),
+            parking: !!l.parking || !!l.specs?.parkingFeature,
             internet: !!l.internet,
             petsAllowed: !!l.petsAllowed,
+            highlights: l.highlights?.length ? l.highlights : [""]
           });
           const imgs = l.images || [];
           setExistingImages(imgs);
           setKeepExisting(imgs.map(() => true));
         }
       } catch (err) {
-        toast.error("Could not load listing for editing");
-        goBack();
+        toast.error("Could not load listing details");
+        navigate("/membership");
       } finally {
         setFetching(false);
       }
     };
     fetchListing();
-  }, [editId, goBack]);
+  }, [editId, navigate]);
+
+  // Clean preview blob URLs
+  useEffect(() => {
+    return () => {
+      mediaFiles.forEach((f) => URL.revokeObjectURL(f.previewUrl));
+    };
+  }, [mediaFiles]);
 
   const handleChange = (field) => (e) => {
-    const value =
-      e.target.type === "checkbox" ? e.target.checked : e.target.value;
-    setForm((prev) => ({ ...prev, [field]: value }));
-    // Clear error for field on change
-    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: null }));
+    const val = e.target.type === "checkbox" ? e.target.checked : e.target.value;
+    setForm(prev => ({ ...prev, [field]: val }));
   };
 
-  // Add new images — appends to existing selection
-  const handleMediaChange = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-
-    const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
-    const oversized = files.filter((f) => f.size > MAX_SIZE);
-    if (oversized.length > 0) {
-      toast.warn(`${oversized.length} file(s) exceed 5 MB and were skipped.`);
-    }
-    const valid = files.filter((f) => f.size <= MAX_SIZE);
-    if (!valid.length) return;
-
-    const remaining = 10 - mediaFiles.length - existingImages.filter((_, i) => keepExisting[i]).length;
-    if (remaining <= 0) {
-      toast.warn("Maximum 10 images allowed.");
-      return;
-    }
-
-    const newEntries = valid.slice(0, remaining).map((file) => ({
-      file,
-      previewUrl: URL.createObjectURL(file),
-      name: file.name,
-    }));
-
-    setMediaFiles((prev) => [...prev, ...newEntries]);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-
-  // Remove a newly added image by index
-  const removeNewImage = (idx) => {
-    setMediaFiles((prev) => {
-      URL.revokeObjectURL(prev[idx].previewUrl);
-      return prev.filter((_, i) => i !== idx);
+  const setHighlight = (idx, val) => {
+    setForm(prev => {
+      const newH = [...prev.highlights];
+      newH[idx] = val;
+      return { ...prev, highlights: newH };
     });
   };
 
-  // Toggle keeping an existing image
-  const toggleExistingImage = (idx) => {
-    setKeepExisting((prev) => prev.map((v, i) => (i === idx ? !v : v)));
-  };
+  const addHighlight = () => setForm(p => ({ ...p, highlights: [...p.highlights, ""] }));
+  const removeHighlight = (idx) => setForm(p => {
+    const newH = p.highlights.filter((_, i) => i !== idx);
+    if (!newH.length) newH.push("");
+    return { ...p, highlights: newH };
+  });
 
-  // Address suggestions
-  const handleSelectSuggestion = (suggestion) => {
-    setForm((prev) => ({
-      ...prev,
-      address: suggestion.label.split(",").slice(0, 3).join(", ").trim(),
-      city: suggestion.city || prev.city,
+  const uploadImages = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const MAX_SIZE = 5 * 1024 * 1024;
+    const valid = files.filter(f => f.size <= MAX_SIZE);
+    
+    const remaining = 10 - mediaFiles.length - existingImages.filter((_, i) => keepExisting[i]).length;
+    if (valid.length > remaining) toast.warn(`Only ${remaining} images allowed.`);
+    
+    const newEntries = valid.slice(0, remaining).map(file => ({
+      file,
+      previewUrl: URL.createObjectURL(file),
+      name: file.name
     }));
-    setAddressSuggestions([]);
+    setMediaFiles(prev => [...prev, ...newEntries]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  useEffect(() => {
-    const address = form.address?.trim();
-    if (!address || address.length < 4) {
-      setAddressSuggestions([]);
-      return;
-    }
-    const controller = new AbortController();
-    const timeoutId = setTimeout(async () => {
-      try {
-        setAddressLoading(true);
-        const params = new URLSearchParams();
-        params.append("q", address);
-        if (form.city?.trim()) params.append("city", form.city.trim());
-        const API_BASE =
-          process.env.REACT_APP_API_BASE?.trim() || "http://localhost:4000";
-        const res = await fetch(
-          `${API_BASE}/api/listings/geo/search?${params.toString()}`,
-          { signal: controller.signal, credentials: "omit" }
-        );
-        if (!res.ok) { setAddressSuggestions([]); return; }
-        const data = await res.json();
-        setAddressSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
-      } catch (err) {
-        if (err.name !== "AbortError") console.error(err);
-      } finally {
-        setAddressLoading(false);
-      }
-    }, 400);
-    return () => { clearTimeout(timeoutId); controller.abort(); };
-  }, [form.address, form.city]);
+  const removeNewImage = (idx) => setMediaFiles(prev => prev.filter((_, i) => i !== idx));
+  const toggleExistingImage = (idx) => setKeepExisting(prev => prev.map((v, i) => i === idx ? !v : v));
 
-  // Validate and return error map
-  const validate = () => {
-    const errs = {};
-    if (!form.title.trim()) errs.title = "Title is required";
-    if (!form.description.trim()) errs.description = "Description is required";
-    if (!form.price) errs.price = "Price / budget is required";
-    if (Number(form.price) <= 0) errs.price = "Price must be greater than 0";
-    if (!form.city.trim()) errs.city = "City is required";
-    if (!form.address.trim()) errs.address = "Address is required";
-    return errs;
+  const validateStep = (step) => {
+    if (step === 1) {
+      if (!form.description.trim()) return "Description is required";
+    }
+    if (step === 2) {
+      if (!form.district) return "District is required";
+      if (!form.municipality) return "Municipality is required";
+      if (!form.locality) return "Locality/Tole is required";
+    }
+    if (step === 3) {
+      if (!form.price || Number(form.price) <= 0) return "Valid Price is required";
+    }
+    return null;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const nextStep = () => {
+    const err = validateStep(currentStep);
+    if (err) return toast.error(err);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setCurrentStep(p => p + 1);
+  };
+  const prevStep = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setCurrentStep(p => Math.max(1, p - 1));
+  };
 
-    const errs = validate();
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      toast.error("Please fix the highlighted fields");
-      return;
-    }
+  const handleSubmit = async () => {
+    const err = validateStep(3); // validate current step before submitting
+    if (err) return toast.error(err);
 
     try {
-      setUploading(true);
-
+      setSubmitting(true);
       const fd = new FormData();
-      Object.entries(form).forEach(([key, value]) => fd.append(key, value));
+      
+      const locationJSON = JSON.stringify({
+        district: form.district,
+        municipality: form.municipality,
+        wardNo: form.wardNo ? Number(form.wardNo) : undefined,
+        locality: form.locality
+      });
+      const specsJSON = JSON.stringify({
+        bedrooms: form.bedrooms ? Number(form.bedrooms) : undefined,
+        bathrooms: form.bathrooms ? Number(form.bathrooms) : undefined,
+        builtUpAreaSqFt: form.builtUpAreaSqFt ? Number(form.builtUpAreaSqFt) : undefined,
+        landAreaAana: form.landAreaAana ? Number(form.landAreaAana) : undefined,
+        roadAccessFeet: form.roadAccessFeet ? Number(form.roadAccessFeet) : undefined,
+        facing: form.facing,
+        furnishing: form.furnishing ? 'fully' : 'unfurnished',
+        parking: form.parking ? 1 : 0
+      });
 
-      // If user provided a Google Maps URL with parsed coords, pass them to backend
-      if (locationMode === "maps" && parsedCoords) {
-        fd.append("lat", parsedCoords.lat);
-        fd.append("lng", parsedCoords.lng);
-        if (mapsUrl.trim()) fd.append("mapsUrl", mapsUrl.trim());
-      }
+      fd.append("type", form.type);
+      fd.append("propertyType", form.propertyType);
+      fd.append("title", form.title.trim());
+      fd.append("description", form.description.trim());
+      fd.append("price", form.price);
+      fd.append("location", locationJSON);
+      fd.append("specs", specsJSON);
+      fd.append("mapsUrl", form.mapsUrl.trim());
+      fd.append("highlights", JSON.stringify(form.highlights.filter(h => h.trim())));
+      fd.append("internet", form.internet);
+      fd.append("petsAllowed", form.petsAllowed);
 
-      // Attach new image files
+      // Add files
       mediaFiles.forEach(({ file }) => fd.append("images", file));
-
-      // In edit mode, send list of existing images to keep
       if (editId) {
-        const toKeep = existingImages.filter((_, i) => keepExisting[i]);
-        toKeep.forEach((url) => fd.append("keepImages", url));
+        existingImages.forEach((img, i) => {
+           if (keepExisting[i]) fd.append("keepImages", img);
+        });
       }
 
-      const url = editId ? `/api/listings/${editId}` : "/api/listings/create";
-      const method = editId ? "PUT" : "POST";
-
-      await apiFetch(url, { method, body: fd });
-
-      toast.success(
-        editId ? "Listing updated!" : isWanted ? "Request posted!" : "Listing posted!"
-      );
-      goBack();
-    } catch (err) {
-      console.error(err);
-      if (err.status === 401) {
-        toast.info("Please log in to post listings.");
-        navigate("/login");
-      } else {
-        toast.error(err.message || "Something went wrong. Please try again.");
-      }
+      await apiFetch(editId ? `/api/listings/${editId}` : "/api/listings/create", {
+        method: editId ? "PUT" : "POST",
+        body: fd
+      });
+      toast.success(editId ? "Listing updated!" : "Listing live!");
+      navigate("/membership");
+    } catch (e) {
+      toast.error(e.message || "Failed to post listing.");
     } finally {
-      setUploading(false);
+      setSubmitting(false);
     }
   };
 
-  if (fetching) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <Loader className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
-          <p className="text-sm text-slate-500">Loading listing data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const totalImages =
-    existingImages.filter((_, i) => keepExisting[i]).length + mediaFiles.length;
+  if (fetching) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><div className="text-center py-20 animate-pulse text-blue-600 font-bold tracking-widest uppercase">Loading editor...</div></div>;
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] bg-slate-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-3xl rounded-3xl bg-white border border-blue-100 shadow-md px-6 py-7 sm:px-8 sm:py-9">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-3 mb-6">
-          <button
-            type="button"
-            onClick={goBack}
-            className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-blue-700"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Cancel
-          </button>
-          <Home className="h-8 w-8 text-blue-600" />
-        </div>
+    <div className="bg-slate-50 min-h-[calc(100vh-5rem)] py-8 px-4 font-sans text-slate-800">
+       <div className="max-w-3xl mx-auto">
 
-        <div className="mb-4">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1">
-            {editId
-              ? form.type === "wanted"
-                ? "Edit your request"
-                : "Edit your home"
-              : "What would you like to do?"}
-          </h1>
-          <p className="text-sm text-slate-600">
-            {editId
-              ? "Update details, price, or amenities."
-              : "Post a home you have available, or request one you're looking for."}{" "}
-            Fields marked with <span className="text-red-500">*</span> are
-            required.
-          </p>
-        </div>
-
-        {/* Type Toggle */}
-        {!editId && (
-          <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
-            {["offer", "wanted"].map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setForm((prev) => ({ ...prev, type: t }))}
-                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
-                  form.type === t
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                {t === "offer" ? "Post a Home (Offer)" : "Request a Home (Wanted)"}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <form className="space-y-5" onSubmit={handleSubmit}>
-          {/* Title */}
-          <FormInput
-            label={
-              isWanted
-                ? "Title (e.g., Family looking for 2BHK in Patan) *"
-                : "Title (e.g., Modern 2BHK near New Baneshwor) *"
-            }
-            placeholder={
-              isWanted
-                ? "Student looking for room in Kathmandu..."
-                : "Modern 2BHK near New Baneshwor"
-            }
-            value={form.title}
-            onChange={handleChange("title")}
-            error={errors.title}
-            maxLength={120}
-          />
-
-          {/* Description */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              {isWanted
-                ? "Describe what kind of home you need *"
-                : "Description *"}
-            </label>
-            <textarea
-              className={`w-full rounded-xl border px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 min-h-[90px] bg-slate-50 ${
-                errors.description
-                  ? "border-red-400 bg-red-50"
-                  : "border-slate-200"
-              }`}
-              placeholder={
-                isWanted
-                  ? "Briefly explain your situation, preferred location, move-in date, budget, etc."
-                  : "Short description about the home — size, neighbourhood, what's nearby..."
-              }
-              value={form.description}
-              onChange={handleChange("description")}
-              maxLength={500}
-            />
-            <div className="flex justify-between mt-0.5">
-              {errors.description ? (
-                <FieldError msg={errors.description} />
-              ) : (
-                <span />
-              )}
-              <span className="text-[10px] text-slate-400">
-                {form.description.length}/500
-              </span>
-            </div>
+          {/* Header & Breadcrumb */}
+          <div className="flex items-center gap-4 mb-6">
+             <button onClick={() => navigate("/membership")} className="p-2 bg-white rounded-full shadow-sm hover:text-blue-600 transition-colors">
+               <ArrowLeft className="w-5 h-5" />
+             </button>
+             <div>
+               <h1 className="text-2xl font-extrabold tracking-tight">{editId ? "Edit Listing" : "Post a New Listing"}</h1>
+               <p className="text-sm text-slate-500 font-medium">Provide high-quality details for higher conversions.</p>
+             </div>
           </div>
 
-          {/* Price / Beds / Baths */}
-          <div className="grid gap-3 sm:grid-cols-3">
-            <FormInput
-              label={isWanted ? "Max budget (Rs.) *" : "Monthly rent (Rs.) *"}
-              type="number"
-              placeholder={isWanted ? "40000" : "45000"}
-              value={form.price}
-              onChange={handleChange("price")}
-              error={errors.price}
-              min="0"
-            />
-            <FormInput
-              label={isWanted ? "Min beds" : "Beds"}
-              type="number"
-              placeholder={isWanted ? "1" : "2"}
-              value={form.beds}
-              onChange={handleChange("beds")}
-              min="0"
-            />
-            <FormInput
-              label={isWanted ? "Min baths" : "Baths"}
-              type="number"
-              placeholder="1"
-              value={form.baths}
-              onChange={handleChange("baths")}
-              min="0"
-            />
-          </div>
-
-          {/* Location: tab toggle */}
-          <div>
-            <div className="flex items-center gap-1 mb-2">
-              <button
-                type="button"
-                onClick={() => setLocationMode("manual")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                  locationMode === "manual"
-                    ? "bg-blue-600 border-blue-600 text-white"
-                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                <MapPin className="h-3.5 w-3.5" /> Manual address
-              </button>
-              <button
-                type="button"
-                onClick={() => setLocationMode("maps")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                  locationMode === "maps"
-                    ? "bg-blue-600 border-blue-600 text-white"
-                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                <Link className="h-3.5 w-3.5" /> Google Maps URL
-              </button>
-            </div>
-
-            {locationMode === "manual" ? (
-              <div className="grid gap-3 sm:grid-cols-2">
-                <FormInput
-                  label="City *"
-                  placeholder="Kathmandu"
-                  value={form.city}
-                  onChange={handleChange("city")}
-                  error={errors.city}
-                />
-                <div className="relative z-10">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    {isWanted ? "Preferred area / address *" : "Address *"}
-                  </label>
-                  <input
-                    type="text"
-                    className={`w-full rounded-xl border px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 bg-slate-50 ${
-                      errors.address ? "border-red-400 bg-red-50" : "border-slate-200"
-                    }`}
-                    placeholder={isWanted ? "Sifal, Baneshwor, Lazimpat..." : "Sifal Road, Ward 7..."}
-                    value={form.address}
-                    onChange={handleChange("address")}
-                    autoComplete="off"
-                  />
-                  {errors.address && <FieldError msg={errors.address} />}
-                  {addressLoading && <p className="text-[11px] text-slate-400 mt-1">Searching suggestions…</p>}
-                  <AddressSuggestionsList
-                    suggestions={addressSuggestions}
-                    show={addressSuggestions.length > 0}
-                    onSelect={handleSelectSuggestion}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-700">
-                  Google Maps URL
-                </label>
-                <input
-                  type="url"
-                  value={mapsUrl}
-                  onChange={(e) => handleMapsUrlChange(e.target.value)}
-                  placeholder="https://www.google.com/maps/place/.../@27.7172,85.3240,..."
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-                />
-                {mapsUrl && parsedCoords && (
-                  <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-xl px-3 py-2">
-                    <CheckCircle className="h-4 w-4 shrink-0" />
-                    Coordinates extracted: <strong>{parsedCoords.lat.toFixed(5)}, {parsedCoords.lng.toFixed(5)}</strong>
-                  </div>
-                )}
-                {mapsUrl && !parsedCoords && (
-                  <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
-                    <AlertCircle className="h-4 w-4 shrink-0" />
-                    Could not extract coordinates. Make sure it's a full Google Maps URL (not a short link).
-                  </div>
-                )}
-                <p className="text-[11px] text-slate-400">You still need to fill in City and Address below for display purposes.</p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <FormInput label="City *" placeholder="Kathmandu" value={form.city} onChange={handleChange("city")} error={errors.city} />
-                  <FormInput label="Address (for display) *" placeholder="Eg: Sifal Road" value={form.address} onChange={handleChange("address")} error={errors.address} />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Sqft */}
-          <FormInput
-            label={isWanted ? "Approx. area needed (sqft)" : "Area (sqft)"}
-            type="number"
-            placeholder="900"
-            value={form.sqft}
-            onChange={handleChange("sqft")}
-            min="0"
-          />
-
-          {/* Amenities */}
-          <div className="grid gap-2 sm:grid-cols-2 text-xs text-slate-700">
-            <p className="col-span-full font-semibold mb-1">
-              {isWanted ? "Requirements / Preferences" : "Amenities"}
-            </p>
-            {[
-              { field: "furnished", labels: ["Need furnished", "Furnished"] },
-              { field: "parking", labels: ["Need parking", "Parking available"] },
-              { field: "internet", labels: ["Need internet", "Internet included"] },
-              { field: "petsAllowed", labels: ["Pets allowed", "Pets allowed"] },
-            ].map(({ field, labels }) => (
-              <label key={field} className="inline-flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                  checked={form[field]}
-                  onChange={handleChange(field)}
-                />
-                <span>{isWanted ? labels[0] : labels[1]}</span>
-              </label>
-            ))}
-          </div>
-
-          {/* Image Upload */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-semibold text-slate-700">
-                {isWanted
-                  ? "Photos (optional)"
-                  : `Photos (up to 10) — ${totalImages}/10`}
-              </label>
-            </div>
-
-            {/* Upload drop zone */}
-            {totalImages < 10 && (
-              <label className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                <UploadCloud className="h-6 w-6 text-blue-500" />
-                <span className="text-xs text-slate-600 font-medium">
-                  {editId
-                    ? "Upload additional photos"
-                    : isWanted
-                    ? "Click to upload optional photos"
-                    : "Click to upload home photos"}
-                </span>
-                <span className="text-[10px] text-slate-400">
-                  JPG, PNG, WEBP • First photo = cover image
-                </span>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleMediaChange}
-                  className="hidden"
-                />
-              </label>
-            )}
-
-            {/* Existing images grid (edit mode) */}
-            {editId && existingImages.length > 0 && (
-              <div className="mt-3">
-                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                  Current photos — click ✕ to remove
-                </p>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                  {existingImages.map((url, idx) => (
-                    <div key={idx} className="relative group">
-                      <img
-                        src={url}
-                        alt={`Existing ${idx + 1}`}
-                        className={`h-20 w-full object-cover rounded-xl border-2 transition-all ${
-                          keepExisting[idx]
-                            ? "border-blue-400 opacity-100"
-                            : "border-red-400 opacity-30"
-                        }`}
-                        onError={(e) => {
-                          e.target.src =
-                            "https://placehold.co/80x80/eff6ff/0f172a?text=Img";
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => toggleExistingImage(idx)}
-                        className={`absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow ${
-                          keepExisting[idx] ? "bg-red-500" : "bg-green-500"
-                        }`}
-                        title={keepExisting[idx] ? "Remove" : "Keep"}
-                      >
-                        {keepExisting[idx] ? <X className="h-3 w-3" /> : "✓"}
-                      </button>
+          {/* Timeline / Progress */}
+          <div className="bg-white p-4 sm:p-5 text-sm rounded-2xl shadow-sm mb-6 flex justify-between overflow-x-auto gap-4 scrollbar-hide border border-slate-100">
+             {["Basics", "Location", "Specs", "Media"].map((t, i) => {
+                const isActive = currentStep === i + 1;
+                const isPast = currentStep > i + 1;
+                return (
+                  <div key={i} className={`font-bold whitespace-nowrap min-w-max flex items-center gap-2 transition-colors ${isActive ? 'text-blue-600' : isPast ? 'text-slate-700' : 'text-slate-300'}`}>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${isActive ? 'bg-blue-600 text-white shadow-md' : isPast ? 'bg-slate-200 text-slate-600' : 'bg-slate-100 border'}`}>
+                       {isPast ? <CheckCircle className="w-3.5 h-3.5" /> : (i + 1)}
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* New image previews */}
-            {mediaFiles.length > 0 && (
-              <div className="mt-3">
-                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                  New photos — click ✕ to remove
-                </p>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                  {mediaFiles.map((entry, idx) => (
-                    <div key={idx} className="relative group">
-                      <img
-                        src={entry.previewUrl}
-                        alt={entry.name}
-                        className="h-20 w-full object-cover rounded-xl border-2 border-blue-300"
-                      />
-                      {idx === 0 && existingImages.filter((_, i) => keepExisting[i]).length === 0 && (
-                        <span className="absolute bottom-1 left-1 bg-blue-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                          Cover
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removeNewImage(idx)}
-                        className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-red-500 flex items-center justify-center text-white shadow hover:bg-red-600"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {totalImages === 0 && (
-              <div className="flex items-center gap-2 mt-2 text-[11px] text-slate-400">
-                <ImageIcon className="h-3.5 w-3.5" />
-                No photos selected yet
-              </div>
-            )}
+                    {t}
+                  </div>
+                )
+             })}
           </div>
 
-          {/* Actions */}
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={goBack}
-              className="px-4 py-2 text-sm bg-white border border-blue-200 rounded-full font-semibold text-blue-700 hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={uploading}
-              className="px-5 py-2 text-sm bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 disabled:opacity-60 flex items-center gap-2"
-            >
-              {uploading && <Loader className="h-4 w-4 animate-spin" />}
-              {uploading
-                ? editId ? "Updating..." : isWanted ? "Posting request..." : "Posting..."
-                : editId ? "Update listing"
-                : isWanted ? "Post request"
-                : "Post home"}
-            </button>
+          <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100 min-h-[400px] flex flex-col justify-between relative overflow-hidden">
+             
+             {/* Content Area */}
+             <div className="relative z-10">
+               {currentStep === 1 && (
+                 <Step1Basics form={form} handleChange={handleChange} />
+               )}
+               {currentStep === 2 && (
+                 <Step2Location form={form} handleChange={handleChange} />
+               )}
+               {currentStep === 3 && (
+                 <Step3Specs form={form} handleChange={handleChange} />
+               )}
+               {currentStep === 4 && (
+                 <Step4Media 
+                   form={form} addHighlight={addHighlight} removeHighlight={removeHighlight} setHighlight={setHighlight}
+                   mediaFiles={mediaFiles} existingImages={existingImages} keepExisting={keepExisting}
+                   uploadImages={uploadImages} removeNewImage={removeNewImage} toggleExistingImage={toggleExistingImage}
+                   fileRef={fileInputRef}
+                 />
+               )}
+             </div>
+             
+             {/* Footer Nav */}
+             <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between gap-4 relative z-10">
+               {currentStep > 1 ? (
+                 <button onClick={prevStep} className="px-6 py-3 rounded-full font-bold text-slate-600 border-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center gap-2">
+                   <ArrowLeft className="w-4 h-4" /> Back
+                 </button>
+               ) : <div />}
+               
+               {currentStep < 4 ? (
+                 <button onClick={nextStep} className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full flex items-center gap-2 shadow-md shadow-blue-500/20 transition-all transform active:scale-95">
+                   Next Step <ArrowRight className="w-4 h-4" />
+                 </button>
+               ) : (
+                 <button onClick={handleSubmit} disabled={submitting} className="px-10 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full font-bold shadow-lg shadow-blue-500/30 flex items-center gap-2 disabled:opacity-70 disabled:scale-100 transition-all transform active:scale-95">
+                   {submitting ? "Publishing..." : (editId ? "Update Listing" : "Go Live!")}
+                 </button>
+               )}
+             </div>
           </div>
-        </form>
+       </div>
+    </div>
+  )
+}
+
+function Step1Basics({ form, handleChange }) {
+  return (
+    <div className="space-y-6 animate-in fade-in duration-300">
+      <div>
+         <h2 className="text-2xl font-extrabold mb-1">The Basics</h2>
+         <p className="text-sm text-slate-500 font-medium">Let's start with the fundamental structure of your listing.</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+         <div>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Deal Type *</label>
+            <select value={form.type} onChange={handleChange("type")} className="w-full border-2 border-slate-200 outline-none p-3.5 rounded-xl font-bold focus:border-blue-500 text-slate-800 focus:bg-white bg-slate-50 transition-colors">
+               <option value="sale">For Sale (Sell)</option>
+               <option value="rent">For Rent</option>
+            </select>
+         </div>
+         <div>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Property Type *</label>
+            <select value={form.propertyType} onChange={handleChange("propertyType")} className="w-full border-2 border-slate-200 outline-none p-3.5 rounded-xl font-bold focus:border-blue-500 text-slate-800 focus:bg-white bg-slate-50 transition-colors">
+               <option value="house">House</option>
+               <option value="apartment">Apartment / Flat</option>
+               <option value="land">Land / Plot</option>
+               <option value="commercial">Commercial Space</option>
+               <option value="room">Room</option>
+            </select>
+         </div>
+      </div>
+
+      <div>
+         <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Custom Title (Optional)</label>
+         <input type="text" placeholder="Leave blank to auto-generate from specs (Recommended)" value={form.title} onChange={handleChange("title")} className="w-full border-2 border-slate-200 p-3.5 rounded-xl outline-none focus:border-blue-500 bg-slate-50 focus:bg-white font-medium transition-colors" />
+      </div>
+
+      <div>
+         <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-1">Description *</label>
+         <p className="text-xs text-slate-400 mb-2 font-medium">Highlight key selling points, neighborhood atmosphere, etc.</p>
+         <textarea rows="5" placeholder="Step into this beautifully maintained..." value={form.description} onChange={handleChange("description")} className="w-full border-2 border-slate-200 p-3.5 rounded-xl outline-none focus:border-blue-500 bg-slate-50 focus:bg-white leading-relaxed font-medium transition-colors resize-none" />
       </div>
     </div>
   );
 }
 
-/* Sub-components */
+function Step2Location({ form, handleChange }) {
+  const municipalities = MUNICIPALITIES[form.district] || [];
 
-function FormInput({ label, error, ...props }) {
   return (
-    <div>
-      <label className="block text-xs font-semibold text-slate-700 mb-1">
-        {label}
-      </label>
-      <input
-        className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 bg-slate-50 ${
-          error ? "border-red-400 bg-red-50" : "border-slate-200"
-        }`}
-        {...props}
-      />
-      {error && <FieldError msg={error} />}
+    <div className="space-y-6 animate-in fade-in duration-300">
+       <div>
+         <h2 className="text-2xl font-extrabold mb-1">Exact Location</h2>
+         <p className="text-sm text-slate-500 font-medium">Buyers filter heavily by location. Try to be as precise as possible.</p>
+       </div>
+       
+       <div className="grid md:grid-cols-2 gap-4">
+         <div>
+           <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">District *</label>
+           <select value={form.district} onChange={handleChange("district")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors font-bold text-slate-800">
+             <option value="">Select District</option>
+             {DISTRICTS_OF_NEPAL.map(d => <option key={d} value={d}>{d}</option>)}
+           </select>
+         </div>
+         <div>
+           <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Municipality / City *</label>
+           {municipalities.length > 0 ? (
+             <select value={form.municipality} onChange={handleChange("municipality")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors font-bold text-slate-800">
+               <option value="">Select City</option>
+               {municipalities.map(m => <option key={m} value={m}>{m}</option>)}
+             </select>
+           ) : (
+             <input type="text" placeholder="Type city name" value={form.municipality} onChange={handleChange("municipality")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors font-medium" />
+           )}
+         </div>
+       </div>
+
+       <div className="grid grid-cols-3 gap-4">
+         <div className="col-span-1">
+           <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Ward No</label>
+           <input type="number" min="1" max="35" placeholder="Eg. 10" value={form.wardNo} onChange={handleChange("wardNo")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors font-medium text-center" />
+         </div>
+         <div className="col-span-2">
+           <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Locality / Tole *</label>
+           <input type="text" placeholder="Eg. Shantinagar, Shrijana Chowk" value={form.locality} onChange={handleChange("locality")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors font-medium" />
+         </div>
+       </div>
+
+       <div className="bg-slate-50 p-5 mt-2 border border-slate-100 rounded-xl space-y-2">
+         <label className="text-sm font-bold flex items-center gap-2 text-slate-700">
+           <span className="bg-blue-100/50 p-1.5 rounded-lg"><MapPin className="w-4 h-4 text-blue-600" /></span> 
+           Google Maps URL (Optional but recommended)
+         </label>
+         <p className="text-xs text-slate-500 font-medium mb-3">Paste a link, and we'll extract the exact coordinates to show a map.</p>
+         <input type="url" placeholder="https://www.google.com/maps/place/..." value={form.mapsUrl} onChange={handleChange("mapsUrl")} className="w-full border-2 border-slate-300 focus:border-blue-400 p-3 rounded-lg text-sm outline-none bg-white font-mono shadow-sm transition-colors" />
+       </div>
     </div>
   );
 }
 
-function FieldError({ msg }) {
+function Step3Specs({ form, handleChange }) {
+  const isLand = form.propertyType === "land";
+
   return (
-    <p className="flex items-center gap-1 text-[11px] text-red-500 mt-1">
-      <AlertCircle className="h-3 w-3 shrink-0" />
-      {msg}
-    </p>
+    <div className="space-y-6 animate-in fade-in duration-300">
+       <div>
+         <h2 className="text-2xl font-extrabold mb-1">Property Specifications</h2>
+         <p className="text-sm text-slate-500 font-medium">Accurate details help match you with serious buyers.</p>
+       </div>
+       
+       <div className="bg-blue-50/70 border border-blue-100 p-6 rounded-2xl relative overflow-hidden">
+         <label className="text-xs uppercase tracking-widest text-blue-600 font-black block mb-2">{form.type === 'rent' ? 'Monthly Rent (Rs.) *' : 'Total Price (Rs.) *'}</label>
+         <div className="relative z-10">
+           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-black text-xl">Rs.</span>
+           <input type="number" min="0" placeholder="e.g. 5000000" value={form.price} onChange={handleChange("price")} className="w-full border-2 border-transparent outline-none focus:border-blue-400 p-4 pl-14 rounded-xl text-2xl font-black text-slate-800 bg-white shadow-sm transition-colors" />
+         </div>
+       </div>
+
+       <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
+         {!isLand && (
+           <>
+             <div>
+               <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Bedrooms</label>
+               <input type="number" min="0" placeholder="0" value={form.bedrooms} onChange={handleChange("bedrooms")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl bg-slate-50 focus:border-blue-400 focus:bg-white transition-colors text-lg font-bold text-center" />
+             </div>
+             <div>
+               <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Bathrooms</label>
+               <input type="number" min="0" placeholder="0" value={form.bathrooms} onChange={handleChange("bathrooms")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl bg-slate-50 focus:border-blue-400 focus:bg-white transition-colors text-lg font-bold text-center" />
+             </div>
+             <div>
+               <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Built Area (SqFt)</label>
+               <input type="number" min="0" placeholder="e.g. 1500" value={form.builtUpAreaSqFt} onChange={handleChange("builtUpAreaSqFt")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl bg-slate-50 focus:border-blue-400 focus:bg-white transition-colors font-bold" />
+             </div>
+           </>
+         )}
+         
+         <div>
+           <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Land Area (Aana/Dhur)</label>
+           <input type="number" step="0.1" min="0" placeholder="e.g. 4.5" value={form.landAreaAana} onChange={handleChange("landAreaAana")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl bg-slate-50 focus:border-blue-400 focus:bg-white transition-colors font-bold" />
+         </div>
+         <div>
+           <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Road Access (Feet)</label>
+           <input type="number" min="0" placeholder="e.g. 13" value={form.roadAccessFeet} onChange={handleChange("roadAccessFeet")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl bg-slate-50 focus:border-blue-400 focus:bg-white transition-colors font-bold" />
+         </div>
+         <div>
+           <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Facing</label>
+           <select value={form.facing} onChange={handleChange("facing")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl bg-slate-50 focus:border-blue-400 focus:bg-white transition-colors font-bold text-slate-700">
+             <option value="">Any / Unsure</option>
+             {FACING_DIRECTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+           </select>
+         </div>
+       </div>
+
+       <div className="pt-2 grid grid-cols-2 gap-3 text-sm mt-4">
+         {!isLand && (
+           <label className="flex items-center gap-3 p-4 border-2 border-slate-100 rounded-xl cursor-pointer hover:border-slate-300 hover:bg-slate-50 transition-all font-semibold">
+             <input type="checkbox" checked={form.furnishing} onChange={handleChange("furnishing")} className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500" />
+             <span>Fully Furnished</span>
+           </label>
+         )}
+         <label className="flex items-center gap-3 p-4 border-2 border-slate-100 rounded-xl cursor-pointer hover:border-slate-300 hover:bg-slate-50 transition-all font-semibold">
+           <input type="checkbox" checked={form.parking} onChange={handleChange("parking")} className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500" />
+           <span>Parking Area</span>
+         </label>
+         <label className="flex items-center gap-3 p-4 border-2 border-slate-100 rounded-xl cursor-pointer hover:border-slate-300 hover:bg-slate-50 transition-all font-semibold">
+           <input type="checkbox" checked={form.internet} onChange={handleChange("internet")} className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500" />
+           <span>Internet Access</span>
+         </label>
+         <label className="flex items-center gap-3 p-4 border-2 border-slate-100 rounded-xl cursor-pointer hover:border-slate-300 hover:bg-slate-50 transition-all font-semibold">
+           <input type="checkbox" checked={form.petsAllowed} onChange={handleChange("petsAllowed")} className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500" />
+           <span>Pets Allowed</span>
+         </label>
+       </div>
+    </div>
+  );
+}
+
+function Step4Media({ form, setHighlight, addHighlight, removeHighlight, mediaFiles, existingImages, keepExisting, uploadImages, removeNewImage, toggleExistingImage, fileRef }) {
+  return (
+    <div className="space-y-8 animate-in fade-in duration-300">
+       <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 sm:p-7 border border-amber-200/60 rounded-3xl relative overflow-hidden">
+         <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-amber-400 rounded-full blur-3xl opacity-20 pointer-events-none" />
+         <h2 className="text-xl font-extrabold mb-1 text-amber-900 relative z-10">Selling Highlights</h2>
+         <p className="text-xs font-semibold text-amber-700/80 mb-5 max-w-sm relative z-10">Add up to 5 punchy bullet points to instantly grab attention.</p>
+         
+         <div className="space-y-3 relative z-10">
+           {form.highlights.map((h, i) => (
+              <div key={i} className="flex gap-2 items-center group">
+                 <div className="w-2 h-2 bg-amber-500 rounded-full shrink-0 shadow-sm" />
+                 <input type="text" value={h} onChange={e => setHighlight(i, e.target.value)} placeholder="e.g. 5 mins walk to Ring Road" className="flex-1 border-b-2 border-amber-200 focus:border-amber-500 p-2 text-sm outline-none bg-transparent transition-colors font-bold text-amber-950 placeholder:text-amber-900/40" />
+                 <button onClick={() => removeHighlight(i)} className="text-amber-300 hover:text-red-500 p-2 transition-colors duration-200"><Trash className="w-4 h-4" /></button>
+              </div>
+           ))}
+           {form.highlights.length < 5 && (
+             <button onClick={addHighlight} className="flex items-center gap-1.5 text-xs text-amber-700 font-bold px-3 py-2 bg-white/60 hover:bg-white rounded-lg shadow-sm transition-colors mt-3">
+               <Plus className="w-4 h-4 text-amber-500" /> Add Another
+             </button>
+           )}
+         </div>
+       </div>
+
+       <div className="pt-2">
+         <div className="flex justify-between items-end mb-4 px-1">
+            <div>
+               <h2 className="text-xl font-extrabold mb-1">Upload Photos</h2>
+               <p className="text-sm font-medium text-slate-500">The first photo will be the main cover image.</p>
+            </div>
+            <span className="text-xs font-black text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">{mediaFiles.length + existingImages.filter((_, i) => keepExisting[i]).length} / 10 Max</span>
+         </div>
+         
+         {mediaFiles.length + existingImages.filter((_, i) => keepExisting[i]).length < 10 && (
+           <label className="border-2 border-dashed border-blue-300 bg-blue-50/50 hover:bg-blue-100/60 rounded-3xl flex flex-col items-center justify-center py-10 px-4 cursor-pointer transition-colors outline-none focus-within:ring-4 focus-within:ring-blue-100 group">
+              <div className="p-4 bg-white rounded-full shadow-sm mb-4 group-hover:scale-110 transition-transform">
+                 <UploadCloud className="w-7 h-7 text-blue-600" />
+              </div>
+              <span className="text-sm font-extrabold text-blue-700 block bg-white px-5 py-2 rounded-full border border-blue-100">Click to Select Photos</span>
+              <span className="text-xs font-semibold text-slate-400 mt-3">JPG, PNG, WEBP allowed (Max 5MB each)</span>
+              <input type="file" multiple accept="image/*" className="hidden" ref={fileRef} onChange={uploadImages} />
+           </label>
+         )}
+
+         {(mediaFiles.length > 0 || existingImages.length > 0) && (
+           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 mt-6">
+              {existingImages.map((src, i) => (
+                 <div key={'old-'+i} className="relative aspect-[4/3] group rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white">
+                    <img src={src} className={`w-full h-full object-cover transition-all duration-300 ${keepExisting[i] ? 'opacity-100' : 'opacity-20 grayscale'}`} alt="" />
+                    <button onClick={() => toggleExistingImage(i)} className={`absolute top-2 right-2 p-1.5 shadow-md rounded-full text-white transition-transform hover:scale-110 z-10 ${keepExisting[i] ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}>
+                       {keepExisting[i] ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                    </button>
+                    {i === 0 && keepExisting[i] && <span className="absolute bottom-2 left-2 bg-slate-900/80 text-white text-[10px] font-black px-2 py-0.5 rounded backdrop-blur-sm shadow-sm">COVER</span>}
+                 </div>
+              ))}
+              {mediaFiles.map((m, i) => (
+                 <div key={'new-'+i} className="relative aspect-[4/3] group rounded-xl overflow-hidden shadow-sm border-2 border-blue-400 bg-white">
+                    <img src={m.previewUrl} className="w-full h-full object-cover" alt="" />
+                    <button onClick={() => removeNewImage(i)} className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 shadow-md text-white p-1.5 rounded-full transition-transform hover:scale-110 z-10"><X className="w-3.5 h-3.5" /></button>
+                    {i === 0 && existingImages.filter((_, id) => keepExisting[id]).length === 0 && <span className="absolute bottom-2 left-2 bg-blue-600/90 text-white text-[10px] font-black px-2 py-0.5 rounded backdrop-blur-sm shadow-sm opacity-100">COVER</span>}
+                 </div>
+              ))}
+           </div>
+         )}
+       </div>
+    </div>
   );
 }
