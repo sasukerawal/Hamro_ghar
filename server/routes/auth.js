@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
   port: process.env.SMTP_PORT || 587,
   secure: false, // TLS requires false for port 587
   auth: {
-    user: process.env.EMAIL_USER,
+    user: process.env.SMTP_USER || process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
 });
@@ -373,7 +373,11 @@ router.post('/reset-password', async (req, res) => {
 // Call this on app load / periodically so users aren't logged out mid-session.
 router.post('/refresh', async (req, res) => {
   try {
-    const token = req.cookies?.token;
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.startsWith('Bearer ') 
+      ? authHeader.split(' ')[1] 
+      : req.cookies?.token;
+
     if (!token) return res.status(401).json({ error: 'No token' });
 
     const payload = jwt.verify(token, process.env.JWT_SECRET);
@@ -384,10 +388,11 @@ router.post('/refresh', async (req, res) => {
     }
 
     // Issue a fresh 7-day token
-    issueCookie(res, user);
+    const newToken = generateToken(user);
 
     return res.json({
       ok: true,
+      token: newToken,
       user: {
         id: user._id,
         name: user.name,
