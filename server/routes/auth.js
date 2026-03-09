@@ -11,11 +11,16 @@ const router = express.Router();
 // Use environment variables for security.
 // For Gmail, use an App Password if 2FA is enabled.
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // Use implicitly TLS on port 465
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  // Add debug flags so the logs tell us exactly what's failing in Render
+  debug: true,
+  logger: true 
 });
 
 // Verify transporter on boot
