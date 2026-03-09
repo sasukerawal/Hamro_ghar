@@ -8,19 +8,16 @@ import User from '../models/User.js';
 const router = express.Router();
 
 // --- Email Transporter Setup ---
-// Use environment variables for security.
-// For Gmail, use an App Password if 2FA is enabled.
+// Render blocks SMTP connections to Google on its free tier (ENETUNREACH).
+// We must use a transactional provider like Brevo (Sendinblue), SendGrid, or Resend.
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // Use implicitly TLS on port 465
+  host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+  port: process.env.SMTP_PORT || 587,
+  secure: false, // TLS requires false for port 587
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  // Add debug flags so the logs tell us exactly what's failing in Render
-  debug: true,
-  logger: true 
 });
 
 // Verify transporter on boot
