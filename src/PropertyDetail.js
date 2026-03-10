@@ -4,9 +4,8 @@ import { apiFetch } from "./api";
 import { Helmet } from "react-helmet";
 import {
   MapPin, Heart, Share2, ChevronLeft, Loader, Phone, CheckCircle2,
-  AlertTriangle, Home, Ruler, Compass, Layers, Droplets, Wifi, Car, Bike, Grid, Maximize2
+  AlertTriangle, Home, Ruler, Compass, Layers, Droplets, Wifi, Car, Bike, Grid, Maximize2, Tag, Building
 } from "lucide-react";
-import { toast } from "react-toastify";
 import { useMeasurement } from "./contexts/MeasurementContext";
 
 const MetricBox = ({ label, value, icon }) => {
@@ -77,7 +76,9 @@ export default function PropertyDetail() {
   const amenities = home.amenities || [];
   
   const locationDisplay = [
+    home.location?.roadName,
     home.location?.tole, 
+    home.location?.nearestChowk ? `Near ${home.location.nearestChowk}` : '',
     home.location?.ward ? `Ward ${home.location.ward}` : '',
     home.location?.municipality || home.city,
     home.location?.district
@@ -201,6 +202,10 @@ export default function PropertyDetail() {
                  {specs.builtUpAreaSqFt && <DetailRow label="Built Up Area" value={`${specs.builtUpAreaSqFt} Sq.Ft`} icon={Ruler} />}
                  {(isApt || home.propertyType === 'room') && specs.floorNumber && <DetailRow label="Floor Level" value={specs.floorNumber} icon={Layers} />}
                  
+                 {/* Room specifics if available */}
+                 {specs.attachedBathrooms > 0 && <DetailRow label="Attached Baths" value={specs.attachedBathrooms} icon={Tag} />}
+                 {specs.commonBathrooms > 0 && <DetailRow label="Common Baths" value={specs.commonBathrooms} icon={Tag} />}
+                 
                  {/* Parking Sub-section */}
                  {(specs.parking > 0 || fac.carParking > 0 || fac.bikeParking > 0 || home.parkingFeature) && (
                    <>
@@ -220,6 +225,9 @@ export default function PropertyDetail() {
                    {specs.water?.source && <DetailRow label="Water Source" value={specs.water.source} />}
                    {specs.water?.drinkingWater && <DetailRow label="Drinking Water" value="Available" />}
                    {specs.water?.hotWater && <DetailRow label="Hot Water" value="Available" />}
+                   {specs.water?.waterSupply247 && <DetailRow label="24/7 Water Supply" value="Yes" />}
+                   {specs.water?.waterTank && <DetailRow label="Reserve Tank" value="Installed" />}
+                   {specs.electricity && <DetailRow label="Electricity" value="Grid Connected" />}
                    <DetailRow label="Internet / WiFi" value={(specs.wifi?.available || home.internet) ? "Available" : "No"} icon={Wifi} />
                    {specs.wifi?.provider && <DetailRow label="ISP" value={specs.wifi.provider} />}
                 </div>

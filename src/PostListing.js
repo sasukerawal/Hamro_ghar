@@ -14,11 +14,11 @@ const ROAD_TYPES = ["Pitched", "Gravel", "Soil", "Alley", "None", "Blacktopped"]
 
 export const AMENITIES_LIST = [
   "Air Conditioning", "Backup Inverter / Generator", "Balcony", "Bike Parking",
-  "CCTV", "Cafeteria", "Car Parking", "Community Hall", "Drainage",
+  "CCTV", "Cable TV", "Cafeteria", "Car Parking", "Community Hall", "Drainage",
   "Drinking Water", "Electricity Backup", "Fire Place", "Garbage Collection",
   "Garden", "Gym", "Hot Water", "Internet / WiFi", "Kids Playground",
-  "Lift", "Maintenance", "Modular Kitchen", "Parking", "Pets Allowed",
-  "Public Transport", "Regular Water Supply", "Security Staff", "Solar",
+  "Lift", "Maintenance", "Microwave", "Modular Kitchen", "Parking", "Pets Allowed",
+  "Public Transport", "Reception", "Regular Water Supply", "Security Staff", "Solar",
   "Solar Water", "Store Room", "Swimming Pool", "Terrace", "Visitor Parking",
   "Washing Machine", "Water Well"
 ];
@@ -45,11 +45,15 @@ export default function PostListing() {
     wardNo: "",
     tole: "",
     nearestLandmark: "",
+    nearestChowk: "",
+    roadName: "",
     mapsUrl: "",
     
     // Specs
     bedrooms: "",
     bathrooms: "",
+    attachedBathrooms: "",
+    commonBathrooms: "",
     builtUpAreaSqFt: "",
     ropani: "",
     aana: "",
@@ -76,6 +80,10 @@ export default function PostListing() {
     waterSource: "",
     hotWater: false,
     drinkingWater: false,
+    waterSupply247: false,
+    waterTank: false,
+    
+    electricity: false,
 
     wifiAvailable: false,
     wifiProvider: "",
@@ -115,10 +123,14 @@ export default function PostListing() {
             wardNo: l.location?.ward || l.location?.wardNo || "",
             tole: l.location?.tole || l.location?.locality || l.address || "",
             nearestLandmark: l.location?.nearestLandmark || "",
+            nearestChowk: l.location?.nearestChowk || "",
+            roadName: l.location?.roadName || "",
             mapsUrl: l.mapsUrl || "",
             
             bedrooms: l.specs?.bedrooms ?? l.beds ?? "",
             bathrooms: l.specs?.bathrooms ?? l.baths ?? "",
+            attachedBathrooms: l.specs?.attachedBathrooms ?? "",
+            commonBathrooms: l.specs?.commonBathrooms ?? "",
             builtUpAreaSqFt: l.specs?.builtUpAreaSqFt ?? l.sqft ?? "",
             ropani: l.specs?.landArea?.ropani ?? "",
             aana: l.specs?.landArea?.aana ?? l.specs?.landAreaAana ?? "",
@@ -144,6 +156,10 @@ export default function PostListing() {
             waterSource: l.specs?.water?.source || "",
             hotWater: !!l.specs?.water?.hotWater,
             drinkingWater: !!l.specs?.water?.drinkingWater,
+            waterSupply247: !!l.specs?.water?.waterSupply247,
+            waterTank: !!l.specs?.water?.waterTank,
+            
+            electricity: !!l.specs?.electricity,
 
             wifiAvailable: !!l.specs?.wifi?.available || !!l.internet,
             wifiProvider: l.specs?.wifi?.provider || "",
@@ -281,12 +297,16 @@ export default function PostListing() {
         municipality: form.municipality,
         ward: form.wardNo ? Number(form.wardNo) : undefined,
         tole: form.tole,
-        nearestLandmark: form.nearestLandmark
+        nearestLandmark: form.nearestLandmark,
+        nearestChowk: form.nearestChowk,
+        roadName: form.roadName
       });
 
       const specsJSON = JSON.stringify({
         bedrooms: form.bedrooms ? Number(form.bedrooms) : undefined,
         bathrooms: form.bathrooms ? Number(form.bathrooms) : undefined,
+        attachedBathrooms: form.attachedBathrooms ? Number(form.attachedBathrooms) : undefined,
+        commonBathrooms: form.commonBathrooms ? Number(form.commonBathrooms) : undefined,
         kitchen: form.kitchen ? Number(form.kitchen) : undefined,
         diningRoom: form.diningRoom ? Number(form.diningRoom) : undefined,
         livingRoom: form.livingRoom ? Number(form.livingRoom) : undefined,
@@ -314,8 +334,11 @@ export default function PostListing() {
           available: form.waterAvailable,
           source: form.waterSource || undefined,
           hotWater: form.hotWater,
-          drinkingWater: form.drinkingWater
+          drinkingWater: form.drinkingWater,
+          waterSupply247: form.waterSupply247,
+          waterTank: form.waterTank
         },
+        electricity: form.electricity,
         wifi: {
           available: form.wifiAvailable,
           provider: form.wifiProvider || undefined
@@ -477,9 +500,19 @@ export default function PostListing() {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Tole / Chowk *</label>
-                      <input type="text" placeholder="e.g. Shantinagar, Shrijana Chowk" value={form.tole} onChange={handleChange("tole")} className="w-full border-2 border-slate-200 p-4 outline-none rounded-xl focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors font-bold text-lg" />
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Tole / Area *</label>
+                        <input type="text" placeholder="e.g. Shantinagar" value={form.tole} onChange={handleChange("tole")} className="w-full border-2 border-slate-200 p-4 outline-none rounded-xl focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors font-bold text-lg" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Nearest Chowk</label>
+                        <input type="text" placeholder="e.g. Shrijana Chowk" value={form.nearestChowk} onChange={handleChange("nearestChowk")} className="w-full border-2 border-slate-200 p-4 outline-none rounded-xl focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors font-bold text-lg" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Road Name</label>
+                        <input type="text" placeholder="e.g. Madan Bhandari Path" value={form.roadName} onChange={handleChange("roadName")} className="w-full border-2 border-slate-200 p-4 outline-none rounded-xl focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors font-bold text-lg" />
+                      </div>
                     </div>
 
                     <div className="bg-slate-50 p-5 mt-2 border border-slate-200 rounded-xl space-y-2">
@@ -541,20 +574,28 @@ export default function PostListing() {
 
                     {!isLand && (
                       <>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                           <div>
+                        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                           <div className="col-span-2 md:col-span-1">
                               <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Bedrooms</label>
                               <input type="number" min="0" placeholder="0" value={form.bedrooms} onChange={handleChange("bedrooms")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold text-lg" />
                            </div>
-                           <div>
-                              <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Bathrooms</label>
+                           <div className="col-span-2 md:col-span-1">
+                              <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Total Baths</label>
                               <input type="number" min="0" placeholder="0" value={form.bathrooms} onChange={handleChange("bathrooms")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold text-lg" />
                            </div>
-                           <div>
+                           <div className="col-span-1">
+                              <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Attached</label>
+                              <input type="number" min="0" placeholder="0" value={form.attachedBathrooms} onChange={handleChange("attachedBathrooms")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
+                           </div>
+                           <div className="col-span-1">
+                              <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Common</label>
+                              <input type="number" min="0" placeholder="0" value={form.commonBathrooms} onChange={handleChange("commonBathrooms")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
+                           </div>
+                           <div className="col-span-1">
                               <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Kitchens</label>
                               <input type="number" min="0" placeholder="0" value={form.kitchen} onChange={handleChange("kitchen")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
                            </div>
-                           <div>
+                           <div className="col-span-1">
                               <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Living Rooms</label>
                               <input type="number" min="0" placeholder="0" value={form.livingRoom} onChange={handleChange("livingRoom")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
                            </div>
@@ -614,15 +655,29 @@ export default function PostListing() {
                                    <span className="font-semibold text-slate-700 text-sm">Water Available</span>
                                  </label>
                                  {form.waterAvailable && (
-                                   <select value={form.waterSource} onChange={handleChange("waterSource")} className="w-full border-2 border-slate-200 p-2 text-sm outline-none rounded-lg bg-slate-50 focus:border-blue-400 font-medium">
-                                      <option value="">Water Source?</option>
-                                      <option value="Government">Government (Melamchi, etc.)</option>
-                                      <option value="Boring">Boring / Deep Tube Well</option>
-                                      <option value="Tanker">Tanker Required</option>
-                                      <option value="Well">Well</option>
-                                      <option value="Mixed">Mixed</option>
-                                   </select>
+                                   <div className="pl-8 space-y-3">
+                                      <select value={form.waterSource} onChange={handleChange("waterSource")} className="w-full border-2 border-slate-200 p-2 text-sm outline-none rounded-lg bg-slate-50 focus:border-blue-400 font-medium">
+                                         <option value="">Water Source?</option>
+                                         <option value="Government">Government (Melamchi, etc.)</option>
+                                         <option value="Boring">Boring / Deep Tube Well</option>
+                                         <option value="Tanker">Tanker Required</option>
+                                         <option value="Well">Well</option>
+                                         <option value="Mixed">Mixed</option>
+                                      </select>
+                                      <label className="flex items-center gap-3 cursor-pointer">
+                                        <input type="checkbox" checked={form.waterSupply247} onChange={handleChange("waterSupply247")} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                                        <span className="font-medium text-slate-600 text-xs">24/7 Water Supply</span>
+                                      </label>
+                                      <label className="flex items-center gap-3 cursor-pointer">
+                                        <input type="checkbox" checked={form.waterTank} onChange={handleChange("waterTank")} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                                        <span className="font-medium text-slate-600 text-xs">Reserve Tank Built</span>
+                                      </label>
+                                   </div>
                                  )}
+                                 <label className="flex items-center gap-3 cursor-pointer mt-3">
+                                   <input type="checkbox" checked={form.electricity} onChange={handleChange("electricity")} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                                   <span className="font-semibold text-slate-700 text-sm">Electricity Connected</span>
+                                 </label>
                                  <label className="flex items-center gap-3 cursor-pointer">
                                    <input type="checkbox" checked={form.wifiAvailable} onChange={handleChange("wifiAvailable")} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
                                    <span className="font-semibold text-slate-700 text-sm">Internet / WiFi Available</span>

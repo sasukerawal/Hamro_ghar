@@ -49,6 +49,8 @@ const listingSchema = new mongoose.Schema(
       ward: { type: Number, min: 1 },
       tole: { type: String, trim: true }, // e.g., "Baluwatar", "Thamel"
       nearestLandmark: { type: String, trim: true },
+      nearestChowk: { type: String, trim: true },
+      roadName: { type: String, trim: true },
       // GeoJSON location for map + "near me"
       type: {
         type: String,
@@ -110,6 +112,8 @@ const listingSchema = new mongoose.Schema(
       builtUpAreaSqFt: { type: Number },
       bedrooms: { type: Number, min: 0 },
       bathrooms: { type: Number, min: 0 },
+      attachedBathrooms: { type: Number, min: 0 },
+      commonBathrooms: { type: Number, min: 0 },
       livingRoom: { type: Number, min: 0 },
       kitchen: { type: Number, min: 0 },
       diningRoom: { type: Number, min: 0 },
@@ -126,7 +130,10 @@ const listingSchema = new mongoose.Schema(
         source: { type: String, enum: ['Government', 'Boring', 'Tanker', 'Well', 'Mixed', ''] },
         hotWater: { type: Boolean, default: false },
         drinkingWater: { type: Boolean, default: false },
+        waterSupply247: { type: Boolean, default: false },
+        waterTank: { type: Boolean, default: false },
       },
+      electricity: { type: Boolean, default: false },
       wifi: {
         available: { type: Boolean, default: false },
         provider: { type: String, trim: true }
