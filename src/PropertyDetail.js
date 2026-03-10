@@ -226,9 +226,24 @@ export default function PropertyDetail() {
               </section>
             )}
 
+            {/* Nearby Facilities */}
+            {Array.isArray(home.nearby) && home.nearby.length > 0 && (
+              <section className="mt-10">
+                <h2 className="text-2xl font-extrabold text-slate-900 mb-6">Facilities</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-y-4 gap-x-6 bg-slate-100/50 p-6 rounded-3xl border border-slate-200">
+                  {home.nearby.map((n, i) => n.facility && n.distance ? (
+                    <div key={i} className="flex flex-col border-b sm:border-b-0 border-slate-200/60 pb-2 sm:pb-0">
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-tight">{n.facility}</span>
+                      <span className="text-sm font-extrabold text-slate-800">{n.distance}</span>
+                    </div>
+                  ) : null)}
+                </div>
+              </section>
+            )}
+
             {/* Amenities Grid */}
             {amenities.length > 0 && (
-              <section>
+              <section className="mt-10">
                 <h2 className="text-2xl font-extrabold text-slate-900 mb-6">Amenities</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-2">
                   {amenities.map(a => (

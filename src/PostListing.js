@@ -87,7 +87,8 @@ export default function PostListing() {
     videoUrl: "",
     
     // Facilities & Amenities
-    amenities: []
+    amenities: [],
+    nearby: []
   });
   
   const [mediaFiles, setMediaFiles] = useState([]);
@@ -152,7 +153,8 @@ export default function PostListing() {
             highlights: l.highlights?.length ? l.highlights : [""],
             videoUrl: l.videoUrl ?? "",
             
-            amenities: l.amenities || []
+            amenities: l.amenities || [],
+            nearby: Array.isArray(l.nearby) ? l.nearby : []
           });
           const imgs = l.images || [];
           setExistingImages(imgs);
@@ -328,6 +330,7 @@ export default function PostListing() {
       fd.append("location", locationJSON);
       fd.append("specs", specsJSON);
       fd.append("amenities", JSON.stringify(form.amenities));
+      fd.append("nearby", JSON.stringify(form.nearby));
       fd.append("mapsUrl", form.mapsUrl.trim());
       fd.append("videoUrl", form.videoUrl.trim());
       fd.append("highlights", JSON.stringify(form.highlights.filter(h => h.trim())));
@@ -633,7 +636,7 @@ export default function PostListing() {
                )}
 
                {currentStep === 4 && (
-                 <div className="space-y-6 animate-in fade-in duration-300">
+                 <div className="space-y-8 animate-in fade-in duration-300">
                     <div>
                       <h2 className="text-2xl font-extrabold mb-1">Amenities & Facilities</h2>
                       <p className="text-sm text-slate-500 font-medium">Select all the extra features your property provides.</p>
@@ -655,6 +658,55 @@ export default function PostListing() {
                             </button>
                           );
                        })}
+                    </div>
+                    
+                    <hr className="border-slate-100 border-t-2" />
+                    
+                    <div>
+                      <h3 className="text-lg font-extrabold text-slate-800 mb-1">Nearby Landmarks & Distances</h3>
+                      <p className="text-sm text-slate-500 font-medium mb-4">Add the distance to important places (e.g. Ring Road: 300m, Hospital: 100m).</p>
+                      
+                      <div className="space-y-3">
+                        {form.nearby.map((item, idx) => (
+                           <div key={idx} className="flex items-center gap-3">
+                              <input 
+                                type="text"
+                                placeholder="Facility (e.g. Hospital)"
+                                value={item.facility}
+                                onChange={(e) => {
+                                   const next = [...form.nearby];
+                                   next[idx].facility = e.target.value;
+                                   setForm(p => ({ ...p, nearby: next }));
+                                }}
+                                className="w-1/2 border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-sm font-bold focus:border-blue-400 outline-none"
+                              />
+                              <input 
+                                type="text"
+                                placeholder="Distance (e.g. 100m)"
+                                value={item.distance}
+                                onChange={(e) => {
+                                   const next = [...form.nearby];
+                                   next[idx].distance = e.target.value;
+                                   setForm(p => ({ ...p, nearby: next }));
+                                }}
+                                className="w-1/3 border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-sm font-bold focus:border-blue-400 outline-none"
+                              />
+                              <button 
+                                onClick={() => setForm(p => ({ ...p, nearby: p.nearby.filter((_, i) => i !== idx) }))}
+                                className="p-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl transition-colors"
+                              >
+                                <Trash className="w-5 h-5" />
+                              </button>
+                           </div>
+                        ))}
+                        
+                        <button 
+                          onClick={() => setForm(p => ({ ...p, nearby: [...(p.nearby||[]), { facility: "", distance: "" }] }))}
+                          className="flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-4 py-2.5 rounded-xl transition-colors border-2 border-dashed border-blue-200 hover:border-blue-300"
+                        >
+                          <Plus className="w-4 h-4" /> Add Nearby Landmark
+                        </button>
+                      </div>
                     </div>
                  </div>
                )}

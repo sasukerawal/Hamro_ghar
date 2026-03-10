@@ -145,6 +145,10 @@ const listingSchema = new mongoose.Schema(
     petsAllowed: { type: Boolean, default: false },
     // New Detailed Facilities & Amenities
     amenities: [{ type: String }],
+    nearby: [{ 
+      facility: { type: String },
+      distance: { type: String }
+    }],
     facilities: {
       bikeParking: { type: Number, default: 0 },
       carParking: { type: Number, default: 0 },

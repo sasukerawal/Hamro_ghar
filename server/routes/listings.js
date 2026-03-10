@@ -161,6 +161,7 @@ router.post("/create", requireAuth, (req, res) => {
         specs: specsRaw,
         facilities: facilitiesRaw,
         amenities: amenitiesRaw,
+        nearby: nearbyRaw,
         highlights: highlightsRaw,
         video,
         videoUrl,
@@ -183,6 +184,7 @@ router.post("/create", requireAuth, (req, res) => {
       let specs = {};
       let facilities = {};
       let amenities = [];
+      let nearby = [];
       let highlights = [];
 
       try {
@@ -190,9 +192,10 @@ router.post("/create", requireAuth, (req, res) => {
         if (specsRaw) specs = JSON.parse(specsRaw);
         if (facilitiesRaw) facilities = JSON.parse(facilitiesRaw);
         if (amenitiesRaw) amenities = JSON.parse(amenitiesRaw);
+        if (nearbyRaw) nearby = JSON.parse(nearbyRaw);
         if (highlightsRaw) highlights = JSON.parse(highlightsRaw);
       } catch (err) {
-        return res.status(400).json({ error: "Invalid JSON format for location, specs, facilities, amenities, or highlights" });
+        return res.status(400).json({ error: "Invalid JSON format for location, specs, facilities, amenities, nearby, or highlights" });
       }
 
       // Legacy fallback mapping
@@ -248,6 +251,10 @@ router.post("/create", requireAuth, (req, res) => {
         specs,
         facilities,
         amenities: Array.isArray(amenities) ? amenities.map(a => sanitize(a)) : [],
+        nearby: Array.isArray(nearby) ? nearby.map(n => ({
+          facility: sanitize(n.facility),
+          distance: sanitize(n.distance)
+        })) : [],
         highlights: Array.isArray(highlights) ? highlights.map(h => sanitize(h)) : [],
         images: uploadedImages,
         video: video || "",
@@ -316,6 +323,7 @@ router.put(
         specs: specsRaw,
         facilities: facilitiesRaw,
         amenities: amenitiesRaw,
+        nearby: nearbyRaw,
         highlights: highlightsRaw,
         video,
         videoUrl,
@@ -341,6 +349,7 @@ router.put(
       let newSpecs = listing.specs || {};
       let newFacilities = listing.facilities || {};
       let newAmenities = listing.amenities || [];
+      let newNearby = listing.nearby || [];
       let locationChanged = false;
 
       try {
@@ -351,6 +360,10 @@ router.put(
         if (specsRaw) newSpecs = { ...newSpecs, ...JSON.parse(specsRaw) };
         if (facilitiesRaw) newFacilities = { ...newFacilities, ...JSON.parse(facilitiesRaw) };
         if (amenitiesRaw) newAmenities = JSON.parse(amenitiesRaw).map(a => sanitize(a));
+        if (nearbyRaw) newNearby = JSON.parse(nearbyRaw).map(n => ({
+          facility: sanitize(n.facility),
+          distance: sanitize(n.distance)
+        }));
         if (highlightsRaw) listing.highlights = JSON.parse(highlightsRaw).map(h => sanitize(h));
       } catch (err) { }
 
@@ -401,6 +414,7 @@ router.put(
       listing.specs = newSpecs;
       listing.facilities = newFacilities;
       listing.amenities = newAmenities;
+      listing.nearby = newNearby;
 
       // Append new images
       if (req.files && req.files.length > 0) {

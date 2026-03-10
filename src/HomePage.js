@@ -1114,25 +1114,32 @@ const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved, isVirtualized })
         >
           <Heart className="h-4 w-4" fill={isSaved ? "currentColor" : "none"} />
         </button>
-        <div className="absolute left-3 bottom-3 flex items-center gap-2">
-           <span className="rounded-full bg-blue-600/90 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm shadow-sm border-blue-500/50">
+        <div className="absolute left-3 bottom-3 flex items-center gap-2 z-20">
+           <span className="rounded-full bg-blue-600/90 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm shadow-sm border border-blue-500/50">
              {formatPrice(home.price)}
            </span>
-           <span className="rounded-full bg-slate-900/80 px-2 py-1 text-[9px] font-semibold text-white backdrop-blur-sm uppercase tracking-wider">
+           <span className="rounded-full bg-slate-900/80 px-2 py-1 text-[9px] font-semibold text-white backdrop-blur-sm uppercase tracking-wider border border-slate-700/50">
              {home.type === "sale" ? "Sale" : "Rent"}
            </span>
         </div>
       </div>
-      <div className="p-3.5 space-y-2 flex-1 flex flex-col">
-        <p className="text-sm font-semibold text-slate-900 line-clamp-1">
+      <div className="p-4 space-y-2 flex-1 flex flex-col">
+        <p className="text-sm font-bold text-slate-900 line-clamp-1">
           {home.title || home.address}
         </p>
-        <p className="text-xs text-slate-500 flex items-center gap-1">
-          <MapPin className="h-3.5 w-3.5 text-blue-500 shrink-0" />
-          <span className="truncate">{home?.location?.municipality || home.city}{home?.location?.district ? `, ${home.location.district}` : ""}</span>
+        <p className="text-xs font-medium text-slate-500 flex items-start gap-1.5 mt-1">
+          <MapPin className="h-3.5 w-3.5 text-rose-500 shrink-0 mt-0.5" />
+          <span className="line-clamp-2 leading-snug">
+            {[
+              home?.location?.tole || home.address,
+              home?.location?.ward ? `Ward ${home.location.ward}` : '',
+              home?.location?.municipality || home.city,
+              home?.location?.district
+            ].filter(Boolean).join(", ")}
+          </span>
         </p>
         
-        <div className="mt-auto pt-2">
+        <div className="mt-auto pt-3">
             <div className="flex items-center justify-between text-[11px] font-medium text-slate-600 bg-slate-50 rounded-lg p-2 border border-slate-100">
               <span className="flex items-center gap-1"><span className="text-slate-400">🛏️</span> {home?.specs?.bedrooms || home.beds || "-"}</span>
               <div className="w-px h-3 bg-slate-200" />
