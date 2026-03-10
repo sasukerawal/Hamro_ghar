@@ -43,6 +43,19 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleToggleVerify = async (id, currentStatus) => {
+    try {
+      const res = await apiFetch(`/api/listings/admin/listings/${id}/verify`, { method: "PUT" });
+      toast.success(res.isVerified ? "Listing Verified!" : "Verification Removed");
+      setData(prev => ({
+         ...prev,
+         recentListings: prev.recentListings.map(l => l._id === id ? { ...l, isVerified: res.isVerified } : l)
+      }));
+    } catch (err) {
+      toast.error(err.message || "Failed to toggle verification");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -116,7 +129,7 @@ export default function AdminDashboard() {
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 border-b border-slate-100">
                   <tr>
-                    {["Title", "City", "Type", "Price", "Status", "Date", "Action"].map((h) => (
+                    {["Title", "City", "Type", "Price", "Status", "Verified", "Date", "Action"].map((h) => (
                       <th key={h} className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wide px-4 py-3">{h}</th>
                     ))}
                   </tr>
@@ -125,10 +138,10 @@ export default function AdminDashboard() {
                   {(data?.recentListings || []).map((l) => (
                     <tr key={l._id} className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
                       <td className="px-4 py-3 font-medium text-slate-800 max-w-[180px] truncate">{l.title}</td>
-                      <td className="px-4 py-3 text-slate-600">{l.city}</td>
+                      <td className="px-4 py-3 text-slate-600">{l.location?.district || l.city}</td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                          l.type === "wanted"
+                          l.type === "wanted" || l.type === "rent"
                             ? "bg-purple-50 text-purple-700 border border-purple-200"
                             : "bg-blue-50 text-blue-700 border border-blue-200"
                         }`}>
@@ -144,6 +157,18 @@ export default function AdminDashboard() {
                         }`}>
                           {l.status}
                         </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => handleToggleVerify(l._id, l.isVerified)}
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${
+                            l.isVerified
+                              ? "bg-blue-600 text-white border-blue-700 shadow-sm"
+                              : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                          }`}
+                        >
+                          {l.isVerified ? "✓ Verified" : "Unverified"}
+                        </button>
                       </td>
                       <td className="px-4 py-3 text-slate-500 text-[11px]">
                         {new Date(l.createdAt).toLocaleDateString()}

@@ -9,7 +9,10 @@ import {
   Crown,
   PlusCircle,
   Globe,
+  Ruler
 } from "lucide-react";
+
+import { useMeasurement } from "./contexts/MeasurementContext";
 
 // ---------------------------------------------------------------------------
 // 🌐 Translation map — English ↔ Nepali
@@ -42,6 +45,7 @@ const LANG = {
 export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { unitSystem, toggleUnitSystem } = useMeasurement();
 
   const t = LANG[lang] || LANG.en;
 
@@ -88,6 +92,17 @@ export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang
 
         {/* DESKTOP RIGHT ACTIONS */}
         <div className="hidden md:flex items-center gap-3">
+          {/* 📏 Unit System Toggle */}
+          <button
+            type="button"
+            onClick={toggleUnitSystem}
+            title={unitSystem === "nepali" ? "Switch to International (M/SqFt)" : "Switch to Nepali (Cr/Aana)"}
+            className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+          >
+            <Ruler className="h-3.5 w-3.5" />
+            {unitSystem === "nepali" ? "Aana/Lakh" : "SqFt/M"}
+          </button>
+
           {/* 🌐 Language Toggle */}
           <button
             type="button"

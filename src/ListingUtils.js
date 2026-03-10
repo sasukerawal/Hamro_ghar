@@ -20,6 +20,7 @@ import {
   Flag,
 } from "lucide-react";
 import { apiFetch } from "./api";
+import { Helmet } from "react-helmet";
 
 
 // Reusable Helper Components
@@ -172,52 +173,102 @@ export function ListingModal({
     setActiveIndex(idx);
   };
 
+  // Generate dynamic SEO metadata and JSON-LD schema
+  const pageTitle = home ? `${home.title || home.address} - HamroGhar` : "Property Details - HamroGhar";
+  const pageDescription = home?.description 
+    ? (home.description.substring(0, 155) + "...") 
+    : `Check out this property located at ${home.address}, ${home.city} on HamroGhar.`;
+  const pageUrl = `${window.location.origin}/?listing=${homeKey}`;
+  const ogImage = images[0] || fallbackImg;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "RealEstateListing",
+    "name": home.title || home.address,
+    "description": home.description || `Property in ${home.city}`,
+    "image": ogImage,
+    "url": pageUrl,
+    "datePosted": home.createdAt,
+    "offers": {
+      "@type": "Offer",
+      "price": typeof home.price === "number" ? home.price : 0,
+      "priceCurrency": "NPR",
+      "availability": "https://schema.org/InStock",
+      "url": pageUrl
+    },
+    // Adding specific specs if available via V2 schema mapping
+    "numberOfRooms": home.beds || home?.specs?.bedrooms,
+    "floorSize": {
+      "@type": "QuantitativeValue",
+      "value": home.sqft || home?.specs?.landArea,
+      "unitText": home?.specs?.landAreaUnit || "SQFT"
+    }
+  };
+
   return (
     <div
-      className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center px-4 py-6 backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-0 sm:py-6 sm:px-4 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:url" content={pageUrl} />
+        <meta property="og:type" content="website" />
+        <link rel="canonical" href={pageUrl} />
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+      </Helmet>
+      
       <div
-        className="w-full max-w-xl max-h-[90vh] rounded-3xl bg-white shadow-2xl overflow-y-auto"
+        className="w-full h-full sm:h-auto sm:max-w-3xl sm:max-h-[85vh] sm:rounded-3xl bg-white shadow-2xl overflow-y-auto relative flex flex-col"
       >
-        {/* Image Area */}
-        <div className="relative w-full overflow-hidden bg-slate-100">
-          <div className="relative h-56 sm:h-64 w-full">
+        {/* Top Floating Actions */}
+        <div className="absolute top-4 right-4 z-50 flex gap-2">
+          {isOwner && (
+            <button
+              onClick={handleEditClick}
+              className="bg-white hover:bg-slate-50 text-slate-800 px-3 py-1.5 rounded-full text-[11px] font-bold shadow-md flex items-center gap-1 transition-colors"
+            >
+              <Edit3 className="h-3.5 w-3.5" /> Edit
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="bg-white hover:bg-slate-50 text-slate-800 h-8 w-8 rounded-full flex items-center justify-center shadow-md transition-colors"
+          >
+            <span className="sr-only">Close</span>
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        {/* Hero Image Area */}
+        <div className="relative w-full overflow-hidden bg-slate-900 group shrink-0">
+          <div className="relative h-64 sm:h-80 w-full">
             <img
               src={currentImage}
               alt="Home"
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover transition-transform duration-500"
               onError={(e) => {
                 e.target.onerror = null;
                 e.target.src = fallbackImg;
               }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+            {/* Gradient Overlay for bottom text legibility */}
+            <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
 
-            {/* Top Buttons */}
-            <div className="absolute top-4 right-4 flex gap-2">
-              {isOwner && (
-                <button
-                  onClick={handleEditClick}
-                  className="bg-white/90 hover:bg-white text-slate-800 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm flex items-center gap-1"
-                >
-                  <Edit3 className="h-3.5 w-3.5" />
-                  Edit
-                </button>
-              )}
-              <button
-                onClick={onClose}
-                className="bg-white/90 hover:bg-white text-slate-800 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm"
-              >
-                Close
-              </button>
-            </div>
-
-            {/* Price Badge */}
+            {/* Price Badge Over Image */}
             {priceLabel && (
-              <div className="absolute left-4 bottom-4 bg-white/95 px-3 py-1.5 rounded-full text-xs font-bold text-slate-900 shadow-sm">
-                {priceLabel}
-                <span className="ml-1 font-normal text-slate-500">/mo</span>
+              <div className="absolute left-5 bottom-5 flex flex-col items-start gap-1">
+                 <span className="bg-blue-600 px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm uppercase tracking-wide">
+                   {home.type === "sale" ? "For Sale" : "For Rent"}
+                 </span>
+                 <div className="text-white drop-shadow-md flex items-baseline gap-1">
+                   <span className="text-3xl font-extrabold">{priceLabel}</span>
+                   {home.type !== "sale" && <span className="text-sm font-medium text-white/80">/mo</span>}
+                 </div>
               </div>
             )}
 
@@ -226,198 +277,236 @@ export function ListingModal({
               <>
                 <button
                   onClick={goPrev}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-1.5 rounded-full backdrop-blur-sm"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100"
                 >
-                  <ChevronLeft className="h-5 w-5" />
+                  <ChevronLeft className="h-6 w-6" />
                 </button>
                 <button
                   onClick={goNext}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-1.5 rounded-full backdrop-blur-sm"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100"
                 >
-                  <ChevronRight className="h-5 w-5" />
+                  <ChevronRight className="h-6 w-6" />
                 </button>
+                {/* Image Counter */}
+                <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full pointer-events-none">
+                  {activeIndex + 1} / {images.length}
+                </div>
               </>
             )}
           </div>
-
-          {/* Thumbnails */}
-          {images.length > 1 && (
-            <div className="flex gap-2 px-4 py-3 bg-white border-b border-slate-100 overflow-x-auto">
-              {images.map((img, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={(e) => handleThumbClick(e, idx)}
-                  className={`h-12 w-16 rounded-lg overflow-hidden border flex-shrink-0 ${
-                    idx === activeIndex
-                      ? "border-blue-500 ring-2 ring-blue-100"
-                      : "border-slate-200 opacity-70 hover:opacity-100"
-                  }`}
-                >
-                  <img
-                    src={img}
-                    alt={`Thumb ${idx}`}
-                    className="h-full w-full object-cover"
-                    onError={(e) => { e.target.onerror = null; e.target.src = fallbackImg; }}
-                  />
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Content Area */}
-        <div className="p-5 sm:p-6 space-y-5">
-          {/* Title Row */}
-          <div className="flex justify-between items-start gap-2">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600 mb-1">
-                {home.city || "Listed Home"}
-              </p>
-              <h3 className="text-xl font-bold text-slate-900 leading-tight">
-                {home.title || home.address || "Home for rent"}
-              </h3>
-              {home.address && (
-                <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                  <MapPin className="h-3 w-3" /> {home.address}
-                </p>
-              )}
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] text-slate-400">
-                {postedDate ? `Posted ${postedDate}` : ""}
-              </p>
-              <div className="flex items-center justify-end gap-1 text-[10px] text-slate-400 mt-1">
-                <Eye className="h-3 w-3" /> {home.views || 0} views
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-5 sm:p-8">
+            {/* Title & Location */}
+            <div className="mb-8">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                 <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700 ring-1 ring-inset ring-blue-700/10 uppercase tracking-wider">
+                   {home?.specs?.propertyType || "Property"}
+                 </span>
+                 {home?.status && home.status !== "active" && (
+                   <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700 ring-1 ring-inset ring-amber-700/10 uppercase tracking-wider">
+                     {home.status}
+                   </span>
+                 )}
+                 <span className="text-[10px] text-slate-400 font-medium">
+                   Listed {postedDate || "Recently"}
+                 </span>
               </div>
+              
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight mb-2">
+                {home.title || "Beautiful Property in Nepal"}
+              </h1>
+              <p className="text-sm text-slate-600 flex items-center gap-1.5 font-medium">
+                <MapPin className="h-4 w-4 text-slate-400" />
+                {home?.location?.municipality || home.city}{home?.location?.district ? `, ${home.location.district}` : ""}
+              </p>
             </div>
-          </div>
 
-          {/* Specs */}
-          <div className="flex flex-wrap gap-2">
-            <SpecPill>{home.beds} Beds</SpecPill>
-            <SpecPill>{home.baths} Baths</SpecPill>
-            {home.sqft && <SpecPill>{home.sqft} Sqft</SpecPill>}
-          </div>
-
-          {/* Description */}
-          {home.description && (
-            <div className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
-              {home.description}
+            {/* Quick Facts Grid (V2 Schema) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+              <QuickFact label="Bedrooms" value={home?.specs?.bedrooms || home.beds} icon="🛏️" />
+              <QuickFact label="Bathrooms" value={home?.specs?.bathrooms || home.baths} icon="🛁" />
+              <QuickFact label="Land Area" value={home?.specs?.landArea || home.sqft ? `${home?.specs?.landArea || home.sqft} ${home?.specs?.landAreaUnit || 'sqft'}` : null} icon="📐" />
+              <QuickFact label="Facing" value={home?.specs?.facing} icon="🧭" />
+              {home?.specs?.roadAccessFeet && <QuickFact label="Road Access" value={`${home.specs.roadAccessFeet} ft`} icon="🛣️" />}
+              {home?.specs?.builtYear && <QuickFact label="Built Year" value={home.specs.builtYear} icon="🏗️" />}
             </div>
-          )}
 
-          {/* Amenities */}
-          <div>
-            <p className="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-2">
-              Amenities
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <AmenityTag active={!!home.furnished}>Furnished</AmenityTag>
-              <AmenityTag active={!!home.internet}>Internet</AmenityTag>
-              <AmenityTag active={!!home.parking}>Parking</AmenityTag>
-              <AmenityTag active={!!home.petsAllowed}>Pets Allowed</AmenityTag>
+            <div className="grid gap-10 sm:grid-cols-3">
+               {/* Left Column (Main Content) */}
+               <div className="sm:col-span-2 space-y-8 text-sm">
+                 
+                 {/* Overview */}
+                 {home.description && (
+                   <section>
+                     <h2 className="text-lg font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2">Overview</h2>
+                     <p className="text-slate-600 leading-relaxed whitespace-pre-wrap">{home.description}</p>
+                   </section>
+                 )}
+
+                 {/* Room Details */}
+                 {(home?.specs?.livingRoom || home?.specs?.kitchen || home?.specs?.totalFloors || home?.specs?.dimension) && (
+                   <section>
+                      <h2 className="text-lg font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2">Room Details</h2>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {home?.specs?.totalFloors > 0 && <div className="p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Total Floors</span><span className="font-extrabold text-slate-800">{home.specs.totalFloors}</span></div>}
+                        {home?.specs?.livingRoom > 0 && <div className="p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Living Rooms</span><span className="font-extrabold text-slate-800">{home.specs.livingRoom}</span></div>}
+                        {home?.specs?.kitchen > 0 && <div className="p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Kitchens</span><span className="font-extrabold text-slate-800">{home.specs.kitchen}</span></div>}
+                        {home?.specs?.dimension && <div className="p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Dimension</span><span className="font-extrabold text-slate-800 text-sm whitespace-nowrap overflow-hidden text-ellipsis">{home.specs.dimension}</span></div>}
+                      </div>
+                   </section>
+                 )}
+
+                 {/* Facilities */}
+                 <section>
+                   <h2 className="text-lg font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2">Facilities & Amenities</h2>
+                   <div className="flex flex-wrap gap-2">
+                     {home?.facilities?.bikeParking > 0 && <AmenityTag active={true}>🏍️ Bike Parking ({home.facilities.bikeParking})</AmenityTag>}
+                     {home?.facilities?.carParking > 0 && <AmenityTag active={true}>🚗 Car Parking ({home.facilities.carParking})</AmenityTag>}
+                     {home?.facilities?.boringWater && <AmenityTag active={true}>💧 Boring Water (Yes)</AmenityTag>}
+                     {home?.facilities?.drinkingWater && <AmenityTag active={true}>🚰 Drinking Water (Yes)</AmenityTag>}
+
+                     <AmenityTag active={!!(home?.specs?.furnishing === 'Fully Furnished' || home?.specs?.furnishing === 'fully' || home.furnished)}>🛋️ Furnished</AmenityTag>
+                     <AmenityTag active={!!home?.highlights?.find(h => h.toLowerCase().includes('internet') || h.toLowerCase().includes('wifi') || home.internet)}>🌐 Internet/WiFi</AmenityTag>
+                     <AmenityTag active={!!(home?.specs?.parking || home.parking)}>🅿️ Parking Available</AmenityTag>
+                     <AmenityTag active={!!home.petsAllowed}>🐕 Pets Allowed</AmenityTag>
+                     {home?.highlights?.map(h => <AmenityTag key={h} active={true}>✨ {h}</AmenityTag>)}
+                   </div>
+                 </section>
+
+                 {/* Landmarks */}
+                 {(home?.location?.ringRoad || home?.location?.hospital || home?.location?.school || home?.location?.airport || home?.location?.bhatbhateni || home?.location?.publicTransport) && (
+                   <section>
+                      <h2 className="text-lg font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2">Nearby Landmarks</h2>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                        {home?.location?.ringRoad && <div className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-white shadow-sm"><span className="text-slate-500 font-medium">Ring Road</span><span className="font-bold text-slate-800">{home.location.ringRoad}</span></div>}
+                        {home?.location?.hospital && <div className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-white shadow-sm"><span className="text-slate-500 font-medium">Hospital</span><span className="font-bold text-slate-800">{home.location.hospital}</span></div>}
+                        {home?.location?.school && <div className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-white shadow-sm"><span className="text-slate-500 font-medium">School/College</span><span className="font-bold text-slate-800">{home.location.school}</span></div>}
+                        {home?.location?.bhatbhateni && <div className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-white shadow-sm"><span className="text-slate-500 font-medium">Bhatbhateni</span><span className="font-bold text-slate-800">{home.location.bhatbhateni}</span></div>}
+                        {home?.location?.airport && <div className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-white shadow-sm"><span className="text-slate-500 font-medium">Airport</span><span className="font-bold text-slate-800">{home.location.airport}</span></div>}
+                        {home?.location?.publicTransport && <div className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-white shadow-sm"><span className="text-slate-500 font-medium">Public Transport</span><span className="font-bold text-slate-800">{home.location.publicTransport}</span></div>}
+                      </div>
+                   </section>
+                 )}
+
+                 {/* Video */}
+                 {home?.videoUrl && (
+                   <section>
+                     <h2 className="text-lg font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2">Video Walkthrough</h2>
+                     <a href={home.videoUrl} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-3 p-4 bg-red-50 text-red-600 rounded-xl font-extrabold border border-red-100 shadow-sm hover:bg-red-100 hover:shadow-md transition-all">
+                       <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+                       Watch Property Tour on YouTube/TikTok
+                     </a>
+                   </section>
+                 )}
+
+                 {/* Disclaimer */}
+                 <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
+                   <div className="flex gap-3">
+                     <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
+                     <p className="text-xs text-slate-600 leading-relaxed">
+                       <strong className="text-slate-800">Safety Disclaimer:</strong> HamroGhar connects users but does not directly verify listings. Never wire money or pay a deposit before viewing the property in person and signing a lease. Report suspicious activity immediately.
+                     </p>
+                   </div>
+                 </div>
+
+               </div>
+
+               {/* Right Column (Sidebar) */}
+               <div className="space-y-6">
+                 
+                 {/* Contact Card */}
+                 <div className="rounded-2xl bg-white border border-blue-100 shadow-xl shadow-blue-500/5 p-5 sticky top-5">
+                    <h3 className="font-bold text-slate-900 mb-4">Contact Poster</h3>
+                    <OwnerSocialsPanel socials={home.owner?.socials} />
+                    
+                    <div className="h-px bg-slate-100 my-4" />
+                    
+                    {/* Action Buttons */}
+                    <div className="space-y-2">
+                      <a
+                        href={mapsUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors"
+                      >
+                        <MapPin className="h-4 w-4" /> View on Map
+                      </a>
+                      
+                      {!isOwner && (
+                        <button
+                          onClick={handleHeartClick}
+                          className={`w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold border transition-colors ${
+                            isSaved
+                              ? "bg-red-50 border-red-100 text-red-600 hover:bg-red-100"
+                              : "bg-blue-600 border-blue-600 text-white hover:bg-blue-700"
+                          }`}
+                        >
+                          <Heart className="h-4 w-4" fill={isSaved ? "currentColor" : "none"} />
+                          {isSaved ? "Remove from Saved" : "Save this Home"}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Share Row */}
+                    <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                       <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Share</span>
+                       <div className="flex gap-1">
+                          <button onClick={() => {
+                              const url = `${window.location.origin}/?listing=${home._id || home.id}`;
+                              navigator.clipboard.writeText(url).then(() => toast.success("Copied!")).catch(() => toast.error("Could not copy"));
+                            }} 
+                            className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors bg-slate-50 hover:bg-blue-50 rounded-lg"
+                            title="Copy Link">
+                            <Copy className="h-4 w-4" />
+                          </button>
+                          <button onClick={() => {
+                             const text = `Check out this home on HamroGhar: ${home.title || home.address} — Rs.${home.price}/mo\n${window.location.origin}/?listing=${home._id || home.id}`;
+                             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                            }} 
+                            className="p-1.5 text-slate-400 hover:text-green-500 transition-colors bg-slate-50 hover:bg-green-50 rounded-lg"
+                            title="WhatsApp">
+                            <Share2 className="h-4 w-4" />
+                          </button>
+                       </div>
+                    </div>
+                 </div>
+                 
+                 <ReportListingButton listingId={home._id || home.id} />
+
+               </div>
             </div>
-          </div>
 
-          {/* Price History Chart */}
-          {home.priceHistory && home.priceHistory.length > 1 && (
-            <PriceHistoryChart history={home.priceHistory} />
-          )}
-
-          {/* Disclaimer */}
-          <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 flex items-start gap-2.5">
-            <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-            <p className="text-[11px] text-amber-800 leading-relaxed">
-              <span className="font-bold">Disclaimer:</span> HamroGhar is a listing platform only. All communication between users happens independently and off-platform. HamroGhar bears no responsibility for, and makes no guarantees about, any transactions, agreements, or interactions between renters and property owners. Proceed with your own judgment and due diligence.
-            </p>
-          </div>
-
-          {/* Connect with Owner */}
-          <div>
-            <p className="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-2">
-              Connect with Owner
-            </p>
-            <OwnerSocialsPanel socials={home.owner?.socials} />
-          </div>
-
-          {/* Reviews */}
-          <ReviewsSection listingId={home._id || home.id} />
-
-          {/* Footer Actions */}
-          <div className="pt-4 border-t border-slate-100 space-y-2">
-            {/* Row 1: Maps + Save */}
-            <div className="flex items-center gap-2">
-              <a
-                href={mapsUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors"
-              >
-                <MapPin className="h-3.5 w-3.5" />
-                Google Maps
-              </a>
-
-              {!isOwner && (
-                <button
-                  onClick={handleHeartClick}
-                  className={`flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold border transition-colors ${
-                    isSaved
-                      ? "bg-red-50 border-red-100 text-red-600 hover:bg-red-100"
-                      : "bg-blue-600 border-blue-600 text-white hover:bg-blue-700"
-                  }`}
-                >
-                  {isSaved ? (
-                    <><Trash2 className="h-3.5 w-3.5" /> Unsave</>
-                  ) : (
-                    <><Heart className="h-3.5 w-3.5" /> Save Home</>
-                  )}
-                </button>
+            {/* Price History & Reviews */}
+            <div className="mt-12 space-y-8">
+              {home.priceHistory && home.priceHistory.length > 1 && (
+                <PriceHistoryChart history={home.priceHistory} />
               )}
+              <ReviewsSection listingId={home._id || home.id} />
             </div>
 
-            {/* Row 2: Share buttons + Copy URL */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  const text = `Check out this home on HamroGhar: ${home.title || home.address} — Rs.${home.price}/mo\n${window.location.origin}/?listing=${home._id || home.id}`;
-                  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-                }}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl bg-green-500 text-white text-xs font-bold hover:bg-green-600 transition-colors"
-              >
-                <Share2 className="h-3.5 w-3.5" />
-                WhatsApp
-              </button>
-              <button
-                onClick={() => {
-                  const url = `${window.location.origin}/?listing=${home._id || home.id}`;
-                  window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
-                }}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl bg-blue-700 text-white text-xs font-bold hover:bg-blue-800 transition-colors"
-              >
-                <Facebook className="h-3.5 w-3.5" />
-                Facebook
-              </button>
-              <button
-                onClick={() => {
-                  const url = `${window.location.origin}/?listing=${home._id || home.id}`;
-                  navigator.clipboard.writeText(url).then(() => toast.success("Link copied!")).catch(() => toast.error("Could not copy"));
-                }}
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-bold hover:bg-slate-50 transition-colors"
-              >
-                <Copy className="h-3.5 w-3.5" />
-                Copy
-              </button>
-            </div>
-
-            {/* Row 3: Report */}
-            <ReportListingButton listingId={home._id || home.id} />
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+// Sub-component for Quick Facts
+const QuickFact = ({ label, value, icon }) => {
+  if (!value) return null;
+  return (
+    <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+       <span className="text-xl leading-none pt-0.5">{icon}</span>
+       <div>
+         <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">{label}</p>
+         <p className="text-sm font-semibold text-slate-900">{value}</p>
+       </div>
+    </div>
+  );
+};
 
 /* ----------------------------------------
    OWNER SOCIALS PANEL

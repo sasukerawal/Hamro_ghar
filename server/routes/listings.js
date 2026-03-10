@@ -159,8 +159,11 @@ router.post("/create", requireAuth, (req, res) => {
         price,
         location: locationRaw,
         specs: specsRaw,
+        facilities: facilitiesRaw,
+        amenities: amenitiesRaw,
         highlights: highlightsRaw,
         video,
+        videoUrl,
         mapsUrl,
         
         // Legacy fallback
@@ -178,14 +181,18 @@ router.post("/create", requireAuth, (req, res) => {
 
       let location = {};
       let specs = {};
+      let facilities = {};
+      let amenities = [];
       let highlights = [];
 
       try {
         if (locationRaw) location = JSON.parse(locationRaw);
         if (specsRaw) specs = JSON.parse(specsRaw);
+        if (facilitiesRaw) facilities = JSON.parse(facilitiesRaw);
+        if (amenitiesRaw) amenities = JSON.parse(amenitiesRaw);
         if (highlightsRaw) highlights = JSON.parse(highlightsRaw);
       } catch (err) {
-        return res.status(400).json({ error: "Invalid JSON format for location, specs, or highlights" });
+        return res.status(400).json({ error: "Invalid JSON format for location, specs, facilities, amenities, or highlights" });
       }
 
       // Legacy fallback mapping
@@ -239,9 +246,12 @@ router.post("/create", requireAuth, (req, res) => {
         price: numericPrice,
         location,
         specs,
+        facilities,
+        amenities: Array.isArray(amenities) ? amenities.map(a => sanitize(a)) : [],
         highlights: Array.isArray(highlights) ? highlights.map(h => sanitize(h)) : [],
         images: uploadedImages,
         video: video || "",
+        videoUrl: videoUrl || "",
         mapsUrl: mapsUrl || "",
         status: "active",
         
@@ -304,8 +314,11 @@ router.put(
         price,
         location: locationRaw,
         specs: specsRaw,
+        facilities: facilitiesRaw,
+        amenities: amenitiesRaw,
         highlights: highlightsRaw,
         video,
+        videoUrl,
         mapsUrl,
         
         // Legacy fallback
@@ -326,6 +339,8 @@ router.put(
 
       let newLocation = listing.location || {};
       let newSpecs = listing.specs || {};
+      let newFacilities = listing.facilities || {};
+      let newAmenities = listing.amenities || [];
       let locationChanged = false;
 
       try {
@@ -334,6 +349,8 @@ router.put(
            locationChanged = true;
         }
         if (specsRaw) newSpecs = { ...newSpecs, ...JSON.parse(specsRaw) };
+        if (facilitiesRaw) newFacilities = { ...newFacilities, ...JSON.parse(facilitiesRaw) };
+        if (amenitiesRaw) newAmenities = JSON.parse(amenitiesRaw).map(a => sanitize(a));
         if (highlightsRaw) listing.highlights = JSON.parse(highlightsRaw).map(h => sanitize(h));
       } catch (err) { }
 
@@ -363,6 +380,7 @@ router.put(
       if (propertyType) listing.propertyType = propertyType;
       if (description) listing.description = sanitize(description);
       if (video !== undefined) listing.video = video || "";
+      if (videoUrl !== undefined) listing.videoUrl = videoUrl || "";
       if (mapsUrl !== undefined) listing.mapsUrl = mapsUrl || "";
       
       if (furnished !== undefined) listing.furnished = parseBool(furnished);
@@ -381,6 +399,8 @@ router.put(
       }
 
       listing.specs = newSpecs;
+      listing.facilities = newFacilities;
+      listing.amenities = newAmenities;
 
       // Append new images
       if (req.files && req.files.length > 0) {
@@ -489,10 +509,17 @@ router.get("/all", async (req, res) => {
     }
 
     const {
-      type,        // ✅ NEW: filter by offer/wanted
-      city,
+      type,        // offer/wanted/sale/rent
+      propertyType,
+      city,        // generic search mapped to district/municipality/locality
+      district,
+      municipality,
       minPrice,
       maxPrice,
+      minLandArea, // new
+      maxLandArea, // new
+      roadAccess,  // new
+      facing,      // new
       beds,
       baths,
       furnished,
@@ -500,29 +527,45 @@ router.get("/all", async (req, res) => {
       parking,
       petsAllowed,
       status,
+      amenities,
       limit,
       page,
     } = req.query;
 
     const query = {};
 
-    // Filter by listing type
-    if (type === "wanted") {
-      query.type = "wanted";
-    } else if (type === "offer") {
-      query.type = "offer";
-    } else {
-      // If you want homepage to show only offers by default, uncomment:
-      // query.type = "offer";
-      // Otherwise, leaving it unset will return both.
+    // Filter by type
+    if (type) {
+      // e.g. "sale", "rent", or fallback to old "offer"/"wanted"
+      query.type = type;
+    }
+    
+    if (propertyType) {
+      query.propertyType = propertyType;
     }
 
-    // City + address search
+    // Location search
+    if (district && district.trim()) {
+      query["location.district"] = new RegExp(`^${district.trim()}$`, "i");
+    }
+    
+    if (municipality && municipality.trim()) {
+      query["location.municipality"] = new RegExp(`^${municipality.trim()}$`, "i");
+    }
+
+    // Generic text search (backward compatibility or general search bar)
     if (city && city.trim()) {
       const pattern = new RegExp(city.trim(), "i");
-      query.$or = [{ city: pattern }, { address: pattern }];
+      query.$or = [
+        { city: pattern }, 
+        { address: pattern },
+        { "location.district": pattern },
+        { "location.municipality": pattern },
+        { "location.tole": pattern },
+      ];
     }
 
+    // Price Range
     const priceQuery = {};
     const minP = toNumber(minPrice);
     const maxP = toNumber(maxPrice);
@@ -530,15 +573,52 @@ router.get("/all", async (req, res) => {
     if (maxP !== undefined) priceQuery.$lte = maxP;
     if (Object.keys(priceQuery).length > 0) query.price = priceQuery;
 
+    // Land Area Range
+    const landQuery = {};
+    const minLa = toNumber(minLandArea);
+    const maxLa = toNumber(maxLandArea);
+    if (minLa !== undefined) landQuery.$gte = minLa;
+    if (maxLa !== undefined) landQuery.$lte = maxLa;
+    if (Object.keys(landQuery).length > 0) {
+       query["specs.landArea.aana"] = landQuery;
+    }
+
+    // Road Access
+    const roadR = toNumber(roadAccess);
+    if (roadR !== undefined) {
+       query["specs.roadAccess.widthFeet"] = { $gte: roadR };
+    }
+
+    // Facing
+    if (facing && facing.trim()) {
+      query["specs.facing"] = new RegExp(`^${facing.trim()}$`, "i");
+    }
+
+    // Beds / Baths
     const bedsN = toNumber(beds);
     const bathsN = toNumber(baths);
-    if (bedsN !== undefined) query.beds = { $gte: bedsN };
-    if (bathsN !== undefined) query.baths = { $gte: bathsN };
+    if (bedsN !== undefined) {
+      query.$or = [{ beds: { $gte: bedsN } }, { "specs.bedrooms": { $gte: bedsN } }];
+    }
+    if (bathsN !== undefined) {
+      query.$or = [{ baths: { $gte: bathsN } }, { "specs.bathrooms": { $gte: bathsN } }];
+    }
 
-    if (furnished === "true") query.furnished = true;
+    // Booleans
+    if (furnished === "true") {
+      query.$or = [{ furnished: true }, { "specs.furnishing": "fully" }];
+    }
     if (internet === "true") query.internet = true;
-    if (parking === "true") query.parking = true;
+    if (parking === "true") {
+      query.$or = [{ parking: true }, { "specs.parkingFeature": true }, { "specs.parking": { $gte: 1 } }];
+    }
     if (petsAllowed === "true") query.petsAllowed = true;
+    
+    // Amenities
+    if (amenities) {
+      const arr = amenities.split(",").map(a => new RegExp(`^${a.trim()}$`, "i"));
+      query.amenities = { $all: arr };
+    }
 
     query.status = status || "active";
 
@@ -971,6 +1051,127 @@ router.delete("/admin/listings/:id", requireAuth, async (req, res) => {
     res.json({ message: "Listing deleted by admin" });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete" });
+  }
+});
+
+/* =========================================
+   REPORT LISTING
+   POST /api/listings/:id/report
+========================================= */
+import Report from "../models/Report.js";
+import nodemailer from "nodemailer";
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+router.post("/:id/report", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const listingId = req.params.id;
+
+    const listing = await Listing.findById(listingId);
+    if (!listing) return res.status(404).json({ error: "Listing not found" });
+
+    // Check if already reported by this user
+    const existing = await Report.findOne({ listingId, reporterId: userId });
+    if (existing) {
+      return res.status(400).json({ error: "You have already reported this listing" });
+    }
+
+    const report = new Report({
+      listingId,
+      reporterId: userId,
+    });
+    await report.save();
+
+    // Send email to admin
+    try {
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: process.env.EMAIL_USER, // Send to site admin
+        subject: `[HamroGhar] Listing Reported: ${listing.title}`,
+        text: `A user has reported a listing.\n\nListing ID: ${listingId}\nListing Title: ${listing.title}\nReporter ID: ${userId}\nUrl: ${process.env.CLIENT_ORIGIN || 'http://localhost:3000'}/?listing=${listingId}\n\nPlease review this listing.`,
+      });
+    } catch (err) {
+      console.error("[REPORT] Failed to send email alert:", err);
+    }
+
+    res.json({ success: true, message: "Report submitted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+/* =========================================
+   MIGRATE SCHEMA V2 (Admin Only / One-time)
+   POST /api/listings/migrate-schema-v2
+========================================= */
+router.post("/migrate-schema-v2", async (req, res) => {
+  try {
+    const listings = await Listing.find({});
+    let migratedCount = 0;
+
+    for (let home of listings) {
+      let changed = false;
+
+      // 1. Initialize location if missing
+      if (!home.location) {
+        home.location = {};
+        changed = true;
+      }
+
+      // Convert number province to string province enum
+      if (typeof home.location.province === "number") {
+        const provinceMap = { 1: "Koshi", 2: "Madhesh", 3: "Bagmati", 4: "Gandaki", 5: "Lumbini", 6: "Karnali", 7: "Sudurpashchim" };
+        if (provinceMap[home.location.province]) {
+          home.location.province = provinceMap[home.location.province];
+          changed = true;
+        }
+      }
+
+      // Merge generic city/address into location object
+      if (!home.location.district && home.city) {
+        home.location.district = home.city;
+        home.location.municipality = home.city;
+        changed = true;
+      }
+      if (!home.location.tole && home.address) {
+        home.location.tole = home.address;
+        changed = true;
+      }
+
+      // 2. Initialize specs if missing
+      if (!home.specs) {
+        home.specs = {};
+        changed = true;
+      }
+
+      // Migrate beds/baths/sqft into specs
+      if (home.beds && !home.specs.bedrooms) { home.specs.bedrooms = home.beds; changed = true; }
+      if (home.baths && !home.specs.bathrooms) { home.specs.bathrooms = home.baths; changed = true; }
+      if (home.sqft && !home.specs.landArea?.totalSqFt) {
+        if (!home.specs.landArea) home.specs.landArea = {};
+        home.specs.landArea.totalSqFt = home.sqft;
+        changed = true;
+      }
+      if (home.furnished && !home.specs.furnishing) { home.specs.furnishing = "Fully Furnished"; changed = true; }
+
+      if (changed) {
+        await home.save();
+        migratedCount++;
+      }
+    }
+
+    res.json({ success: true, message: `Migrated ${migratedCount} listings to V2 Schema.` });
+  } catch (err) {
+    console.error("[Migration Error]", err);
+    res.status(500).json({ error: "Failed to migrate schema" });
   }
 });
 

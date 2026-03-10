@@ -58,12 +58,13 @@ export default function ListingMapView({
     : center;
 
   return (
-    <div className="w-full h-[400px] rounded-3xl overflow-hidden border border-blue-100">
+    <div className="w-full h-[400px] rounded-3xl overflow-hidden border border-blue-100 z-0 relative">
       <MapContainer
         center={startCenter}
         zoom={13}
-        scrollWheelZoom={true}
-        className="w-full h-full"
+        scrollWheelZoom={false}
+        dragging={!L.Browser.mobile}
+        className="w-full h-full z-0"
       >
         <TileLayer
           attribution='&copy; OpenStreetMap contributors'

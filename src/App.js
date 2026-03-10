@@ -11,6 +11,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { Loader } from "lucide-react";
 
 import { apiFetch } from "./api";
+import { MeasurementProvider } from "./contexts/MeasurementContext";
 
 // Core components needed immediately
 import Header from "./Header";
@@ -27,6 +28,7 @@ const UserProfile = lazy(() => import("./UserProfile"));
 const PostListing = lazy(() => import("./PostListing"));
 const NotFound = lazy(() => import("./NotFound"));
 const AdminDashboard = lazy(() => import("./AdminDashboard"));
+const PropertyDetail = lazy(() => import("./PropertyDetail"));
 
 // Loading fallback for suspended routes
 const FallbackSpinner = () => (
@@ -74,6 +76,17 @@ function App() {
       }
     };
     checkUser();
+
+    // Token Auto-Refresh on focus
+    const onFocus = async () => {
+      if (localStorage.getItem("token")) {
+        try {
+          await apiFetch("/api/auth/refresh", { method: "POST" });
+        } catch (_) {}
+      }
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, []);
 
   const handleLoginSuccess = () => {
@@ -101,8 +114,9 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-slate-900">
-      {/* Header appears on all pages */}
+    <MeasurementProvider>
+      <div className="min-h-screen flex flex-col bg-white text-slate-900">
+        {/* Header appears on all pages */}
       <Header
         isLoggedIn={isLoggedIn}
         onLogout={handleLogout}
@@ -203,6 +217,9 @@ function App() {
               }
             />
 
+            {/* Main Property Detail Page */}
+            <Route path="/property/:id" element={<PropertyDetail />} />
+
             {/* Fallback: proper 404 page */}
             <Route path="*" element={<NotFound />} />
 
@@ -228,7 +245,8 @@ function App() {
         pauseOnHover={false}
         theme="light"
       />
-    </div>
+      </div>
+    </MeasurementProvider>
   );
 }
 

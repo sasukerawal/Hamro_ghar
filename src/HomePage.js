@@ -3,9 +3,11 @@ import React, { useState, useEffect } from "react";
 import { apiFetch } from "./api";
 import { toast } from "react-toastify";
 import useSWR from "swr";
+import { useNavigate } from "react-router-dom";
 
 import FilterModal from "./FilterModal";
 import { ListingModal, handleToggleSaveHome } from "./ListingUtils";
+import { useMeasurement } from "./contexts/MeasurementContext";
 import AddressSuggestionsList from "./AddressSuggestionsList";
 import ListingMapView from "./ListingMapView";
 
@@ -176,6 +178,7 @@ export default function HomePage({
 }) {
   const t = PAGE_LANG[lang] || PAGE_LANG.en;
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
 
   // 🔄 List vs Map toggle
   const [showMap, setShowMap] = useState(false);
@@ -187,7 +190,18 @@ export default function HomePage({
   const [beds, setBeds] = useState("");
   const [petsOnly, setPetsOnly] = useState(false);
   const [furnishedOnly, setFurnishedOnly] = useState(false);
-  const [listingType, setListingType] = useState(""); // "" | "offer" | "wanted"
+  const [listingType, setListingType] = useState(""); // "" | "sale" | "rent" | "offer" | "wanted"
+  
+  // NEW V2 Filters
+  const [propertyType, setPropertyType] = useState("");
+  const [district, setDistrict] = useState("");
+  const [municipality, setMunicipality] = useState("");
+  const [minLandArea, setMinLandArea] = useState("");
+  const [maxLandArea, setMaxLandArea] = useState("");
+  const [roadAccess, setRoadAccess] = useState("");
+  const [facing, setFacing] = useState("");
+  const [amenities, setAmenities] = useState([]);
+
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   // Pagination
@@ -256,6 +270,17 @@ export default function HomePage({
     if (petsOnly) params.append("petsAllowed", "true");
     if (furnishedOnly) params.append("furnished", "true");
     if (listingType) params.append("type", listingType);
+    
+    // Append V2 filters
+    if (propertyType) params.append("propertyType", propertyType);
+    if (district) params.append("district", district);
+    if (municipality) params.append("municipality", municipality);
+    if (minLandArea) params.append("minLandArea", minLandArea);
+    if (maxLandArea) params.append("maxLandArea", maxLandArea);
+    if (roadAccess) params.append("roadAccess", roadAccess);
+    if (facing) params.append("facing", facing);
+    if (amenities && amenities.length > 0) params.append("amenities", amenities.join(","));
+
     params.append("page", page);
     params.append("limit", LISTINGS_PER_PAGE);
     
@@ -331,31 +356,20 @@ export default function HomePage({
     handleRunSearch();
   };
 
-  // Modal handlers
-  const openHomeModal = async (home) => {
-    setSelectedHome(home);
-    setIsModalOpen(true);
-
+  // Modal handlers -> Converted to Page Redirect for V2 Architecture
+  const openHomeModal = (home) => {
     const id = home?._id || home?.id;
-    if (!id || String(id).startsWith("demo-")) return;
-
-    try {
-      const data = await apiFetch(`/api/listings/${id}/view`, {
+    if (!id) return;
+    
+    // Increment views asynchronously behind the scenes
+    if (!String(id).startsWith("demo-")) {
+      apiFetch(`/api/listings/${id}/view`, {
         method: "PATCH",
         credentials: "omit",
-      });
-
-      if (typeof data.views === "number") {
-        // Just update local state for the modal since SWR will revalidate over time
-        setSelectedHome((prev) =>
-          prev && (prev._id || prev.id) === id
-            ? { ...prev, views: data.views }
-            : prev
-        );
-      }
-    } catch (err) {
-      console.error("Increment view error", err);
+      }).catch(() => {});
     }
+    
+    navigate(`/property/${id}`);
   };
 
   const closeHomeModal = () => {
@@ -388,6 +402,15 @@ export default function HomePage({
     setPetsOnly(false);
     setFurnishedOnly(false);
     setListingType("");
+    
+    setPropertyType("");
+    setDistrict("");
+    setMunicipality("");
+    setMinLandArea("");
+    setMaxLandArea("");
+    setRoadAccess("");
+    setFacing("");
+
     setSuggestions([]);
     setPage(1);
   };
@@ -423,6 +446,23 @@ export default function HomePage({
         setFurnishedOnly={setFurnishedOnly}
         listingType={listingType}
         onTypeFilter={handleTypeFilter}
+        
+        // V2 Filters
+        propertyType={propertyType}
+        setPropertyType={setPropertyType}
+        district={district}
+        setDistrict={setDistrict}
+        municipality={municipality}
+        setMunicipality={setMunicipality}
+        minLandArea={minLandArea}
+        setMinLandArea={setMinLandArea}
+        maxLandArea={maxLandArea}
+        setMaxLandArea={setMaxLandArea}
+        roadAccess={roadAccess}
+        setRoadAccess={setRoadAccess}
+        facing={facing}
+        setFacing={setFacing}
+
         onSearch={handleRunSearch}
         onClear={handleClearFilters}
         onOpenModal={() => setIsFilterModalOpen(true)}
@@ -499,6 +539,25 @@ export default function HomePage({
         setPetsOnly={setPetsOnly}
         furnishedOnly={furnishedOnly}
         setFurnishedOnly={setFurnishedOnly}
+        
+        // V2 Filters
+        propertyType={propertyType}
+        setPropertyType={setPropertyType}
+        district={district}
+        setDistrict={setDistrict}
+        municipality={municipality}
+        setMunicipality={setMunicipality}
+        minLandArea={minLandArea}
+        setMinLandArea={setMinLandArea}
+        maxLandArea={maxLandArea}
+        setMaxLandArea={setMaxLandArea}
+        roadAccess={roadAccess}
+        setRoadAccess={setRoadAccess}
+        facing={facing}
+        setFacing={setFacing}
+        amenities={amenities}
+        setAmenities={setAmenities}
+
         onApply={handleRunSearch}
         onClear={handleClearFilters}
         suggestions={suggestions}
@@ -682,6 +741,15 @@ const FiltersBar = ({
   setFurnishedOnly,
   listingType,
   onTypeFilter,
+  
+  // V2
+  propertyType,
+  setPropertyType,
+  district,
+  setDistrict,
+  municipality,
+  setMunicipality,
+  
   onSearch,
   onClear,
   onOpenModal,
@@ -699,8 +767,8 @@ const FiltersBar = ({
         {/* Type toggle + map toggle row */}
         <div className="flex items-center gap-2">
           <Tag className="h-3.5 w-3.5 text-slate-400" />
-          <span className="text-[11px] font-semibold text-slate-500 mr-1">Type:</span>
-          {[{val:"offer",label:"🏠 Homes for Rent"},{val:"wanted",label:"🔍 Wanted Rooms"}].map(({val,label}) => (
+          <span className="text-[11px] font-semibold text-slate-500 mr-1">Deal:</span>
+          {[{val:"sale",label:"For Sale"},{val:"rent",label:"For Rent"}].map(({val,label}) => (
             <button
               key={val}
               type="button"
@@ -715,6 +783,15 @@ const FiltersBar = ({
             </button>
           ))}
           <span className="text-slate-200">|</span>
+          <select value={propertyType} onChange={e => setPropertyType(e.target.value)} className="outline-none border border-slate-200 bg-white text-[11px] text-slate-600 font-semibold px-2 py-1 rounded-full w-32 cursor-pointer hover:bg-slate-50">
+            <option value="">All Types</option>
+            <option value="house">House</option>
+            <option value="apartment">Apartment</option>
+            <option value="land">Land</option>
+            <option value="commercial">Commercial</option>
+            <option value="room">Room</option>
+          </select>
+          <span className="text-slate-200">|</span>
           <button
             type="button"
             onClick={onToggleMap}
@@ -723,43 +800,30 @@ const FiltersBar = ({
             {showMap ? "📋 Show list" : "🗺️ Show map"}
           </button>
         </div>
+        
         {/* Filter inputs row */}
         <div className="flex flex-row sm:items-end gap-3">
           <div className="grid gap-3 sm:grid-cols-4 flex-1">
-            <div className="relative text-xs">
-              <p className="font-semibold text-slate-700 mb-1">City / Area</p>
-              <div className="relative">
-                <input
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-                  placeholder="Baneshwor"
-                  value={searchCity}
-                  onChange={(e) => {
-                    setSearchCity(e.target.value);
-                    setShowSuggestions(true);
-                  }}
-                  onFocus={() => setShowSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                />
-                <AddressSuggestionsList
-                  suggestions={suggestions}
-                  show={showSuggestions}
-                  onSelect={onSelectSuggestion}
-                />
-              </div>
-            </div>
-            <FilterInput label="Min rent (Rs)" type="number" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} />
-            <FilterInput label="Max rent (Rs)" type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} />
-            <FilterInput label="Min beds" type="number" value={beds} onChange={(e) => setBeds(e.target.value)} />
+             <FilterInput label="District (e.g. Kathmandu)" type="text" value={district} onChange={(e) => setDistrict(e.target.value)} />
+             <FilterInput label="City/Municipality" type="text" value={municipality} onChange={(e) => setMunicipality(e.target.value)} />
+             <FilterInput label="Max rent/price" type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} />
+             <FilterInput label="Min beds" type="number" value={beds} onChange={(e) => setBeds(e.target.value)} />
           </div>
           <div className="flex flex-wrap gap-2 mt-2 sm:mt-0">
-            <FilterCheckbox label="Pets allowed" checked={petsOnly} onChange={(e) => setPetsOnly(e.target.checked)} />
-            <FilterCheckbox label="Furnished only" checked={furnishedOnly} onChange={(e) => setFurnishedOnly(e.target.checked)} />
+            <button
+              type="button"
+              onClick={onOpenModal}
+              className="inline-flex items-center justify-center rounded-full bg-blue-50 text-blue-700 px-4 py-1.5 border border-blue-200 text-xs font-semibold hover:bg-blue-100"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 mr-1" />
+              Advanced
+            </button>
             <button
               type="button"
               onClick={onSearch}
               className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
             >
-              Apply filters
+              Search
             </button>
             <button
               type="button"
@@ -775,7 +839,7 @@ const FiltersBar = ({
       {/* Mobile layout */}
       <div className="sm:hidden">
         <div className="flex items-center gap-2 mb-2">
-          {[{val:"offer",label:"For Rent"},{val:"wanted",label:"Wanted"}].map(({val,label}) => (
+          {[{val:"sale",label:"Buy"},{val:"rent",label:"Rent"}].map(({val,label}) => (
             <button
               key={val}
               type="button"
@@ -792,9 +856,8 @@ const FiltersBar = ({
         </div>
         <div className="flex items-center justify-between gap-2">
           <div className="flex-1">
-            <p className="text-sm font-semibold text-slate-700">
-              Showing {beds ? `${beds}+ bed ` : ""}homes in{" "}
-              {searchCity || "All Areas"}
+            <p className="text-sm font-semibold text-slate-700 truncate">
+               {district || municipality ? `${municipality ? municipality+', ' : ''}${district}` : "All Areas"}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -998,6 +1061,7 @@ const FeaturedListings = ({
 );
 
 const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved, isVirtualized }) => {
+  const { formatPrice, formatArea } = useMeasurement();
   const imageSrc =
     home.images?.[0] ||
     home.image ||
@@ -1024,37 +1088,66 @@ const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved, isVirtualized })
               "https://placehold.co/600x400/eff6ff/0f172a?text=Home";
           }}
         />
+        {/* Verification Badges */}
+        <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10 pointer-events-none">
+          {(home.verifiedSeller || home.isVerified) && (
+             <span className="inline-flex items-center gap-1 rounded-full bg-blue-600/95 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm backdrop-blur-sm tracking-wider uppercase">
+               <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+               </svg>
+               Verified
+             </span>
+          )}
+          {home.urgency === "high" && (
+             <span className="inline-flex items-center gap-1 rounded-full bg-red-500/95 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm backdrop-blur-sm tracking-wider uppercase bg-pulse">
+               ⚡ Urgent
+             </span>
+          )}
+        </div>
+
         <button
           type="button"
           onClick={handleSaveClick}
-          className={`absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 shadow-sm hover:bg-blue-50 ${
+          className={`absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 shadow-sm hover:bg-blue-50 z-20 ${
             isSaved ? "text-red-500" : "text-slate-700"
           }`}
         >
           <Heart className="h-4 w-4" fill={isSaved ? "currentColor" : "none"} />
         </button>
-        <span className="absolute left-3 bottom-3 rounded-full bg-blue-600/90 px-2.5 py-1 text-[11px] font-semibold text-white">
-          {typeof home.price === "number" ? `Rs. ${home.price}` : home.price}
-        </span>
+        <div className="absolute left-3 bottom-3 flex items-center gap-2">
+           <span className="rounded-full bg-blue-600/90 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm shadow-sm border-blue-500/50">
+             {formatPrice(home.price)}
+           </span>
+           <span className="rounded-full bg-slate-900/80 px-2 py-1 text-[9px] font-semibold text-white backdrop-blur-sm uppercase tracking-wider">
+             {home.type === "sale" ? "Sale" : "Rent"}
+           </span>
+        </div>
       </div>
-      <div className="p-3.5 space-y-2">
-        <p className="text-sm font-semibold text-slate-900 truncate">
+      <div className="p-3.5 space-y-2 flex-1 flex flex-col">
+        <p className="text-sm font-semibold text-slate-900 line-clamp-1">
           {home.title || home.address}
         </p>
         <p className="text-xs text-slate-500 flex items-center gap-1">
-          <MapPin className="h-3.5 w-3.5 text-blue-500" />
-          {home.city}
+          <MapPin className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+          <span className="truncate">{home?.location?.municipality || home.city}{home?.location?.district ? `, ${home.location.district}` : ""}</span>
         </p>
-        <div className="flex items-center justify-between text-[11px] text-slate-500 mt-2">
-          <span>{home.beds} beds</span>
-          <span>{home.baths} baths</span>
-          <span>{home.sqft} sqft</span>
-        </div>
-        <div className="mt-1 flex items-center justify-between text-[10px] text-slate-400">
-          <span className="inline-flex items-center gap-1">
-            <Eye className="h-3 w-3" />
-            {home.views ?? 0} views
-          </span>
+        
+        <div className="mt-auto pt-2">
+            <div className="flex items-center justify-between text-[11px] font-medium text-slate-600 bg-slate-50 rounded-lg p-2 border border-slate-100">
+              <span className="flex items-center gap-1"><span className="text-slate-400">🛏️</span> {home?.specs?.bedrooms || home.beds || "-"}</span>
+              <div className="w-px h-3 bg-slate-200" />
+              <span className="flex items-center gap-1"><span className="text-slate-400">🛁</span> {home?.specs?.bathrooms || home.baths || "-"}</span>
+              <div className="w-px h-3 bg-slate-200" />
+              <span className="flex items-center gap-1 truncate max-w-[90px]"><span className="text-slate-400">📐</span> {formatArea(home?.specs?.landArea, home.sqft)}</span>
+            </div>
+            
+            <div className="mt-2.5 flex items-center justify-between text-[10px] text-slate-400 font-medium">
+              <span className="inline-flex items-center gap-1">
+                <Eye className="h-3 w-3" />
+                {home.views ?? 0} views
+              </span>
+              <span>{home.createdAt ? new Date(home.createdAt).toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) : "Recently"}</span>
+            </div>
         </div>
       </div>
     </div>
