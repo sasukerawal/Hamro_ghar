@@ -2,11 +2,9 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import {
   Heart,
-  Eye,
   ChevronLeft,
   ChevronRight,
   Edit3,
-  Trash2,
   MapPin,
   AlertTriangle,
   Facebook,
@@ -166,11 +164,6 @@ export function ListingModal({
   const goNext = (e) => {
     e.stopPropagation();
     setActiveIndex((prev) => (prev + 1) % images.length);
-  };
-
-  const handleThumbClick = (e, idx) => {
-    e.stopPropagation();
-    setActiveIndex(idx);
   };
 
   // Generate dynamic SEO metadata and JSON-LD schema

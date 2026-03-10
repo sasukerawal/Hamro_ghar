@@ -4,7 +4,7 @@ import { apiFetch } from "./api";
 import { Helmet } from "react-helmet";
 import {
   MapPin, Heart, Share2, ChevronLeft, Loader, Phone, CheckCircle2,
-  AlertTriangle, Home, Ruler, Compass, Layers, Droplets, Wifi, Car, Bike, Grid, Maximize2, Tag, Building
+  AlertTriangle, Home, Ruler, Layers, Droplets, Wifi, Car, Bike, Grid, Maximize2, Tag, Building
 } from "lucide-react";
 import { useMeasurement } from "./contexts/MeasurementContext";
 

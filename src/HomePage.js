@@ -893,16 +893,7 @@ const FilterInput = ({ label, ...props }) => (
   </div>
 );
 
-const FilterCheckbox = ({ label, ...props }) => (
-  <label className="inline-flex items-center gap-1.5 text-[11px] text-slate-700 cursor-pointer">
-    <input
-      type="checkbox"
-      className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-      {...props}
-    />
-    <span>{label}</span>
-  </label>
-);
+
 
 // HighlightStrip — honest, no "verified" claim
 const HighlightStrip = ({ t }) => (
