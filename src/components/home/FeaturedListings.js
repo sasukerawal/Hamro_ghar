@@ -1,6 +1,7 @@
 import React from "react";
 import { ChevronLeft, ChevronRight, Heart, MapPin, Eye } from "lucide-react";
 import { useMeasurement } from "../../contexts/MeasurementContext";
+import AdBanner from "../ads/AdBanner";
 
 // Skeleton shimmer card
 export const SkeletonCard = () => (
@@ -28,6 +29,7 @@ export const FeaturedListings = ({
   page,
   totalPages,
   onPageChange,
+  feedAd,
 }) => (
   <section className="bg-slate-50 py-10">
     <div className="max-w-6xl mx-auto px-4">
@@ -60,19 +62,27 @@ export const FeaturedListings = ({
       ) : (
         <>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {listings.map((home) => {
+            {listings.map((home, index) => {
               const id = home._id || home.id;
               const isSaved = savedIds.includes(id);
 
               return (
-                <ListingCard
-                  key={id}
-                  home={home}
-                  onToggleSave={onToggleSave}
-                  onOpenHome={onOpenHome}
-                  isSaved={isSaved}
-                  isVirtualized={false}
-                />
+                <React.Fragment key={id}>
+                  <ListingCard
+                    home={home}
+                    onToggleSave={onToggleSave}
+                    onOpenHome={onOpenHome}
+                    isSaved={isSaved}
+                    isVirtualized={false}
+                  />
+                  
+                  {/* Inline Feed Ad Placement */}
+                  {feedAd && index === 5 && (
+                    <div className="sm:col-span-2 lg:col-span-3">
+                      <AdBanner ad={feedAd} className="h-32 w-full mt-4" />
+                    </div>
+                  )}
+                </React.Fragment>
               );
             })}
           </div>

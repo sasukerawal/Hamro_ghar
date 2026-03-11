@@ -2,12 +2,17 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiFetch } from "./api";
 import { Helmet } from "react-helmet";
+import { toast } from "react-toastify";
 import {
   MapPin, Heart, Share2, ChevronLeft, Loader, Phone, CheckCircle2,
   AlertTriangle, Home, Ruler, Layers, Droplets, Wifi, Car, Bike, Grid, Maximize2, Tag, Building,
   MessageCircle, Mail, ExternalLink
 } from "lucide-react";
 import { useMeasurement } from "./contexts/MeasurementContext";
+import VideoEmbed from "./components/VideoEmbed";
+import { ListingCard } from "./components/home/FeaturedListings";
+import useSWR from "swr";
+import AdBanner from "./components/ads/AdBanner";
 
 const MetricBox = ({ label, value, icon }) => {
   if (!value) return null;
@@ -39,12 +44,26 @@ export default function PropertyDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [home, setHome] = useState(null);
+  const [similarListings, setSimilarListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { formatPrice, formatArea } = useMeasurement();
 
+  const swrFetcher = async (url) => {
+    const res = await apiFetch(url, { credentials: "omit" });
+    return res;
+  };
+
+  const { data: adsData } = useSWR("/api/ads/active", swrFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 300000, 
+  });
+
   useEffect(() => {
     window.scrollTo(0, 0);
+    setLoading(true);
+    
+    // Fetch main listing
     apiFetch(`/api/listings/${id}`)
       .then((data) => {
         setHome(data.listing || data);
@@ -54,6 +73,11 @@ export default function PropertyDetail() {
         setError(err.message || "Property not found");
         setLoading(false);
       });
+      
+    // Fetch similar listings
+    apiFetch(`/api/listings/${id}/similar`)
+      .then((data) => setSimilarListings(Array.isArray(data) ? data : []))
+      .catch((err) => console.error("Could not load similar properties", err));
   }, [id]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader className="w-10 h-10 animate-spin text-blue-600" /></div>;
@@ -85,29 +109,61 @@ export default function PropertyDetail() {
     home.location?.district
   ].filter(Boolean).join(", ");
 
+  const handleShare = async () => {
+    const shareData = {
+      title: `${home.title || "Property Listing"} - HamroGhar`,
+      text: home.description?.substring(0, 100) + "...",
+      url: window.location.href,
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        if (err.name !== 'AbortError') console.error("Share failed:", err.message);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success("Listing URL copied to clipboard!");
+      } catch (err) {
+        toast.error("Failed to copy URL.");
+      }
+    }
+  };
+
   return (
     <div className="bg-slate-50 min-h-screen pb-24 font-sans text-slate-800">
       <Helmet>
         <title>{home.title || "Property Listing"} - HamroGhar</title>
         <meta name="description" content={home.description?.substring(0, 150)} />
+        
+        {/* OpenGraph / Social Media SEO tags */}
+        <meta property="og:title" content={`${home.title || "Property Listing"} - HamroGhar`} />
+        <meta property="og:description" content={home.description?.substring(0, 150)} />
+        <meta property="og:image" content={images[0]} />
+        <meta property="og:url" content={window.location.href} />
+        <meta property="og:type" content="website" />
+        
+        {/* Twitter Card tags */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${home.title || "Property Listing"} - HamroGhar`} />
+        <meta name="twitter:description" content={home.description?.substring(0, 150)} />
+        <meta name="twitter:image" content={images[0]} />
       </Helmet>
 
       {/* Top Navigation */}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">
-            <ChevronLeft className="w-5 h-5" /> Back to Search
-          </button>
-          <div className="flex gap-3">
-            <button className="flex items-center gap-2 text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl transition-colors">
-              <Share2 className="w-4 h-4" /> Share
+            <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">
+              <ChevronLeft className="w-5 h-5" /> Back to Search
             </button>
-            <button className="flex items-center gap-2 text-sm font-bold text-slate-700 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 px-4 py-2 rounded-xl transition-colors">
-              <Heart className="w-4 h-4" /> Save
-            </button>
+            <div className="flex gap-3">
+              <button onClick={handleShare} className="flex items-center gap-2 text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl transition-colors active:scale-95">
+                <Share2 className="w-4 h-4" /> Share
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
       <main className="max-w-6xl mx-auto px-4 py-6">
         
@@ -265,6 +321,14 @@ export default function PropertyDetail() {
               </section>
             )}
 
+            {/* Video Tour Section */}
+            {home.videoUrl && (
+              <section className="mt-10">
+                <h2 className="text-2xl font-extrabold text-slate-900 mb-6 flex items-center gap-2">Video Walkthrough</h2>
+                <VideoEmbed url={home.videoUrl} />
+              </section>
+            )}
+
             {/* Location */}
             <section>
               <h2 className="text-2xl font-extrabold text-slate-900 mb-5">Location & Map</h2>
@@ -282,12 +346,34 @@ export default function PropertyDetail() {
                 </div>
               )}
             </section>
+            
+            {/* Similar Properties Nearby */}
+            {similarListings.length > 0 && (
+              <section className="mt-16 pt-10 border-t-2 border-slate-100">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-extrabold text-slate-900">Similar Properties Nearby</h2>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {similarListings.map(listing => (
+                    <ListingCard
+                      key={listing._id}
+                      home={listing}
+                      onToggleSave={() => {}} // Disabled in this view for simplicity
+                      onOpenHome={() => navigate(`/property/${listing._id}`)}
+                      isSaved={false}
+                      isVirtualized={true}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
 
           {/* Details Sidebar Sticky */}
           <div className="lg:col-span-1 hidden lg:block">
-            <div className="sticky top-24 bg-white border border-slate-200 rounded-3xl shadow-2xl shadow-slate-200 p-7">
-              <div className="mb-8">
+            <div className="sticky top-24 space-y-6">
+               <div className="bg-white border border-slate-200 rounded-3xl shadow-2xl shadow-slate-200 p-7">
+                 <div className="mb-8">
                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Asking Price</p>
                  <div className="flex items-baseline gap-1">
                    <h2 className="text-4xl font-black text-slate-900 tracking-tight">{priceLabel}</h2>
@@ -353,6 +439,12 @@ export default function PropertyDetail() {
                  <span>{home.views} Views</span>
                  <span>Posted {new Date(home.createdAt).toLocaleDateString()}</span>
               </div>
+              </div>
+              
+              {/* Sticky Sidebar Ad Placement */}
+              {adsData?.sidebar && adsData.sidebar.length > 0 && (
+                <AdBanner ad={adsData.sidebar[0]} className="h-96 w-full shadow-lg" />
+              )}
             </div>
           </div>
 

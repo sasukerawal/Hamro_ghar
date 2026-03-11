@@ -132,6 +132,64 @@ router.get("/geo/search", async (req, res) => {
   }
 });
 
+/* =========================================
+   SIMILAR LISTINGS
+   GET /api/listings/:id/similar
+========================================= */
+router.get("/:id/similar", async (req, res) => {
+  try {
+    const listingId = req.params.id;
+    const targetListing = await Listing.findById(listingId);
+    
+    if (!targetListing) {
+      return res.status(404).json({ error: "Source listing not found" });
+    }
+
+    const { type, propertyType, price, location } = targetListing;
+
+    // Build similar match criteria
+    const query = {
+      _id: { $ne: listingId }, // Exclude self
+      status: "active",
+      type: type, // Must be same transaction type (rent/sale)
+    };
+
+    // Strongly prefer same property type (House with House)
+    if (propertyType) {
+       query.propertyType = propertyType;
+    }
+
+    // Must be in the same district or city
+    const districtArea = location?.district || targetListing.city;
+    if (districtArea) {
+      query.$or = [
+        { "location.district": districtArea },
+        { city: districtArea }
+      ];
+    }
+
+    // Fetch up to 10 candidates, then sort by price delta to find the closest matches
+    const candidates = await Listing.find(query)
+      .select("-description -contact") // Exclude heavy text
+      .limit(15);
+    
+    // Calculate price proximity score 
+    const scoredCandidates = candidates.map(c => {
+      const priceDiff = Math.abs(c.price - price);
+      const priceScore = priceDiff / price; // Lower is better (percentage difference)
+      return { ...c.toObject(), score: priceScore };
+    });
+
+    // Sort by price proximity and take top 4
+    const sorted = scoredCandidates.sort((a, b) => a.score - b.score).slice(0, 4);
+
+    res.json(sorted);
+  } catch (err) {
+    console.error("Similar properties fetch error:", err);
+    res.status(500).json({ error: "Could not fetch similar properties" });
+  }
+});
+
 // Helper to convert FormData string booleans to real booleans
 const parseBool = (v) => v === true || v === "true" || v === "1";
 
@@ -224,7 +282,7 @@ router.post("/create", requireAuth, (req, res) => {
       const uploadedImages = [];
       if (Array.isArray(req.files) && req.files.length > 0) {
         for (const file of req.files) {
-          if (file.path) uploadedImages.push(file.path);
+          uploadedImages.push(file.path);
         }
       }
 
@@ -1028,20 +1086,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
   }
 });
 
-/* =========================================
-   16. POST /:id/report
-   Report a listing as spam/scam
-========================================= */
-router.post("/:id/report", async (req, res) => {
-  try {
-    const listingId = req.params.id;
-    // Log the report — extend with email/DB storage as needed
-    console.log(`[REPORT] Listing ${listingId} reported at ${new Date().toISOString()}`);
-    res.json({ message: "Report received. Thank you." });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to submit report" });
-  }
-});
+// (Removed duplicate dummy POST /:id/report route)
 
 /* =========================================
    17. GET /admin/overview
@@ -1055,16 +1100,17 @@ router.get("/admin/overview", requireAuth, async (req, res) => {
       return res.status(403).json({ error: "Admin access required" });
     }
 
-    const [totalListings, activeListings, totalUsers, recentListings] = await Promise.all([
+    const [totalListings, activeListings, totalUsers, totalReports, recentListings] = await Promise.all([
       Listing.countDocuments({}),
       Listing.countDocuments({ status: "active" }),
       User.countDocuments({}),
-      Listing.find({}).sort({ createdAt: -1 }).limit(20).select("title city price status createdAt ownerId type"),
+      Report.countDocuments({ status: "pending" }), // Count unresolved reports
+      Listing.find({}).sort({ createdAt: -1 }).limit(20).select("title city price status createdAt ownerId type isVerified"),
     ]);
 
-    const recentUsers = await User.find({}).sort({ createdAt: -1 }).limit(10).select("name email role createdAt");
+    const recentUsers = await User.find({}).sort({ createdAt: -1 }).limit(10).select("name email role isVerified createdAt");
 
-    res.json({ totalListings, activeListings, totalUsers, recentListings, recentUsers });
+    res.json({ totalListings, activeListings, totalUsers, totalReports, recentListings, recentUsers });
   } catch (err) {
     console.error("Admin overview error:", err);
     res.status(500).json({ error: "Failed to load admin data" });
@@ -1092,6 +1138,80 @@ router.delete("/admin/listings/:id", requireAuth, async (req, res) => {
     res.json({ message: "Listing deleted by admin" });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete" });
+  }
+});
+
+/* =========================================
+   19. GET /admin/reports
+   Admin view moderation queue
+========================================= */
+router.get("/admin/reports", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const user = await User.findById(userId);
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const reports = await Report.find({})
+      .populate("listingId", "title ownerId")
+      .populate("reporterId", "name email")
+      .sort({ createdAt: -1 });
+
+    res.json({ reports });
+  } catch (err) {
+    console.error("Admin reports fetch error:", err);
+    res.status(500).json({ error: "Failed to load reports" });
+  }
+});
+
+/* =========================================
+   20. PUT /admin/reports/:id/resolve
+   Admin marks report as resolved
+========================================= */
+router.put("/admin/reports/:id/resolve", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const user = await User.findById(userId);
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const report = await Report.findByIdAndUpdate(
+      req.params.id,
+      { status: "resolved" },
+      { new: true }
+    );
+    if (!report) return res.status(404).json({ error: "Report not found" });
+
+    res.json({ message: "Report resolved", report });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to resolve report" });
+  }
+});
+
+/* =========================================
+   21. PUT /admin/users/:id/verify
+   Admin verifies a user directly
+========================================= */
+router.put("/admin/users/:id/verify", requireAuth, async (req, res) => {
+  try {
+    const adminId = getUserId(req);
+    const adminUser = await User.findById(adminId);
+    if (!adminUser || adminUser.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const targetUser = await User.findById(req.params.id);
+    if (!targetUser) return res.status(404).json({ error: "User not found" });
+
+    // Toggle verified status
+    targetUser.isVerified = !targetUser.isVerified;
+    await targetUser.save();
+
+    res.json({ message: "User verification status updated", isVerified: targetUser.isVerified });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update user verification" });
   }
 });
 

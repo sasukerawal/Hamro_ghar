@@ -17,6 +17,7 @@ import HighlightStrip from "./components/home/HighlightStrip";
 import { FeaturedListings } from "./components/home/FeaturedListings";
 import CallToAction from "./components/home/CallToAction";
 import SiteReviewsSection from "./components/home/SiteReviewsSection";
+import AdBanner from "./components/ads/AdBanner";
 
 import {
   MapPin,
@@ -268,7 +269,13 @@ export default function HomePage({
     avgViews: statsData?.avgViews ?? null,
   };
 
-  // 2. SWR for Listings
+  // 2. SWR for Ads
+  const { data: adsData } = useSWR("/api/ads/active", swrFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 300000, 
+  });
+
+  // 3. SWR for Listings
   // Build query string based on current state
   const buildListingsUrl = () => {
     const params = new URLSearchParams();
@@ -487,6 +494,13 @@ export default function HomePage({
         onToggleMap={() => setShowMap((prev) => !prev)}
       />
 
+      {/* Hero Ad Placement */}
+      {adsData?.hero && adsData.hero.length > 0 && !showMap && (
+        <div className="max-w-6xl mx-auto px-4 mt-6">
+          <AdBanner ad={adsData.hero[0]} className="h-24 sm:h-32 mb-6" />
+        </div>
+      )}
+
       {showMap ? (
         <section className="bg-slate-50 py-10">
           <div className="max-w-6xl mx-auto px-4">
@@ -513,6 +527,7 @@ export default function HomePage({
           page={page}
           totalPages={totalPages}
           onPageChange={handlePageChange}
+          feedAd={adsData?.feed?.[0]}
         />
       )}
 

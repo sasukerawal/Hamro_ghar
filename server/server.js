@@ -10,6 +10,7 @@ import listingsRoutes from "./routes/listings.js";
 import userRoutes from './routes/user.js';
 import reviewsRoutes from './routes/reviews.js';
 import siteReviewsRoutes from './routes/siteReviews.js';
+import adsRoutes from './routes/ads.js';
 import './services/listingExpiry.js'; // starts cron on boot
 
 const app = express();
@@ -73,6 +74,7 @@ app.use('/api/reviews', apiLimiter, reviewsRoutes);
 app.use('/api/site-reviews', apiLimiter, siteReviewsRoutes);
 app.use("/uploads", express.static("uploads"));
 app.use("/api/listings", apiLimiter, listingsRoutes);
+app.use("/api/ads", apiLimiter, adsRoutes);
 
 // --- Health
 app.get('/api/health', (_req, res) => res.json({ ok: true }));

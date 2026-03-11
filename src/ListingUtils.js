@@ -384,16 +384,7 @@ export function ListingModal({
                    </section>
                  )}
 
-                 {/* Video */}
-                 {home?.videoUrl && (
-                   <section>
-                     <h2 className="text-lg font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2">Video Walkthrough</h2>
-                     <a href={home.videoUrl} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-3 p-4 bg-red-50 text-red-600 rounded-xl font-extrabold border border-red-100 shadow-sm hover:bg-red-100 hover:shadow-md transition-all">
-                       <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
-                       Watch Property Tour on YouTube/TikTok
-                     </a>
-                   </section>
-                 )}
+
 
                  {/* Disclaimer */}
                  <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">

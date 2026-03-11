@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
 import { useNavigate, useParams } from "react-router-dom";
 import { 
-  ArrowLeft, ArrowRight, CheckCircle, MapPin, UploadCloud, X, Plus, Trash
+  ArrowLeft, ArrowRight, CheckCircle, MapPin, UploadCloud, X, Plus, Trash, Youtube
 } from "lucide-react";
 import { apiFetch } from "./api";
 import { MUNICIPALITIES, FACING_DIRECTIONS } from "./utils/nepalLocations";
@@ -113,7 +113,10 @@ export default function PostListing() {
     contactPhone: "",
     contactEmail: "",
     contactWhatsapp: "",
-    contactSocial: ""
+    contactSocial: "",
+    
+    // Video
+    videoUrl: ""
   });
   
   const [mediaFiles, setMediaFiles] = useState([]);
@@ -385,6 +388,7 @@ export default function PostListing() {
         whatsapp: form.contactWhatsapp,
         socialMedia: form.contactSocial
       }));
+      if (form.videoUrl?.trim()) fd.append("videoUrl", form.videoUrl.trim());
       fd.append("mapsUrl", form.mapsUrl.trim());
       if (form.parsedLat && form.parsedLng) {
          fd.append("lat", form.parsedLat);
@@ -876,6 +880,26 @@ export default function PostListing() {
                           ))}
                        </div>
                      )}
+                     
+                     <div className="pt-8 border-t border-slate-100">
+                        <div className="flex items-center gap-2 mb-2">
+                           <h3 className="font-extrabold text-slate-800">Video Tour (Optional)</h3>
+                           <span className="bg-indigo-100 text-indigo-700 text-[10px] uppercase font-black px-2 py-0.5 rounded">Boosts Engagement</span>
+                        </div>
+                        <p className="text-xs text-slate-500 mb-3">Paste a link to a YouTube, TikTok, or Instagram Reel walkthrough of the property.</p>
+                        <div className="relative">
+                          <input 
+                            type="url" 
+                            placeholder="https://youtube.com/watch?v=..." 
+                            value={form.videoUrl} 
+                            onChange={handleChange("videoUrl")} 
+                            className="w-full border-2 border-slate-200 pl-4 pr-20 py-3.5 rounded-xl outline-none focus:border-indigo-500 bg-slate-50 focus:bg-white font-medium transition-colors" 
+                          />
+                          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none gap-1">
+                            <Youtube className="w-5 h-5 text-red-500" />
+                          </div>
+                        </div>
+                     </div>
                     </div>
                  </div>
                )}
