@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { X, Search, ChevronDown, ChevronUp, MapPin, Building, Tag, Layers, CheckCircle } from "lucide-react";
 import { AMENITIES_LIST } from "./PostListing";
+import { PROVINCES_TO_DISTRICTS, MUNICIPALITIES } from "./utils/nepalLocations";
 
 function FilterSection({ title, icon: Icon, children, defaultOpen = false }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -42,6 +43,8 @@ export default function FilterModal({
   
   propertyType,
   setPropertyType,
+  province,
+  setProvince,
   district,
   setDistrict,
   municipality,
@@ -127,8 +130,27 @@ export default function FilterModal({
 
           <FilterSection title="Location" icon={MapPin}>
             <div className="space-y-4">
-               <FilterInput label="District (e.g. Kathmandu)" type="text" placeholder="Kathmandu" value={district} onChange={(e) => setDistrict(e.target.value)} />
-               <FilterInput label="Municipality / City" type="text" placeholder="Kathmandu Metropolitan City" value={municipality} onChange={(e) => setMunicipality(e.target.value)} />
+               <div>
+                  <p className="font-bold text-slate-600 mb-2 uppercase tracking-wide text-[10px]">Province</p>
+                  <select value={province} onChange={e => { setProvince(e.target.value); setDistrict(''); setMunicipality(''); }} className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3 py-3 outline-none focus:border-blue-400 font-bold text-slate-700">
+                     <option value="">Any Province</option>
+                     {Object.keys(PROVINCES_TO_DISTRICTS).map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+               </div>
+               <div>
+                  <p className="font-bold text-slate-600 mb-2 uppercase tracking-wide text-[10px]">District</p>
+                  <select value={district} onChange={e => { setDistrict(e.target.value); setMunicipality(''); }} className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3 py-3 outline-none focus:border-blue-400 font-bold text-slate-700">
+                     <option value="">Any District</option>
+                     {(province ? PROVINCES_TO_DISTRICTS[province] : Object.keys(MUNICIPALITIES).sort()).map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+               </div>
+               <div>
+                  <p className="font-bold text-slate-600 mb-2 uppercase tracking-wide text-[10px]">Municipality</p>
+                  <select value={municipality} onChange={e => setMunicipality(e.target.value)} disabled={!district} className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3 py-3 outline-none focus:border-blue-400 font-bold text-slate-700 disabled:opacity-50">
+                     <option value="">Any Municipality</option>
+                     {district && MUNICIPALITIES[district]?.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+               </div>
             </div>
           </FilterSection>
 
@@ -157,13 +179,16 @@ export default function FilterModal({
 
           <FilterSection title="Amenities & Facilities" icon={Layers}>
              <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-3 border-b border-slate-100">
-                  <FilterToggle label="Pets allowed" checked={petsOnly} onChange={(e) => setPetsOnly(e.target.checked)} />
-                  <FilterToggle label="Furnished only" checked={furnishedOnly} onChange={(e) => setFurnishedOnly(e.target.checked)} />
-                </div>
-                
-                <p className="font-bold text-slate-600 mb-2 uppercase tracking-wide text-[10px]">Specific Amenities</p>
                 <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                   {/* Special handling for Furnished to match UI exactly without changing DB schema */}
+                   <label className={`flex items-start p-2.5 rounded-xl border-2 cursor-pointer transition-colors ${furnishedOnly ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
+                      <div className={`w-4 h-4 shrink-0 rounded flex items-center justify-center border mt-0.5 mr-2 transition-colors ${furnishedOnly ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-300'}`}>
+                        {furnishedOnly && <CheckCircle className="w-3 h-3" />}
+                      </div>
+                      <span className={`text-[11px] font-bold mt-0.5 leading-tight ${furnishedOnly ? 'text-blue-900' : 'text-slate-600'}`}>Furnished</span>
+                      <input type="checkbox" className="hidden" checked={furnishedOnly || false} onChange={(e) => setFurnishedOnly(e.target.checked)} />
+                   </label>
+                   
                    {AMENITIES_LIST.map(amenity => (
                      <label key={amenity} className={`flex items-start p-2.5 rounded-xl border-2 cursor-pointer transition-colors ${amenities?.includes(amenity) ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
                         <div className={`w-4 h-4 shrink-0 rounded flex items-center justify-center border mt-0.5 mr-2 transition-colors ${amenities?.includes(amenity) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-300'}`}>
@@ -211,17 +236,3 @@ const FilterInput = ({ label, ...props }) => (
   </div>
 );
 
-const FilterToggle = ({ label, checked, onChange }) => (
-  <label className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer border-2 transition-colors duration-200 ${checked ? 'border-blue-600 bg-blue-50' : 'border-slate-100 bg-slate-50 hover:bg-slate-100'}`}>
-    <div className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${checked ? 'bg-blue-600 text-white' : 'bg-slate-200 text-transparent'}`}>
-      <CheckCircle className="w-3.5 h-3.5" strokeWidth={3} />
-    </div>
-    <span className={`text-sm font-bold ${checked ? 'text-blue-900' : 'text-slate-600'}`}>{label}</span>
-    <input
-      type="checkbox"
-      className="hidden"
-      checked={checked}
-      onChange={onChange}
-    />
-  </label>
-);

@@ -48,11 +48,17 @@ async function forwardGeocode(address, city) {
   if (!q) return null;
 
   // Try: full address first, then city-only as fallback
-  const queries = [q];
-  if (city && city.trim() && city.trim() !== q) queries.push(city.trim());
+  const queries = [];
+  
+  // Strategy 1: Ultra specific with Nepal suffix
+  if (q && city) queries.push(`${q}, ${city}, Nepal`);
+  // Strategy 2: Just the specific locality in Nepal
+  if (q) queries.push(`${q}, Nepal`);
+  // Strategy 3: Just the city in Nepal
+  if (city) queries.push(`${city}, Nepal`);
 
   for (const query of queries) {
-    const url = `${GEOCODE_ENDPOINT}&limit=1&q=${encodeURIComponent(query)}`;
+    const url = `${GEOCODE_ENDPOINT}&limit=1&countrycodes=np&addressdetails=1&q=${encodeURIComponent(query)}`;
     try {
       const res = await fetch(url, {
         headers: { "User-Agent": "HamroGhar/1.0 (educational project; nepal)" },
@@ -89,11 +95,9 @@ router.get("/geo/search", async (req, res) => {
 
     const fullQuery = [q, city].filter(Boolean).join(", ");
 
-    const url = `${GEOCODE_ENDPOINT}&limit=5&q=${encodeURIComponent(
-      fullQuery
-    )}`;
-
-    const fetchRes = await fetch(url, {
+    const fetchRes = await fetch(
+      `${GEOCODE_ENDPOINT}&limit=5&countrycodes=np&addressdetails=1&q=${encodeURIComponent(fullQuery)}, Nepal`,
+      {
       headers: {
         "User-Agent": "HamroGhar/1.0 (educational project)",
       },
@@ -526,6 +530,7 @@ router.get("/all", async (req, res) => {
       type,        // offer/wanted/sale/rent
       propertyType,
       city,        // generic search mapped to district/municipality/locality
+      province,
       district,
       municipality,
       minPrice,
@@ -559,6 +564,10 @@ router.get("/all", async (req, res) => {
     }
 
     // Location search
+    if (province && province.trim()) {
+      query["location.province"] = new RegExp(`^${province.trim()}$`, "i");
+    }
+
     if (district && district.trim()) {
       query["location.district"] = new RegExp(`^${district.trim()}$`, "i");
     }

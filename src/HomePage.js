@@ -194,6 +194,7 @@ export default function HomePage({
   
   // NEW V2 Filters
   const [propertyType, setPropertyType] = useState("");
+  const [province, setProvince] = useState("");
   const [district, setDistrict] = useState("");
   const [municipality, setMunicipality] = useState("");
   const [minLandArea, setMinLandArea] = useState("");
@@ -273,6 +274,7 @@ export default function HomePage({
     
     // Append V2 filters
     if (propertyType) params.append("propertyType", propertyType);
+    if (province) params.append("province", province);
     if (district) params.append("district", district);
     if (municipality) params.append("municipality", municipality);
     if (minLandArea) params.append("minLandArea", minLandArea);
@@ -404,6 +406,7 @@ export default function HomePage({
     setListingType("");
     
     setPropertyType("");
+    setProvince("");
     setDistrict("");
     setMunicipality("");
     setMinLandArea("");
@@ -450,6 +453,8 @@ export default function HomePage({
         // V2 Filters
         propertyType={propertyType}
         setPropertyType={setPropertyType}
+        province={province}
+        setProvince={setProvince}
         district={district}
         setDistrict={setDistrict}
         municipality={municipality}
@@ -543,6 +548,8 @@ export default function HomePage({
         // V2 Filters
         propertyType={propertyType}
         setPropertyType={setPropertyType}
+        province={province}
+        setProvince={setProvince}
         district={district}
         setDistrict={setDistrict}
         municipality={municipality}
