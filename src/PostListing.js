@@ -114,9 +114,6 @@ export default function PostListing() {
     contactEmail: "",
     contactWhatsapp: "",
     contactSocial: "",
-    
-    // Video
-    videoUrl: ""
   });
   
   const [mediaFiles, setMediaFiles] = useState([]);

@@ -4,7 +4,7 @@ import { apiFetch } from "./api";
 import { Helmet } from "react-helmet";
 import { toast } from "react-toastify";
 import {
-  MapPin, Heart, Share2, ChevronLeft, Loader, Phone, CheckCircle2,
+  MapPin, Share2, ChevronLeft, Loader, Phone, CheckCircle2,
   AlertTriangle, Home, Ruler, Layers, Droplets, Wifi, Car, Bike, Grid, Maximize2, Tag, Building,
   MessageCircle, Mail, ExternalLink
 } from "lucide-react";

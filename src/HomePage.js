@@ -26,16 +26,8 @@ import {
   Shield,
   Star,
   ArrowRight,
-  Phone,
-  Home as HomeIcon,
-  Eye,
-  SlidersHorizontal,
   ChevronUp,
   Tag,
-  ChevronLeft,
-  ChevronRight,
-  Loader,
-  AlertTriangle,
   Layers,
 } from "lucide-react";
 
