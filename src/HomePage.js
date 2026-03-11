@@ -1,14 +1,11 @@
 // src/HomePage.js
 import React, { useState, useEffect } from "react";
 import { apiFetch } from "./api";
-import { toast } from "react-toastify";
 import useSWR from "swr";
 import { useNavigate } from "react-router-dom";
 
 import FilterModal from "./FilterModal";
 import { ListingModal, handleToggleSaveHome } from "./ListingUtils";
-import { useMeasurement } from "./contexts/MeasurementContext";
-import AddressSuggestionsList from "./AddressSuggestionsList";
 import ListingMapView from "./ListingMapView";
 
 import HeroSection from "./components/home/HeroSection";
@@ -21,11 +18,6 @@ import AdBanner from "./components/ads/AdBanner";
 
 import {
   MapPin,
-  Search,
-  Heart,
-  Shield,
-  Star,
-  ArrowRight,
   ChevronUp,
   Tag,
   Layers,
