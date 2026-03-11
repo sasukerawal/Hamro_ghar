@@ -185,7 +185,7 @@ export default function PropertyDetail() {
                    </ul>
                 </div>
               )}
-              <div className="text-slate-700 leading-relaxed whitespace-pre-wrap text-[16px] font-medium">
+              <div className="text-slate-700 leading-relaxed whitespace-pre-wrap text-[16px] font-medium break-words overflow-hidden">
                 {home.description}
               </div>
             </section>

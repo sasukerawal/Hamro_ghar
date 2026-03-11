@@ -102,7 +102,7 @@ export default function FilterModal({
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-5 pb-32 space-y-2 relative">
+        <div className="flex-1 overflow-y-auto p-5 space-y-2">
           
           <FilterSection title="Property & Price" icon={Tag} defaultOpen={true}>
             <div className="space-y-4">
@@ -205,7 +205,7 @@ export default function FilterModal({
         </div>
 
         {/* Fixed Footer */}
-        <div className="absolute bottom-0 w-full bg-white border-t border-slate-100 p-5 flex gap-4 z-40">
+        <div className="bg-white border-t border-slate-100 p-5 flex gap-4 z-40 shrink-0 mt-auto">
           <button
             onClick={handleClear}
             className="flex-[1] rounded-2xl bg-slate-50 border-2 border-slate-100 py-3.5 text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors"
