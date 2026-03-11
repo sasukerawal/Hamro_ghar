@@ -268,38 +268,54 @@ function MyListingCard({ home, openMenuId, setOpenMenuId, onView, onEdit, onTogg
   const menuOpen = openMenuId === home._id;
 
   return (
-    <div className="bg-white rounded-2xl border border-blue-50 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-      <div className="relative h-36 overflow-hidden cursor-pointer" onClick={onView}>
-        <img src={img} alt={home.title} className="h-full w-full object-cover transition-transform hover:scale-105 duration-300" onError={(e) => { e.target.src = "https://placehold.co/300x200/eff6ff/0f172a?text=Home"; }} />
-        <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold ${isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
-          {isActive ? "Active" : "Unavailable"}
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col items-stretch overflow-visible">
+      <div className="relative h-44 overflow-hidden rounded-t-2xl cursor-pointer group" onClick={onView}>
+        <img src={img} alt={home.title} className="h-full w-full object-cover transition-transform group-hover:scale-105 duration-500" onError={(e) => { e.target.src = "https://placehold.co/300x200/eff6ff/0f172a?text=Home"; }} />
+        
+        {/* Top Fade overlay */}
+        <div className="absolute top-0 w-full h-16 bg-gradient-to-b from-black/60 to-transparent"></div>
+        
+        {/* Status Badge Top Left */}
+        <span className={`absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1.5 backdrop-blur-md ${isActive ? "bg-emerald-500/90 text-white" : "bg-slate-800/90 text-slate-200"}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : 'bg-slate-400'}`}></span>
+          {isActive ? "Active" : "Hidden"}
         </span>
-        <span className="absolute bottom-2 right-2 bg-blue-600/90 rounded-full px-2 py-0.5 text-[11px] font-semibold text-white">
+        
+        {/* Price Tag Bottom Right */}
+        <span className="absolute bottom-3 right-3 bg-blue-600/95 backdrop-blur shadow-md rounded-xl px-3 py-1.5 text-xs font-black text-white">
           Rs. {home.price?.toLocaleString()}
         </span>
       </div>
-      <div className="px-3 py-2.5">
-        <p className="text-sm font-semibold text-slate-900 truncate">{home.title || home.address}</p>
-        <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-          <MapPin className="h-3 w-3 text-blue-400" /> {home.city}
+      <div className="p-4 flex flex-col flex-1 relative z-0">
+        <p className="text-base font-bold text-slate-900 line-clamp-1 mb-1">{home.title || home.address}</p>
+        <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5 mb-4">
+          <MapPin className="h-3.5 w-3.5 text-blue-500 shrink-0" /> <span className="truncate">{home.location?.municipality || home.city}</span>
         </p>
-        <div className="mt-2.5 flex items-center justify-between">
-          <div className="flex gap-2">
-            <ActionBtn onClick={onEdit} title="Edit" icon={<Edit3 className="h-3.5 w-3.5" />} />
-            <ActionBtn onClick={onToggle} title={isActive ? "Hide" : "Publish"} icon={isActive ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />} />
-          </div>
-          <div className="relative">
-            <button onClick={() => setOpenMenuId(menuOpen ? null : home._id)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
-              <MoreHorizontal className="h-4 w-4" />
-            </button>
-            {menuOpen && (
-              <div className="absolute right-0 bottom-8 bg-white border border-slate-100 rounded-xl shadow-lg z-10 min-w-[130px]">
-                <button onClick={onDelete} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50 rounded-xl">
-                  <Trash2 className="h-3.5 w-3.5" /> Delete listing
-                </button>
-              </div>
-            )}
-          </div>
+        <div className="mt-auto px-1">
+           <hr className="border-slate-100 mb-3" />
+           <div className="flex items-center justify-between">
+             <div className="flex gap-2">
+               <ActionBtn onClick={onEdit} title="Edit" icon={<Edit3 className="h-4 w-4" />} />
+             </div>
+             <div className="relative z-50">
+               <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(menuOpen ? null : home._id); }} className={`p-2 rounded-xl transition-colors ${menuOpen ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-slate-100'}`}>
+                 <MoreHorizontal className="h-5 w-5" />
+               </button>
+               
+               {/* Floating Action Menu dropdown */}
+               {menuOpen && (
+                 <div className="absolute right-0 bottom-full mb-2 bg-white border border-slate-200 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] z-50 min-w-[160px] p-2 animate-in zoom-in-95 duration-200">
+                   <button onClick={(e) => { e.stopPropagation(); onToggle(); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors">
+                     {isActive ? <EyeOff className="h-4 w-4 text-slate-400" /> : <Eye className="h-4 w-4 text-blue-500" />} {isActive ? "Hide Listing" : "Publish Listing"}
+                   </button>
+                   <hr className="border-slate-100 my-1 mx-2" />
+                   <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors">
+                     <Trash2 className="h-4 w-4" /> Delete
+                   </button>
+                 </div>
+               )}
+             </div>
+           </div>
         </div>
       </div>
     </div>
@@ -309,29 +325,36 @@ function MyListingCard({ home, openMenuId, setOpenMenuId, onView, onEdit, onTogg
 function SavedCard({ home, onView, onUnsave }) {
   const img = home.images?.[0] || "https://placehold.co/300x200/eff6ff/0f172a?text=Home";
   return (
-    <div className="bg-white rounded-2xl border border-blue-50 shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer" onClick={onView}>
-      <div className="relative h-36 overflow-hidden">
-        <img src={img} alt={home.title} className="h-full w-full object-cover hover:scale-105 transition-transform duration-300" onError={(e) => { e.target.src = "https://placehold.co/300x200/eff6ff/0f172a?text=Home"; }} />
-        <span className="absolute bottom-2 right-2 bg-blue-600/90 rounded-full px-2 py-0.5 text-[11px] font-semibold text-white">
-          Rs. {home.price?.toLocaleString()}
-        </span>
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col items-stretch overflow-visible">
+      <div className="relative h-44 overflow-hidden rounded-t-2xl cursor-pointer group" onClick={onView}>
+        <img src={img} alt={home.title} className="h-full w-full object-cover transition-transform group-hover:scale-105 duration-500" onError={(e) => { e.target.src = "https://placehold.co/300x200/eff6ff/0f172a?text=Home"; }} />
+        
+        {/* Top Fade overlay */}
+        <div className="absolute top-0 w-full h-16 bg-gradient-to-b from-black/60 to-transparent"></div>
+        
         <button
           onClick={(e) => { e.stopPropagation(); onUnsave(); }}
-          className="absolute top-2 right-2 h-7 w-7 rounded-full bg-white/90 flex items-center justify-center shadow hover:bg-red-50"
+          className="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/95 backdrop-blur flex items-center justify-center shadow-md hover:bg-red-50 hover:scale-110 active:scale-95 transition-all group/btn"
           title="Remove from saved"
         >
-          <Heart className="h-4 w-4 text-red-500 fill-red-500" />
+          <Heart className="h-4 w-4 text-red-500 fill-red-500 group-hover/btn:scale-110 transition-transform" />
         </button>
+
+        <span className="absolute bottom-3 right-3 bg-blue-600/95 backdrop-blur shadow-md rounded-xl px-3 py-1.5 text-xs font-black text-white">
+          Rs. {home.price?.toLocaleString()}
+        </span>
       </div>
-      <div className="px-3 py-2.5">
-        <p className="text-sm font-semibold text-slate-900 truncate">{home.title || home.address}</p>
-        <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-          <MapPin className="h-3 w-3 text-blue-400" /> {home.city}
+      <div className="p-4 flex flex-col flex-1 relative z-0">
+        <p className="text-base font-bold text-slate-900 line-clamp-1 mb-1">{home.title || home.address}</p>
+        <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5 mb-4">
+          <MapPin className="h-3.5 w-3.5 text-blue-500 shrink-0" /> <span className="truncate">{home.location?.municipality || home.city}</span>
         </p>
-        <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-1.5">
-          <span>{home.beds} beds</span>
-          <span>·</span>
-          <span>{home.baths} baths</span>
+        <div className="mt-auto px-1">
+           <hr className="border-slate-100 mb-3" />
+           <div className="flex items-center gap-4 text-xs font-bold text-slate-500">
+             <span className="flex items-center gap-1.5"><Home className="w-3.5 h-3.5 text-slate-400" /> {home.propertyType}</span>
+             <span className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 rounded-md text-slate-600">{home.type === 'rent' ? 'For Rent' : 'For Sale'}</span>
+           </div>
         </div>
       </div>
     </div>
@@ -341,9 +364,8 @@ function SavedCard({ home, onView, onUnsave }) {
 function ActionBtn({ onClick, title, icon }) {
   return (
     <button
-      onClick={onClick}
-      title={title}
-      className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-600 bg-slate-100 hover:bg-blue-100 hover:text-blue-700 rounded-lg transition-colors"
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className="flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-bold text-slate-700 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 hover:text-blue-700 rounded-xl transition-all shadow-sm"
     >
       {icon} {title}
     </button>

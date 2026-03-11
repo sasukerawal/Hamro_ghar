@@ -12,6 +12,15 @@ const PROVINCES = ["Koshi", "Madhesh", "Bagmati", "Gandaki", "Lumbini", "Karnali
 const DISTRICTS = Object.keys(MUNICIPALITIES).sort();
 const ROAD_TYPES = ["Pitched", "Gravel", "Soil", "Alley", "None", "Blacktopped"];
 
+// Helper to cleanly extract Latitude/Longitude from standard Google Maps URLs
+const extractMapCoordinates = (url) => {
+  if (!url) return null;
+  // Match @lat,lng
+  const match = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
+  return null;
+};
+
 export const AMENITIES_LIST = [
   "Air Conditioning", "Backup Inverter / Generator", "Balcony", "Bike Parking",
   "CCTV", "Cable TV", "Cafeteria", "Car Parking", "Community Hall", "Drainage",
@@ -48,6 +57,8 @@ export default function PostListing() {
     nearestChowk: "",
     roadName: "",
     mapsUrl: "",
+    parsedLat: null,
+    parsedLng: null,
     
     // Specs
     bedrooms: "",
@@ -355,6 +366,10 @@ export default function PostListing() {
       fd.append("amenities", JSON.stringify(form.amenities));
       fd.append("nearby", JSON.stringify(form.nearby));
       fd.append("mapsUrl", form.mapsUrl.trim());
+      if (form.parsedLat && form.parsedLng) {
+         fd.append("lat", form.parsedLat);
+         fd.append("lng", form.parsedLng);
+      }
       fd.append("videoUrl", form.videoUrl.trim());
       fd.append("highlights", JSON.stringify(form.highlights.filter(h => h.trim())));
 
@@ -515,12 +530,40 @@ export default function PostListing() {
                       </div>
                     </div>
 
-                    <div className="bg-slate-50 p-5 mt-2 border border-slate-200 rounded-xl space-y-2">
-                      <label className="text-sm font-bold flex items-center gap-2 text-slate-700">
-                        <MapPin className="w-4 h-4 text-blue-600" /> Google Maps Pin URL
-                      </label>
-                      <p className="text-xs text-slate-500 font-medium mb-3">Copy-paste the share URL from Google Maps to help verified buyers visit.</p>
-                      <input type="url" placeholder="https://www.google.com/maps/place/..." value={form.mapsUrl} onChange={handleChange("mapsUrl")} className="w-full border border-slate-300 focus:border-blue-400 p-3 rounded-lg text-sm bg-white font-mono shadow-inner outline-none" />
+                    <div className="bg-slate-50 p-5 mt-2 border border-slate-200 rounded-xl space-y-4">
+                      <div>
+                        <label className="text-sm font-bold flex items-center gap-2 text-slate-700">
+                          <MapPin className="w-4 h-4 text-blue-600" /> Google Maps Pin URL
+                        </label>
+                        <p className="text-xs text-slate-500 font-medium mb-3">Copy-paste the share URL from Google Maps to instantly pinpoint your property.</p>
+                        <input 
+                           type="url" 
+                           placeholder="https://www.google.com/maps/place/..." 
+                           value={form.mapsUrl} 
+                           onChange={(e) => {
+                              const val = e.target.value;
+                              const coords = extractMapCoordinates(val);
+                              setForm(prev => ({ 
+                                ...prev, 
+                                mapsUrl: val,
+                                parsedLat: coords ? coords.lat : null,
+                                parsedLng: coords ? coords.lng : null
+                              }));
+                           }} 
+                           className={`w-full border p-3 rounded-lg text-sm bg-white font-mono shadow-inner outline-none transition-colors ${form.parsedLat ? 'border-emerald-400 focus:border-emerald-500' : 'border-slate-300 focus:border-blue-400'}`}
+                        />
+                      </div>
+                      
+                      {/* Success Badge & Mini Map Visualizer when parsed! */}
+                      {form.parsedLat && form.parsedLng && (
+                         <div className="animate-in fade-in slide-in-from-top-2 flex items-center gap-3 bg-emerald-50 border border-emerald-200 p-3 rounded-lg text-emerald-800">
+                            <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+                            <div className="text-xs font-medium">
+                               <p className="font-bold text-sm">Perfect! Exact location pinned.</p>
+                               <p className="opacity-80">Lat: {form.parsedLat}, Lng: {form.parsedLng}</p>
+                            </div>
+                         </div>
+                      )}
                     </div>
                  </div>
                )}

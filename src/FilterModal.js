@@ -157,7 +157,9 @@ export default function FilterModal({
           <FilterSection title="Property Specs" icon={Building}>
             <div className="space-y-4">
                <div className="grid grid-cols-2 gap-4">
-                  <FilterInput label="Min Beds" type="number" placeholder="1" value={beds} onChange={(e) => setBeds(e.target.value)} />
+                  {propertyType !== 'land' && (
+                    <FilterInput label="Min Beds" type="number" placeholder="1" value={beds} onChange={(e) => setBeds(e.target.value)} />
+                  )}
                   <div className="text-sm">
                     <p className="font-bold text-slate-600 mb-2 uppercase tracking-wide text-[10px]">Facing</p>
                     <select value={facing} onChange={e => setFacing(e.target.value)} className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3 py-3 outline-none focus:border-blue-400 font-bold text-slate-700">
@@ -177,30 +179,32 @@ export default function FilterModal({
             </div>
           </FilterSection>
 
-          <FilterSection title="Amenities & Facilities" icon={Layers}>
-             <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                   {/* Special handling for Furnished to match UI exactly without changing DB schema */}
-                   <label className={`flex items-start p-2.5 rounded-xl border-2 cursor-pointer transition-colors ${furnishedOnly ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
-                      <div className={`w-4 h-4 shrink-0 rounded flex items-center justify-center border mt-0.5 mr-2 transition-colors ${furnishedOnly ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-300'}`}>
-                        {furnishedOnly && <CheckCircle className="w-3 h-3" />}
-                      </div>
-                      <span className={`text-[11px] font-bold mt-0.5 leading-tight ${furnishedOnly ? 'text-blue-900' : 'text-slate-600'}`}>Furnished</span>
-                      <input type="checkbox" className="hidden" checked={furnishedOnly || false} onChange={(e) => setFurnishedOnly(e.target.checked)} />
-                   </label>
-                   
-                   {AMENITIES_LIST.map(amenity => (
-                     <label key={amenity} className={`flex items-start p-2.5 rounded-xl border-2 cursor-pointer transition-colors ${amenities?.includes(amenity) ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
-                        <div className={`w-4 h-4 shrink-0 rounded flex items-center justify-center border mt-0.5 mr-2 transition-colors ${amenities?.includes(amenity) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-300'}`}>
-                          {amenities?.includes(amenity) && <CheckCircle className="w-3 h-3" />}
+          {propertyType !== 'land' && (
+            <FilterSection title="Amenities & Facilities" icon={Layers}>
+               <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                     {/* Special handling for Furnished to match UI exactly without changing DB schema */}
+                     <label className={`flex items-start p-2.5 rounded-xl border-2 cursor-pointer transition-colors ${furnishedOnly ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
+                        <div className={`w-4 h-4 shrink-0 rounded flex items-center justify-center border mt-0.5 mr-2 transition-colors ${furnishedOnly ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-300'}`}>
+                          {furnishedOnly && <CheckCircle className="w-3 h-3" />}
                         </div>
-                        <span className={`text-[11px] font-bold mt-0.5 leading-tight ${amenities?.includes(amenity) ? 'text-blue-900' : 'text-slate-600'}`}>{amenity}</span>
-                        <input type="checkbox" className="hidden" checked={amenities?.includes(amenity) || false} onChange={() => handleAmenityToggle(amenity)} />
+                        <span className={`text-[11px] font-bold mt-0.5 leading-tight ${furnishedOnly ? 'text-blue-900' : 'text-slate-600'}`}>Furnished</span>
+                        <input type="checkbox" className="hidden" checked={furnishedOnly || false} onChange={(e) => setFurnishedOnly(e.target.checked)} />
                      </label>
-                   ))}
-                </div>
-             </div>
-          </FilterSection>
+                     
+                     {AMENITIES_LIST.map(amenity => (
+                       <label key={amenity} className={`flex items-start p-2.5 rounded-xl border-2 cursor-pointer transition-colors ${amenities?.includes(amenity) ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
+                          <div className={`w-4 h-4 shrink-0 rounded flex items-center justify-center border mt-0.5 mr-2 transition-colors ${amenities?.includes(amenity) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-300'}`}>
+                            {amenities?.includes(amenity) && <CheckCircle className="w-3 h-3" />}
+                          </div>
+                          <span className={`text-[11px] font-bold mt-0.5 leading-tight ${amenities?.includes(amenity) ? 'text-blue-900' : 'text-slate-600'}`}>{amenity}</span>
+                          <input type="checkbox" className="hidden" checked={amenities?.includes(amenity) || false} onChange={() => handleAmenityToggle(amenity)} />
+                       </label>
+                     ))}
+                  </div>
+               </div>
+            </FilterSection>
+          )}
 
         </div>
 

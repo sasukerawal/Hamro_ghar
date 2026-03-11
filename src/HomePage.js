@@ -577,12 +577,37 @@ export default function HomePage({
       {showBackToTop && (
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="fixed bottom-6 right-6 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition-all hover:scale-110 active:scale-95"
+          className="fixed bottom-24 sm:bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition-all hover:scale-110 active:scale-95"
           aria-label="Back to top"
         >
           <ChevronUp className="h-5 w-5" />
         </button>
       )}
+
+      {/* Mobile Sticky Action Pill (Map/List Toggle & Filters) */}
+      <div className="sm:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center bg-slate-900/95 backdrop-blur-md text-white rounded-full p-1.5 shadow-2xl border border-slate-700/50">
+         <button 
+           onClick={() => showMap ? setShowMap(false) : setShowMap(true)}
+           className="flex items-center gap-2 px-5 py-2.5 rounded-full hover:bg-slate-800 transition-colors active:scale-95"
+         >
+            {showMap ? <Layers className="w-4 h-4 text-blue-400" /> : <MapPin className="w-4 h-4 text-blue-400" />}
+            <span className="text-sm font-bold tracking-wide">{showMap ? 'List' : 'Map'}</span>
+         </button>
+         
+         <div className="w-[1px] h-6 bg-slate-700 mx-1"></div>
+         
+         <button 
+           onClick={() => setIsFilterModalOpen(true)}
+           className="flex items-center gap-2 px-5 py-2.5 rounded-full hover:bg-slate-800 transition-colors active:scale-95"
+         >
+            <Tag className="w-4 h-4 text-blue-400" />
+            <span className="text-sm font-bold tracking-wide">Filters</span>
+            {/* Show badge if filters are active */}
+            {(propertyType || province || district || minPrice || maxPrice) && (
+              <span className="absolute top-2 right-4 w-2 h-2 rounded-full bg-blue-500"></span>
+            )}
+         </button>
+      </div>
     </>
   );
 }
