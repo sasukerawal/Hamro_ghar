@@ -170,6 +170,7 @@ router.post("/create", requireAuth, (req, res) => {
         video,
         videoUrl,
         mapsUrl,
+        contact: contactRaw,
         
         // Legacy fallback
         beds, baths, sqft, address, city, furnished, internet, parking, petsAllowed
@@ -190,6 +191,7 @@ router.post("/create", requireAuth, (req, res) => {
       let amenities = [];
       let nearby = [];
       let highlights = [];
+      let contact = {};
 
       try {
         if (locationRaw) location = JSON.parse(locationRaw);
@@ -198,8 +200,9 @@ router.post("/create", requireAuth, (req, res) => {
         if (amenitiesRaw) amenities = JSON.parse(amenitiesRaw);
         if (nearbyRaw) nearby = JSON.parse(nearbyRaw);
         if (highlightsRaw) highlights = JSON.parse(highlightsRaw);
+        if (contactRaw) contact = JSON.parse(contactRaw);
       } catch (err) {
-        return res.status(400).json({ error: "Invalid JSON format for location, specs, facilities, amenities, nearby, or highlights" });
+        return res.status(400).json({ error: "Invalid JSON format for location, specs, facilities, amenities, nearby, highlights, or contact" });
       }
 
       // Legacy fallback mapping
@@ -264,6 +267,12 @@ router.post("/create", requireAuth, (req, res) => {
         video: video || "",
         videoUrl: videoUrl || "",
         mapsUrl: mapsUrl || "",
+        contact: {
+          phone: sanitize(contact.phone || ""),
+          email: sanitize(contact.email || ""),
+          whatsapp: sanitize(contact.whatsapp || ""),
+          socialMedia: sanitize(contact.socialMedia || "")
+        },
         status: "active",
         
         // Legacy redundant fields
@@ -332,6 +341,7 @@ router.put(
         video,
         videoUrl,
         mapsUrl,
+        contact: contactRaw,
         
         // Legacy fallback
         beds, baths, sqft, address, city, furnished, internet, parking, petsAllowed
@@ -355,6 +365,7 @@ router.put(
       let newAmenities = listing.amenities || [];
       let newNearby = listing.nearby || [];
       let locationChanged = false;
+      let newContact = listing.contact || {};
 
       try {
         if (locationRaw) {
@@ -369,6 +380,7 @@ router.put(
           distance: sanitize(n.distance)
         }));
         if (highlightsRaw) listing.highlights = JSON.parse(highlightsRaw).map(h => sanitize(h));
+        if (contactRaw) newContact = { ...newContact, ...JSON.parse(contactRaw) };
       } catch (err) { }
 
       // Legacy updates
@@ -444,6 +456,12 @@ router.put(
       }
       
       listing.location = newLocation;
+      listing.contact = {
+        phone: sanitize(newContact.phone || ""),
+        email: sanitize(newContact.email || ""),
+        whatsapp: sanitize(newContact.whatsapp || ""),
+        socialMedia: sanitize(newContact.socialMedia || "")
+      };
 
       await listing.save();
 

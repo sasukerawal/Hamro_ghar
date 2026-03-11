@@ -169,6 +169,14 @@ const listingSchema = new mongoose.Schema(
     videoUrl: { type: String, default: "" }, // Explicit field for Youtube/TikTok URLs
     mapsUrl: { type: String, default: "" },
 
+    // Contact Information
+    contact: {
+      phone: { type: String, trim: true },
+      email: { type: String, trim: true },
+      whatsapp: { type: String, trim: true },
+      socialMedia: { type: String, trim: true } // Facebook/Insta link
+    },
+
     // 6. Trust & Analytics
     isVerified: { type: Boolean, default: false },
     completenessScore: { type: Number, default: 0 },

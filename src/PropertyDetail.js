@@ -4,7 +4,8 @@ import { apiFetch } from "./api";
 import { Helmet } from "react-helmet";
 import {
   MapPin, Heart, Share2, ChevronLeft, Loader, Phone, CheckCircle2,
-  AlertTriangle, Home, Ruler, Layers, Droplets, Wifi, Car, Bike, Grid, Maximize2, Tag, Building
+  AlertTriangle, Home, Ruler, Layers, Droplets, Wifi, Car, Bike, Grid, Maximize2, Tag, Building,
+  MessageCircle, Mail, ExternalLink
 } from "lucide-react";
 import { useMeasurement } from "./contexts/MeasurementContext";
 
@@ -294,17 +295,38 @@ export default function PropertyDetail() {
                  </div>
               </div>
 
-              <div className="space-y-4 mb-8">
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 transform active:scale-95 text-lg">
-                  <Phone className="w-5 h-5" /> Contact Owner
-                </button>
-                <div className="flex gap-3">
-                   <button className="flex-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold py-3 rounded-xl text-sm transition-colors border-2 border-emerald-200">
-                     WhatsApp
-                   </button>
-                   <button className="flex-1 bg-slate-50 text-slate-700 hover:bg-slate-100 font-bold py-3 rounded-xl text-sm transition-colors border-2 border-slate-200">
-                     Schedule Visit
-                   </button>
+              <div className="space-y-3 mb-8">
+                {home.contact?.phone && (
+                  <a href={`tel:${home.contact.phone}`} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 transform active:scale-95 text-lg">
+                    <Phone className="w-5 h-5" /> Call: {home.contact.phone}
+                  </a>
+                )}
+                
+                {home.contact?.whatsapp && (
+                  <a href={`https://wa.me/${home.contact.whatsapp.replace(/[^0-9+]/g, '')}`} target="_blank" rel="noreferrer" className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transform active:scale-95 text-lg">
+                    <MessageCircle className="w-5 h-5" /> WhatsApp Owner
+                  </a>
+                )}
+
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                   {home.contact?.email ? (
+                     <a href={`mailto:${home.contact.email}`} className="flex items-center justify-center gap-2 bg-slate-50 text-slate-700 hover:bg-slate-100 font-bold py-3 rounded-xl text-sm transition-colors border-2 border-slate-200">
+                       <Mail className="w-4 h-4" /> Email
+                     </a>
+                   ) : (
+                     <div className="flex items-center justify-center gap-2 bg-slate-50 text-slate-400 font-bold py-3 rounded-xl text-sm border-2 border-slate-100 line-through">
+                       <Mail className="w-4 h-4" /> Email
+                     </div>
+                   )}
+                   {home.contact?.socialMedia ? (
+                     <a href={home.contact.socialMedia.startsWith('http') ? home.contact.socialMedia : `https://${home.contact.socialMedia}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 bg-slate-50 text-slate-700 hover:bg-slate-100 font-bold py-3 rounded-xl text-sm transition-colors border-2 border-slate-200 overflow-hidden px-2">
+                       <ExternalLink className="w-4 h-4 shrink-0" /> <span className="truncate">Social</span>
+                     </a>
+                   ) : (
+                     <div className="flex items-center justify-center gap-2 bg-slate-50 text-slate-400 font-bold py-3 rounded-xl text-sm border-2 border-slate-100 line-through">
+                       <ExternalLink className="w-4 h-4" /> Social
+                     </div>
+                   )}
                 </div>
               </div>
 
@@ -343,9 +365,22 @@ export default function PropertyDetail() {
            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Price</p>
            <p className="text-xl font-black text-slate-900 tracking-tight">{priceLabel} <span className="text-sm font-bold text-slate-500">{home.type==='rent'&&'/mo'}</span></p>
          </div>
-         <button className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-black px-8 py-3.5 rounded-2xl shadow-xl shadow-blue-500/30 flex items-center gap-2 transition-transform">
-            <Phone className="w-5 h-5" /> Call Owner
-         </button>
+         <div className="flex gap-2">
+            {home.contact?.whatsapp && (
+              <a href={`https://wa.me/${home.contact.whatsapp.replace(/[^0-9+]/g, '')}`} target="_blank" rel="noreferrer" className="bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 active:scale-95 font-black p-3.5 rounded-2xl flex items-center justify-center transition-transform">
+                 <MessageCircle className="w-5 h-5" />
+              </a>
+            )}
+            {home.contact?.phone ? (
+              <a href={`tel:${home.contact.phone}`} className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-black px-6 py-3.5 rounded-2xl shadow-xl shadow-blue-500/30 flex items-center gap-2 transition-transform">
+                 <Phone className="w-5 h-5" /> Call
+              </a>
+            ) : (
+               <button disabled className="bg-slate-200 text-slate-500 font-black px-6 py-3.5 rounded-2xl flex items-center gap-2 cursor-not-allowed">
+                 No Phone
+              </button>
+            )}
+         </div>
       </div>
 
     </div>

@@ -107,7 +107,13 @@ export default function PostListing() {
     
     // Facilities & Amenities
     amenities: [],
-    nearby: []
+    nearby: [],
+
+    // Contact
+    contactPhone: "",
+    contactEmail: "",
+    contactWhatsapp: "",
+    contactSocial: ""
   });
   
   const [mediaFiles, setMediaFiles] = useState([]);
@@ -181,7 +187,12 @@ export default function PostListing() {
             videoUrl: l.videoUrl ?? "",
             
             amenities: l.amenities || [],
-            nearby: Array.isArray(l.nearby) ? l.nearby : []
+            nearby: Array.isArray(l.nearby) ? l.nearby : [],
+
+            contactPhone: l.contact?.phone || "",
+            contactEmail: l.contact?.email || "",
+            contactWhatsapp: l.contact?.whatsapp || "",
+            contactSocial: l.contact?.socialMedia || ""
           });
           const imgs = l.images || [];
           setExistingImages(imgs);
@@ -279,6 +290,9 @@ export default function PostListing() {
       if (totalImages < 3 && !editId) return "Please upload at least 3 high-quality images to build trust.";
     } else if (step === 6) {
       if (!form.description || form.description.trim().length < 20) return "Description is too short. Please provide more detail.";
+      if (!form.contactPhone && !form.contactEmail && !form.contactWhatsapp && !form.contactSocial) {
+         return "Please provide at least one contact method (Phone, Email, WhatsApp, or Social Link).";
+      }
     }
     return null;
   };
@@ -365,6 +379,12 @@ export default function PostListing() {
       fd.append("specs", specsJSON);
       fd.append("amenities", JSON.stringify(form.amenities));
       fd.append("nearby", JSON.stringify(form.nearby));
+      fd.append("contact", JSON.stringify({
+        phone: form.contactPhone,
+        email: form.contactEmail,
+        whatsapp: form.contactWhatsapp,
+        socialMedia: form.contactSocial
+      }));
       fd.append("mapsUrl", form.mapsUrl.trim());
       if (form.parsedLat && form.parsedLng) {
          fd.append("lat", form.parsedLat);
@@ -901,6 +921,31 @@ export default function PostListing() {
                     <div className="mt-4">
                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-1">Full Description *</label>
                        <textarea rows="6" placeholder="Describe the atmosphere, community, neighbors, and quality of the build..." value={form.description} onChange={handleChange("description")} className="w-full border-2 border-slate-200 p-4 rounded-xl outline-none focus:border-blue-500 bg-slate-50 focus:bg-white leading-relaxed font-medium transition-colors resize-none" />
+                    </div>
+
+                    <div className="mt-8 border-t border-slate-100 pt-6">
+                       <div>
+                          <h2 className="text-xl font-extrabold mb-1 text-slate-800">Contact Information *</h2>
+                          <p className="text-xs text-slate-500 font-medium mb-4">You must provide at least one way for buyers to reach you.</p>
+                       </div>
+                       <div className="grid sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Phone Number</label>
+                            <input type="tel" placeholder="e.g. 9812345678" value={form.contactPhone} onChange={handleChange("contactPhone")} className="w-full border-2 border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 bg-slate-50 focus:bg-white font-bold transition-colors" />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">WhatsApp Number</label>
+                            <input type="tel" placeholder="e.g. 9812345678" value={form.contactWhatsapp} onChange={handleChange("contactWhatsapp")} className="w-full border-2 border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 bg-slate-50 focus:bg-white font-bold transition-colors" />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Email Address</label>
+                            <input type="email" placeholder="e.g. owner@example.com" value={form.contactEmail} onChange={handleChange("contactEmail")} className="w-full border-2 border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 bg-slate-50 focus:bg-white font-bold transition-colors" />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Social Media Link</label>
+                            <input type="url" placeholder="Facebook/Insta profile link" value={form.contactSocial} onChange={handleChange("contactSocial")} className="w-full border-2 border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 bg-slate-50 focus:bg-white font-bold transition-colors" />
+                          </div>
+                       </div>
                     </div>
                  </div>
                )}
