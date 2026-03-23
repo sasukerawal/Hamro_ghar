@@ -1,22 +1,61 @@
 /* src/index.css */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --primary-glow: conic-gradient(from 180deg at 50% 50%, #3b82f633 0deg, #1d4ed833 55deg, #60a5fa33 120deg, #2563eb33 160deg, transparent 360deg);
+}
+
+/* ─── Typography ─────────────────────────────────────────── */
 body {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background-color: #f8fafc; /* slate-50 */
-  color: #0f172a;            /* slate-900 */
+  font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #f8fafc;
+  color: #0f172a;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 #root {
   min-height: 100vh;
 }
 
-/* Skeleton shimmer animation */
+/* ─── Glassmorphism ──────────────────────────────────────── */
+.glass {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.glass-dark {
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ─── Skeleton shimmer ───────────────────────────────────── */
 @keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .shimmer {
@@ -25,7 +64,116 @@ body {
   animation: shimmer 1.5s infinite;
 }
 
-/* Smooth scroll for the whole page */
+/* ─── Float ──────────────────────────────────────────────── */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* ─── Fade-in-up (for listing cards entering viewport) ───── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease both;
+}
+
+/* Staggered delays for grid cards */
+.stagger-1 {
+  animation-delay: 0.05s;
+}
+
+.stagger-2 {
+  animation-delay: 0.10s;
+}
+
+.stagger-3 {
+  animation-delay: 0.15s;
+}
+
+.stagger-4 {
+  animation-delay: 0.20s;
+}
+
+.stagger-5 {
+  animation-delay: 0.25s;
+}
+
+.stagger-6 {
+  animation-delay: 0.30s;
+}
+
+/* ─── Pulse glow (stats / hero card) ────────────────────── */
+@keyframes pulseGlow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.20);
+  }
+
+  50% {
+    box-shadow: 0 0 42px rgba(59, 130, 246, 0.40);
+  }
+}
+
+.glow-heavy {
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+/* ─── Hero gradient text ─────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Card hover lift ────────────────────────────────────── */
+.card-lift {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.25s ease;
+}
+
+.card-lift:hover {
+  transform: translateY(-4px) scale(1.005);
+  box-shadow: 0 20px 40px -8px rgba(59, 130, 246, 0.18);
+}
+
+/* ─── Smooth scroll ──────────────────────────────────────── */
 html {
   scroll-behavior: smooth;
+}
+
+/* ─── District map tooltip ───────────────────────────────── */
+.district-tooltip {
+  background: rgba(15, 23, 42, 0.90);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 8px;
+  color: #f8fafc;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
 }

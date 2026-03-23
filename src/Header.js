@@ -65,23 +65,24 @@ export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang
   };
 
   return (
-    <header className="fixed top-0 inset-x-0 z-40 bg-white/90 backdrop-blur-md border-b border-blue-100">
+    <header className="fixed top-0 inset-x-0 z-40 bg-white/85 backdrop-blur-xl border-b border-blue-100/60 shadow-sm shadow-blue-500/5">
       {/* TOP BAR */}
       <div className="max-w-6xl mx-auto h-16 lg:h-20 flex items-center justify-between px-4 lg:px-6 max-[425px]:px-3">
         {/* LOGO */}
         <Link
           to="/"
-          className="flex items-center gap-2 max-[425px]:gap-1 cursor-pointer"
+          className="flex items-center gap-2 max-[425px]:gap-1 cursor-pointer group"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         >
-          <div className="h-9 w-9 max-[425px]:h-8 max-[425px]:w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
+          <div className="relative h-9 w-9 max-[425px]:h-8 max-[425px]:w-8 rounded-full bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center text-white font-black text-sm shadow-md shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-shadow">
             HG
+            <div className="absolute inset-0 rounded-full bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <div className="text-left leading-tight">
-            <p className="text-sm max-[425px]:text-xs font-semibold text-slate-900">
+            <p className="text-sm max-[425px]:text-xs font-bold text-slate-900 tracking-tight">
               HamroGhar
             </p>
-            <p className="text-[11px] max-[425px]:text-[10px] text-blue-500">
+            <p className="text-[11px] max-[425px]:text-[10px] text-blue-500 font-medium">
               {t.tagline}
             </p>
           </div>

@@ -6,7 +6,7 @@ import cloudinary from "../config/cloudinary.js";
 import { requireAuth } from "../middleware/auth.js";
 import User from "../models/User.js";
 import sanitizeHtml from "sanitize-html";
-import redis from "../config/redis.js";
+// import redis from "../config/redis.js";
 
 const router = express.Router();
 
@@ -49,7 +49,7 @@ async function forwardGeocode(address, city) {
 
   // Try: full address first, then city-only as fallback
   const queries = [];
-  
+
   // Strategy 1: Ultra specific with Nepal suffix
   if (q && city) queries.push(`${q}, ${city}, Nepal`);
   // Strategy 2: Just the specific locality in Nepal
@@ -98,10 +98,10 @@ router.get("/geo/search", async (req, res) => {
     const fetchRes = await fetch(
       `${GEOCODE_ENDPOINT}&limit=5&countrycodes=np&addressdetails=1&q=${encodeURIComponent(fullQuery)}, Nepal`,
       {
-      headers: {
-        "User-Agent": "HamroGhar/1.0 (educational project)",
-      },
-    });
+        headers: {
+          "User-Agent": "HamroGhar/1.0 (educational project)",
+        },
+      });
 
     if (!fetchRes.ok) {
       return res.status(fetchRes.status).json({
@@ -140,7 +140,7 @@ router.get("/:id/similar", async (req, res) => {
   try {
     const listingId = req.params.id;
     const targetListing = await Listing.findById(listingId);
-    
+
     if (!targetListing) {
       return res.status(404).json({ error: "Source listing not found" });
     }
@@ -156,7 +156,7 @@ router.get("/:id/similar", async (req, res) => {
 
     // Strongly prefer same property type (House with House)
     if (propertyType) {
-       query.propertyType = propertyType;
+      query.propertyType = propertyType;
     }
 
     // Must be in the same district or city
@@ -172,7 +172,7 @@ router.get("/:id/similar", async (req, res) => {
     const candidates = await Listing.find(query)
       .select("-description -contact") // Exclude heavy text
       .limit(15);
-    
+
     // Calculate price proximity score 
     const scoredCandidates = candidates.map(c => {
       const priceDiff = Math.abs(c.price - price);
@@ -229,7 +229,7 @@ router.post("/create", requireAuth, (req, res) => {
         videoUrl,
         mapsUrl,
         contact: contactRaw,
-        
+
         // Legacy fallback
         beds, baths, sqft, address, city, furnished, internet, parking, petsAllowed
       } = req.body;
@@ -267,7 +267,7 @@ router.post("/create", requireAuth, (req, res) => {
       if (!location.district && city) location.district = city;
       if (!location.municipality && city) location.municipality = city;
       if (!location.locality && address) location.locality = address;
-      
+
       if (typeof specs.bedrooms !== 'number' && beds) specs.bedrooms = toNumber(beds);
       if (typeof specs.bathrooms !== 'number' && baths) specs.bathrooms = toNumber(baths);
       if (typeof specs.builtUpAreaSqFt !== 'number' && sqft) specs.builtUpAreaSqFt = toNumber(sqft);
@@ -288,11 +288,11 @@ router.post("/create", requireAuth, (req, res) => {
 
       const clientLat = location.lat || toNumber(req.body.lat);
       const clientLng = location.lng || toNumber(req.body.lng);
-      
+
       // Compute geo
       const geo = (clientLat && clientLng)
-          ? { lat: clientLat, lng: clientLng }
-          : await forwardGeocode(location.locality || address, location.district || city);
+        ? { lat: clientLat, lng: clientLng }
+        : await forwardGeocode(location.locality || address, location.district || city);
 
       if (geo) {
         location.type = "Point";
@@ -332,7 +332,7 @@ router.post("/create", requireAuth, (req, res) => {
           socialMedia: sanitize(contact.socialMedia || "")
         },
         status: "active",
-        
+
         // Legacy redundant fields
         address: sanitize(location.locality || address || ""),
         city: sanitize(location.district || city || ""),
@@ -351,9 +351,11 @@ router.post("/create", requireAuth, (req, res) => {
       await listing.save();
 
       // Clear caches
-      await redis.del("listings:stats");
-      const keys = await redis.keys("listings:all:*");
-      if (keys.length > 0) await redis.del(...keys);
+      /*
+            await redis.del("listings:stats");
+            const keys = await redis.keys("listings:all:*");
+            if (keys.length > 0) await redis.del(...keys);
+      */
 
       res.status(201).json({ message: "Listing created", listing });
     } catch (err) {
@@ -400,7 +402,7 @@ router.put(
         videoUrl,
         mapsUrl,
         contact: contactRaw,
-        
+
         // Legacy fallback
         beds, baths, sqft, address, city, furnished, internet, parking, petsAllowed
       } = req.body;
@@ -427,8 +429,8 @@ router.put(
 
       try {
         if (locationRaw) {
-           newLocation = { ...newLocation, ...JSON.parse(locationRaw) };
-           locationChanged = true;
+          newLocation = { ...newLocation, ...JSON.parse(locationRaw) };
+          locationChanged = true;
         }
         if (specsRaw) newSpecs = { ...newSpecs, ...JSON.parse(specsRaw) };
         if (facilitiesRaw) newFacilities = { ...newFacilities, ...JSON.parse(facilitiesRaw) };
@@ -445,31 +447,31 @@ router.put(
       if (address) {
         const trimmed = address.trim();
         if (trimmed !== listing.address) {
-           listing.address = trimmed;
-           newLocation.locality = trimmed;
-           locationChanged = true;
+          listing.address = trimmed;
+          newLocation.locality = trimmed;
+          locationChanged = true;
         }
       }
       if (city) {
         const trimmed = city.trim();
         if (trimmed !== listing.city) {
-           listing.city = trimmed;
-           newLocation.district = trimmed;
-           locationChanged = true;
+          listing.city = trimmed;
+          newLocation.district = trimmed;
+          locationChanged = true;
         }
       }
-      
+
       if (beds) { listing.beds = Number(beds); newSpecs.bedrooms = Number(beds); }
       if (baths) { listing.baths = Number(baths); newSpecs.bathrooms = Number(baths); }
       if (sqft) { listing.sqft = Number(sqft); newSpecs.builtUpAreaSqFt = Number(sqft); }
-      
+
       if (type) listing.type = type;
       if (propertyType) listing.propertyType = propertyType;
       if (description) listing.description = sanitize(description);
       if (video !== undefined) listing.video = video || "";
       if (videoUrl !== undefined) listing.videoUrl = videoUrl || "";
       if (mapsUrl !== undefined) listing.mapsUrl = mapsUrl || "";
-      
+
       if (furnished !== undefined) listing.furnished = parseBool(furnished);
       if (internet !== undefined) listing.internet = parseBool(internet);
       if (parking !== undefined) listing.parkingFeature = parseBool(parking);
@@ -477,12 +479,12 @@ router.put(
 
       // Regenerate Title if it wasn't manually overridden
       if (title) {
-         listing.title = sanitize(title);
+        listing.title = sanitize(title);
       } else if (listing.propertyType && newSpecs.bedrooms) {
-         const propTypeDisplay = listing.propertyType.charAt(0).toUpperCase() + listing.propertyType.slice(1);
-         const typeDisplay = listing.type === 'rent' ? 'Rent' : 'Sale';
-         const areaDisplay = newLocation.locality || newLocation.municipality || newLocation.district || 'Nepal';
-         listing.title = `${newSpecs.bedrooms}BHK ${propTypeDisplay} For ${typeDisplay} in ${areaDisplay}`;
+        const propTypeDisplay = listing.propertyType.charAt(0).toUpperCase() + listing.propertyType.slice(1);
+        const typeDisplay = listing.type === 'rent' ? 'Rent' : 'Sale';
+        const areaDisplay = newLocation.locality || newLocation.municipality || newLocation.district || 'Nepal';
+        listing.title = `${newSpecs.bedrooms}BHK ${propTypeDisplay} For ${typeDisplay} in ${areaDisplay}`;
       }
 
       listing.specs = newSpecs;
@@ -500,10 +502,10 @@ router.put(
       if (locationChanged) {
         const clientLat = newLocation.lat || toNumber(req.body.lat);
         const clientLng = newLocation.lng || toNumber(req.body.lng);
-      
+
         const geo = (clientLat && clientLng)
-            ? { lat: clientLat, lng: clientLng }
-            : await forwardGeocode(newLocation.locality || listing.address, newLocation.district || listing.city);
+          ? { lat: clientLat, lng: clientLng }
+          : await forwardGeocode(newLocation.locality || listing.address, newLocation.district || listing.city);
 
         if (geo) {
           newLocation.type = "Point";
@@ -512,7 +514,7 @@ router.put(
           newLocation.lng = geo.lng;
         }
       }
-      
+
       listing.location = newLocation;
       listing.contact = {
         phone: sanitize(newContact.phone || ""),
@@ -524,9 +526,11 @@ router.put(
       await listing.save();
 
       // Clear caches
-      await redis.del("listings:stats");
-      const keys = await redis.keys("listings:all:*");
-      if (keys.length > 0) await redis.del(...keys);
+      /*
+            await redis.del("listings:stats");
+            const keys = await redis.keys("listings:all:*");
+            if (keys.length > 0) await redis.del(...keys);
+      */
 
       res.json({ message: "Listing updated", listing });
     } catch (err) {
@@ -544,10 +548,12 @@ router.put(
 router.get("/stats", async (req, res) => {
   try {
     // 1. Check Redis Cache
-    const cachedStats = await redis.get("listings:stats");
-    if (cachedStats) {
-      return res.json(JSON.parse(cachedStats));
-    }
+    /*
+        const cachedStats = await redis.get("listings:stats");
+        if (cachedStats) {
+          return res.json(JSON.parse(cachedStats));
+        }
+    */
 
     const activeFilter = { status: "active" };
 
@@ -560,15 +566,15 @@ router.get("/stats", async (req, res) => {
     const avgPrice =
       recent.length > 0
         ? Math.round(
-            recent.reduce((sum, l) => sum + (l.price || 0), 0) / recent.length
-          )
+          recent.reduce((sum, l) => sum + (l.price || 0), 0) / recent.length
+        )
         : 0;
 
     const avgViews =
       recent.length > 0
         ? Math.round(
-            recent.reduce((sum, l) => sum + (l.views || 0), 0) / recent.length
-          )
+          recent.reduce((sum, l) => sum + (l.views || 0), 0) / recent.length
+        )
         : 0;
 
     const statsData = {
@@ -579,7 +585,7 @@ router.get("/stats", async (req, res) => {
     };
 
     // 2. Save to Cache (TTL 1 minute)
-    await redis.setex("listings:stats", 60, JSON.stringify(statsData));
+    // await redis.setex("listings:stats", 60, JSON.stringify(statsData));
 
     res.json(statsData);
   } catch (err) {
@@ -596,11 +602,13 @@ router.get("/stats", async (req, res) => {
 router.get("/all", async (req, res) => {
   try {
     // 1. Check Redis Cache using uniquely hashed query string
-    const cacheKey = `listings:all:${Buffer.from(JSON.stringify(req.query)).toString("base64")}`;
-    const cachedData = await redis.get(cacheKey);
-    if (cachedData) {
-      return res.json(JSON.parse(cachedData));
-    }
+    /*
+        const cacheKey = `listings:all:${Buffer.from(JSON.stringify(req.query)).toString("base64")}`;
+        const cachedData = await redis.get(cacheKey);
+        if (cachedData) {
+          return res.json(JSON.parse(cachedData));
+        }
+    */
 
     const {
       type,        // offer/wanted/sale/rent
@@ -634,7 +642,7 @@ router.get("/all", async (req, res) => {
       // e.g. "sale", "rent", or fallback to old "offer"/"wanted"
       query.type = type;
     }
-    
+
     if (propertyType) {
       query.propertyType = propertyType;
     }
@@ -647,7 +655,7 @@ router.get("/all", async (req, res) => {
     if (district && district.trim()) {
       query["location.district"] = new RegExp(`^${district.trim()}$`, "i");
     }
-    
+
     if (municipality && municipality.trim()) {
       query["location.municipality"] = new RegExp(`^${municipality.trim()}$`, "i");
     }
@@ -656,7 +664,7 @@ router.get("/all", async (req, res) => {
     if (city && city.trim()) {
       const pattern = new RegExp(city.trim(), "i");
       query.$or = [
-        { city: pattern }, 
+        { city: pattern },
         { address: pattern },
         { "location.district": pattern },
         { "location.municipality": pattern },
@@ -679,13 +687,13 @@ router.get("/all", async (req, res) => {
     if (minLa !== undefined) landQuery.$gte = minLa;
     if (maxLa !== undefined) landQuery.$lte = maxLa;
     if (Object.keys(landQuery).length > 0) {
-       query["specs.landArea.aana"] = landQuery;
+      query["specs.landArea.aana"] = landQuery;
     }
 
     // Road Access
     const roadR = toNumber(roadAccess);
     if (roadR !== undefined) {
-       query["specs.roadAccess.widthFeet"] = { $gte: roadR };
+      query["specs.roadAccess.widthFeet"] = { $gte: roadR };
     }
 
     // Facing
@@ -712,7 +720,7 @@ router.get("/all", async (req, res) => {
       query.$or = [{ parking: true }, { "specs.parkingFeature": true }, { "specs.parking": { $gte: 1 } }];
     }
     if (petsAllowed === "true") query.petsAllowed = true;
-    
+
     // Amenities
     if (amenities) {
       const arr = amenities.split(",").map(a => new RegExp(`^${a.trim()}$`, "i"));
@@ -734,6 +742,20 @@ router.get("/all", async (req, res) => {
       .skip(skip)
       .limit(limitN);
 
+    // Normalize listings: some documents (from hamro-ghar sub-app) store data in
+    // a nested `specs` object. Flatten these into top-level scalar fields so the
+    // root frontend never receives an object where it expects a number.
+    function normalizeListing(obj) {
+      const specs = obj.specs || {};
+      // Flatten beds/baths/sqft from specs if the top-level value is an object or missing
+      if (typeof obj.beds !== 'number') obj.beds = typeof specs.bedrooms === 'number' ? specs.bedrooms : null;
+      if (typeof obj.baths !== 'number') obj.baths = typeof specs.bathrooms === 'number' ? specs.bathrooms : null;
+      if (typeof obj.sqft !== 'number') obj.sqft = typeof specs.builtUpAreaSqFt === 'number' ? specs.builtUpAreaSqFt : null;
+      // Remove the specs field entirely – it contains nested objects that crash React
+      delete obj.specs;
+      return obj;
+    }
+
     // Attach owner socials
     const ownerIds = [...new Set(listings.map((l) => l.ownerId?.toString()).filter(Boolean))];
     const owners = await User.find({ _id: { $in: ownerIds } }).select('name socials');
@@ -744,13 +766,13 @@ router.get("/all", async (req, res) => {
       const obj = l.toObject();
       const ow = ownerMap[l.ownerId?.toString()];
       obj.owner = ow ? { name: ow.name, socials: ow.socials || {} } : {};
-      return obj;
+      return normalizeListing(obj);
     });
 
     const responseData = { listings: listingsWithOwner, totalPages, page: pageN, totalCount };
 
     // 2. Save result to Cache (TTL 1 minute)
-    await redis.setex(cacheKey, 60, JSON.stringify(responseData));
+    // await redis.setex(cacheKey, 60, JSON.stringify(responseData));
 
     res.json(responseData);
   } catch (err) {
@@ -975,9 +997,11 @@ router.patch("/:id/status", requireAuth, async (req, res) => {
     await listing.save();
 
     // Clear caches
-    await redis.del("listings:stats");
-    const keys = await redis.keys("listings:all:*");
-    if (keys.length > 0) await redis.del(...keys);
+    /*
+        await redis.del("listings:stats");
+        const keys = await redis.keys("listings:all:*");
+        if (keys.length > 0) await redis.del(...keys);
+    */
 
     res.json({
       message: "Status updated",
@@ -1035,9 +1059,11 @@ router.patch("/:id/price", requireAuth, async (req, res) => {
     await listing.save();
 
     // Clear caches
-    await redis.del("listings:stats");
-    const keys = await redis.keys("listings:all:*");
-    if (keys.length > 0) await redis.del(...keys);
+    /*
+        await redis.del("listings:stats");
+        const keys = await redis.keys("listings:all:*");
+        if (keys.length > 0) await redis.del(...keys);
+    */
 
     res.json({
       message: "Price updated",
@@ -1075,9 +1101,11 @@ router.delete("/:id", requireAuth, async (req, res) => {
     await listing.deleteOne();
 
     // Clear caches
-    await redis.del("listings:stats");
-    const keys = await redis.keys("listings:all:*");
-    if (keys.length > 0) await redis.del(...keys);
+    /*
+        await redis.del("listings:stats");
+        const keys = await redis.keys("listings:all:*");
+        if (keys.length > 0) await redis.del(...keys);
+    */
 
     res.json({ message: "Listing deleted" });
   } catch (err) {
@@ -1131,9 +1159,11 @@ router.delete("/admin/listings/:id", requireAuth, async (req, res) => {
     await Listing.findByIdAndDelete(req.params.id);
 
     // Clear caches
-    await redis.del("listings:stats");
-    const keys = await redis.keys("listings:all:*");
-    if (keys.length > 0) await redis.del(...keys);
+    /*
+        await redis.del("listings:stats");
+        const keys = await redis.keys("listings:all:*");
+        if (keys.length > 0) await redis.del(...keys);
+    */
 
     res.json({ message: "Listing deleted by admin" });
   } catch (err) {
@@ -1223,7 +1253,9 @@ import Report from "../models/Report.js";
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp-relay.brevo.com',
+  port: 587,
+  secure: false, // true for 465, false for 587
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,

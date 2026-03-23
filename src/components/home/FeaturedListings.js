@@ -6,7 +6,7 @@ import AdBanner from "../ads/AdBanner";
 // Skeleton shimmer card
 export const SkeletonCard = () => (
   <div className="rounded-2xl border border-blue-50 bg-white shadow-sm overflow-hidden animate-pulse">
-    <div className="h-40 w-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" style={{backgroundSize:'200% 100%', animation:'shimmer 1.5s infinite'}} />
+    <div className="h-40 w-full bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" style={{ backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
     <div className="p-3.5 space-y-2">
       <div className="h-4 bg-slate-200 rounded-full w-3/4" />
       <div className="h-3 bg-slate-100 rounded-full w-1/2" />
@@ -65,17 +65,20 @@ export const FeaturedListings = ({
             {listings.map((home, index) => {
               const id = home._id || home.id;
               const isSaved = savedIds.includes(id);
+              const staggerClass = `stagger-${Math.min(index + 1, 6)}`;
 
               return (
                 <React.Fragment key={id}>
-                  <ListingCard
-                    home={home}
-                    onToggleSave={onToggleSave}
-                    onOpenHome={onOpenHome}
-                    isSaved={isSaved}
-                    isVirtualized={false}
-                  />
-                  
+                  <div className={`animate-fade-in-up ${staggerClass}`}>
+                    <ListingCard
+                      home={home}
+                      onToggleSave={onToggleSave}
+                      onOpenHome={onOpenHome}
+                      isSaved={isSaved}
+                      isVirtualized={false}
+                    />
+                  </div>
+
                   {/* Inline Feed Ad Placement */}
                   {feedAd && index === 5 && (
                     <div className="sm:col-span-2 lg:col-span-3">
@@ -100,11 +103,10 @@ export const FeaturedListings = ({
                 <button
                   key={pg}
                   onClick={() => pg !== page && onPageChange(pg)}
-                  className={`h-8 w-8 rounded-full text-xs font-semibold transition-all ${
-                    pg === page
+                  className={`h-8 w-8 rounded-full text-xs font-semibold transition-all ${pg === page
                       ? "bg-blue-600 text-white shadow-sm"
                       : "border border-slate-200 text-slate-600 hover:bg-slate-50"
-                  }`}
+                    }`}
                 >
                   {pg}
                 </button>
@@ -138,7 +140,7 @@ export const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved, isVirtual
 
   return (
     <div
-      className={`group rounded-2xl border border-blue-50 bg-white shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer flex flex-col ${isVirtualized ? "h-full" : "sm:block"}`}
+      className={`card-lift group rounded-2xl border border-blue-50 bg-white shadow-sm overflow-hidden cursor-pointer flex flex-col ${isVirtualized ? "h-full" : "sm:block"}`}
       onClick={() => onOpenHome(home)}
     >
       <div className="relative h-40 w-full overflow-hidden">
@@ -155,36 +157,35 @@ export const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved, isVirtual
         {/* Verification Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10 pointer-events-none">
           {(home.verifiedSeller || home.isVerified) && (
-             <span className="inline-flex items-center gap-1 rounded-full bg-blue-600/95 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm backdrop-blur-sm tracking-wider uppercase">
-               <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
-               </svg>
-               Verified
-             </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-600/95 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm backdrop-blur-sm tracking-wider uppercase">
+              <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+              </svg>
+              Verified
+            </span>
           )}
           {home.urgency === "high" && (
-             <span className="inline-flex items-center gap-1 rounded-full bg-red-500/95 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm backdrop-blur-sm tracking-wider uppercase bg-pulse">
-               ⚡ Urgent
-             </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-500/95 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm backdrop-blur-sm tracking-wider uppercase bg-pulse">
+              ⚡ Urgent
+            </span>
           )}
         </div>
 
         <button
           type="button"
           onClick={handleSaveClick}
-          className={`absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 shadow-sm hover:bg-blue-50 z-20 ${
-            isSaved ? "text-red-500" : "text-slate-700"
-          }`}
+          className={`absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 shadow-sm hover:bg-blue-50 z-20 ${isSaved ? "text-red-500" : "text-slate-700"
+            }`}
         >
           <Heart className="h-4 w-4" fill={isSaved ? "currentColor" : "none"} />
         </button>
         <div className="absolute left-3 bottom-3 flex items-center gap-2 z-20">
-           <span className="rounded-full bg-blue-600/90 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm shadow-sm border border-blue-500/50">
-             {formatPrice(home.price)}
-           </span>
-           <span className="rounded-full bg-slate-900/80 px-2 py-1 text-[9px] font-semibold text-white backdrop-blur-sm uppercase tracking-wider border border-slate-700/50">
-             {home.type === "sale" ? "Sale" : "Rent"}
-           </span>
+          <span className="rounded-full bg-blue-600/90 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm shadow-sm border border-blue-500/50">
+            {formatPrice(home.price)}
+          </span>
+          <span className="rounded-full bg-slate-900/80 px-2 py-1 text-[9px] font-semibold text-white backdrop-blur-sm uppercase tracking-wider border border-slate-700/50">
+            {home.type === "sale" ? "Sale" : "Rent"}
+          </span>
         </div>
       </div>
       <div className="p-4 space-y-2 flex-1 flex flex-col">
@@ -202,23 +203,23 @@ export const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved, isVirtual
             ].filter(Boolean).join(", ")}
           </span>
         </p>
-        
+
         <div className="mt-auto pt-3">
-            <div className="flex items-center justify-between text-[11px] font-medium text-slate-600 bg-slate-50 rounded-lg p-2 border border-slate-100">
-              <span className="flex items-center gap-1"><span className="text-slate-400">🛏️</span> {home?.specs?.bedrooms || home.beds || "-"}</span>
-              <div className="w-px h-3 bg-slate-200" />
-              <span className="flex items-center gap-1"><span className="text-slate-400">🛁</span> {home?.specs?.bathrooms || home.baths || "-"}</span>
-              <div className="w-px h-3 bg-slate-200" />
-              <span className="flex items-center gap-1 truncate max-w-[90px]"><span className="text-slate-400">📐</span> {formatArea(home?.specs?.landArea, home.sqft)}</span>
-            </div>
-            
-            <div className="mt-2.5 flex items-center justify-between text-[10px] text-slate-400 font-medium">
-              <span className="inline-flex items-center gap-1">
-                <Eye className="h-3 w-3" />
-                {home.views ?? 0} views
-              </span>
-              <span>{home.createdAt ? new Date(home.createdAt).toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) : "Recently"}</span>
-            </div>
+          <div className="flex items-center justify-between text-[11px] font-medium text-slate-600 bg-slate-50 rounded-lg p-2 border border-slate-100">
+            <span className="flex items-center gap-1"><span className="text-slate-400">🛏️</span> {home?.specs?.bedrooms || home.beds || "-"}</span>
+            <div className="w-px h-3 bg-slate-200" />
+            <span className="flex items-center gap-1"><span className="text-slate-400">🛁</span> {home?.specs?.bathrooms || home.baths || "-"}</span>
+            <div className="w-px h-3 bg-slate-200" />
+            <span className="flex items-center gap-1 truncate max-w-[90px]"><span className="text-slate-400">📐</span> {formatArea(home?.specs?.landArea, home.sqft)}</span>
+          </div>
+
+          <div className="mt-2.5 flex items-center justify-between text-[10px] text-slate-400 font-medium">
+            <span className="inline-flex items-center gap-1">
+              <Eye className="h-3 w-3" />
+              {home.views ?? 0} views
+            </span>
+            <span>{home.createdAt ? new Date(home.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : "Recently"}</span>
+          </div>
         </div>
       </div>
     </div>

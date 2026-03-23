@@ -103,8 +103,8 @@ export function ListingModal({
     (Array.isArray(home.images) && home.images.length > 0
       ? home.images
       : home.image
-      ? [home.image]
-      : []) || [];
+        ? [home.image]
+        : []) || [];
 
   const fallbackImg = "https://placehold.co/800x500/eff6ff/0f172a?text=Home";
   const images = rawImages.length > 0 ? rawImages : [fallbackImg];
@@ -115,8 +115,8 @@ export function ListingModal({
     home?.mapsUrl && home.mapsUrl.trim()
       ? home.mapsUrl
       : home?.location?.lat && home?.location?.lng
-      ? `https://www.google.com/maps/search/?api=1&query=${home.location.lat},${home.location.lng}`
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        ? `https://www.google.com/maps/search/?api=1&query=${home.location.lat},${home.location.lng}`
+        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
           `${home.address || ""} ${home.city || ""}`.trim()
         )}`;
 
@@ -168,8 +168,8 @@ export function ListingModal({
 
   // Generate dynamic SEO metadata and JSON-LD schema
   const pageTitle = home ? `${home.title || home.address} - HamroGhar` : "Property Details - HamroGhar";
-  const pageDescription = home?.description 
-    ? (home.description.substring(0, 155) + "...") 
+  const pageDescription = home?.description
+    ? (home.description.substring(0, 155) + "...")
     : `Check out this property located at ${home.address}, ${home.city} on HamroGhar.`;
   const pageUrl = `${window.location.origin}/?listing=${homeKey}`;
   const ogImage = images[0] || fallbackImg;
@@ -214,7 +214,7 @@ export function ListingModal({
         <link rel="canonical" href={pageUrl} />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
-      
+
       <div
         className="w-full h-full sm:h-auto sm:max-w-3xl sm:max-h-[85vh] sm:rounded-3xl bg-white shadow-2xl overflow-y-auto relative flex flex-col"
       >
@@ -233,7 +233,7 @@ export function ListingModal({
             className="bg-white hover:bg-slate-50 text-slate-800 h-8 w-8 rounded-full flex items-center justify-center shadow-md transition-colors"
           >
             <span className="sr-only">Close</span>
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
 
@@ -255,13 +255,13 @@ export function ListingModal({
             {/* Price Badge Over Image */}
             {priceLabel && (
               <div className="absolute left-5 bottom-5 flex flex-col items-start gap-1">
-                 <span className="bg-blue-600 px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm uppercase tracking-wide">
-                   {home.type === "sale" ? "For Sale" : "For Rent"}
-                 </span>
-                 <div className="text-white drop-shadow-md flex items-baseline gap-1">
-                   <span className="text-3xl font-extrabold">{priceLabel}</span>
-                   {home.type !== "sale" && <span className="text-sm font-medium text-white/80">/mo</span>}
-                 </div>
+                <span className="bg-blue-600 px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm uppercase tracking-wide">
+                  {home.type === "sale" ? "For Sale" : "For Rent"}
+                </span>
+                <div className="text-white drop-shadow-md flex items-baseline gap-1">
+                  <span className="text-3xl font-extrabold">{priceLabel}</span>
+                  {home.type !== "sale" && <span className="text-sm font-medium text-white/80">/mo</span>}
+                </div>
               </div>
             )}
 
@@ -295,19 +295,19 @@ export function ListingModal({
             {/* Title & Location */}
             <div className="mb-8">
               <div className="flex flex-wrap items-center gap-2 mb-2">
-                 <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700 ring-1 ring-inset ring-blue-700/10 uppercase tracking-wider">
-                   {home?.specs?.propertyType || "Property"}
-                 </span>
-                 {home?.status && home.status !== "active" && (
-                   <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700 ring-1 ring-inset ring-amber-700/10 uppercase tracking-wider">
-                     {home.status}
-                   </span>
-                 )}
-                 <span className="text-[10px] text-slate-400 font-medium">
-                   Listed {postedDate || "Recently"}
-                 </span>
+                <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700 ring-1 ring-inset ring-blue-700/10 uppercase tracking-wider">
+                  {home?.specs?.propertyType || "Property"}
+                </span>
+                {home?.status && home.status !== "active" && (
+                  <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700 ring-1 ring-inset ring-amber-700/10 uppercase tracking-wider">
+                    {home.status}
+                  </span>
+                )}
+                <span className="text-[10px] text-slate-400 font-medium">
+                  Listed {postedDate || "Recently"}
+                </span>
               </div>
-              
+
               <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight mb-2">
                 {home.title || "Beautiful Property in Nepal"}
               </h1>
@@ -328,139 +328,138 @@ export function ListingModal({
             </div>
 
             <div className="grid gap-10 sm:grid-cols-3">
-               {/* Left Column (Main Content) */}
-               <div className="sm:col-span-2 space-y-8 text-sm">
-                 
-                 {/* Overview */}
-                 {home.description && (
-                   <section>
-                     <h2 className="text-lg font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2">Overview</h2>
-                     <p className="text-slate-600 leading-relaxed whitespace-pre-wrap">{home.description}</p>
-                   </section>
-                 )}
+              {/* Left Column (Main Content) */}
+              <div className="sm:col-span-2 space-y-8 text-sm">
 
-                 {/* Room Details */}
-                 {(home?.specs?.livingRoom || home?.specs?.kitchen || home?.specs?.totalFloors || home?.specs?.dimension) && (
-                   <section>
-                      <h2 className="text-lg font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2">Room Details</h2>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        {home?.specs?.totalFloors > 0 && <div className="p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Total Floors</span><span className="font-extrabold text-slate-800">{home.specs.totalFloors}</span></div>}
-                        {home?.specs?.livingRoom > 0 && <div className="p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Living Rooms</span><span className="font-extrabold text-slate-800">{home.specs.livingRoom}</span></div>}
-                        {home?.specs?.kitchen > 0 && <div className="p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Kitchens</span><span className="font-extrabold text-slate-800">{home.specs.kitchen}</span></div>}
-                        {home?.specs?.dimension && <div className="p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Dimension</span><span className="font-extrabold text-slate-800 text-sm whitespace-nowrap overflow-hidden text-ellipsis">{home.specs.dimension}</span></div>}
-                      </div>
-                   </section>
-                 )}
+                {/* Overview */}
+                {home.description && (
+                  <section>
+                    <h2 className="text-lg font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2">Overview</h2>
+                    <p className="text-slate-600 leading-relaxed whitespace-pre-wrap">{home.description}</p>
+                  </section>
+                )}
 
-                 {/* Facilities */}
-                 <section>
-                   <h2 className="text-lg font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2">Facilities & Amenities</h2>
-                   <div className="flex flex-wrap gap-2">
-                     {home?.facilities?.bikeParking > 0 && <AmenityTag active={true}>🏍️ Bike Parking ({home.facilities.bikeParking})</AmenityTag>}
-                     {home?.facilities?.carParking > 0 && <AmenityTag active={true}>🚗 Car Parking ({home.facilities.carParking})</AmenityTag>}
-                     {home?.facilities?.boringWater && <AmenityTag active={true}>💧 Boring Water (Yes)</AmenityTag>}
-                     {home?.facilities?.drinkingWater && <AmenityTag active={true}>🚰 Drinking Water (Yes)</AmenityTag>}
+                {/* Room Details */}
+                {(home?.specs?.livingRoom || home?.specs?.kitchen || home?.specs?.totalFloors || home?.specs?.dimension) && (
+                  <section>
+                    <h2 className="text-lg font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2">Room Details</h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {home?.specs?.totalFloors > 0 && <div className="p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Total Floors</span><span className="font-extrabold text-slate-800">{home.specs.totalFloors}</span></div>}
+                      {home?.specs?.livingRoom > 0 && <div className="p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Living Rooms</span><span className="font-extrabold text-slate-800">{home.specs.livingRoom}</span></div>}
+                      {home?.specs?.kitchen > 0 && <div className="p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Kitchens</span><span className="font-extrabold text-slate-800">{home.specs.kitchen}</span></div>}
+                      {home?.specs?.dimension && <div className="p-3 bg-slate-50 rounded-xl border border-slate-100"><span className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Dimension</span><span className="font-extrabold text-slate-800 text-sm whitespace-nowrap overflow-hidden text-ellipsis">{home.specs.dimension}</span></div>}
+                    </div>
+                  </section>
+                )}
 
-                     <AmenityTag active={!!(home?.specs?.furnishing === 'Fully Furnished' || home?.specs?.furnishing === 'fully' || home.furnished)}>🛋️ Furnished</AmenityTag>
-                     <AmenityTag active={!!home?.highlights?.find(h => h.toLowerCase().includes('internet') || h.toLowerCase().includes('wifi') || home.internet)}>🌐 Internet/WiFi</AmenityTag>
-                     <AmenityTag active={!!(home?.specs?.parking || home.parking)}>🅿️ Parking Available</AmenityTag>
-                     <AmenityTag active={!!home.petsAllowed}>🐕 Pets Allowed</AmenityTag>
-                     {home?.highlights?.map(h => <AmenityTag key={h} active={true}>✨ {h}</AmenityTag>)}
-                   </div>
-                 </section>
+                {/* Facilities */}
+                <section>
+                  <h2 className="text-lg font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2">Facilities & Amenities</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {home?.facilities?.bikeParking > 0 && <AmenityTag active={true}>🏍️ Bike Parking ({home.facilities.bikeParking})</AmenityTag>}
+                    {home?.facilities?.carParking > 0 && <AmenityTag active={true}>🚗 Car Parking ({home.facilities.carParking})</AmenityTag>}
+                    {home?.facilities?.boringWater && <AmenityTag active={true}>💧 Boring Water (Yes)</AmenityTag>}
+                    {home?.facilities?.drinkingWater && <AmenityTag active={true}>🚰 Drinking Water (Yes)</AmenityTag>}
 
-                 {/* Landmarks */}
-                 {(home?.location?.ringRoad || home?.location?.hospital || home?.location?.school || home?.location?.airport || home?.location?.bhatbhateni || home?.location?.publicTransport) && (
-                   <section>
-                      <h2 className="text-lg font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2">Nearby Landmarks</h2>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                        {home?.location?.ringRoad && <div className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-white shadow-sm"><span className="text-slate-500 font-medium">Ring Road</span><span className="font-bold text-slate-800">{home.location.ringRoad}</span></div>}
-                        {home?.location?.hospital && <div className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-white shadow-sm"><span className="text-slate-500 font-medium">Hospital</span><span className="font-bold text-slate-800">{home.location.hospital}</span></div>}
-                        {home?.location?.school && <div className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-white shadow-sm"><span className="text-slate-500 font-medium">School/College</span><span className="font-bold text-slate-800">{home.location.school}</span></div>}
-                        {home?.location?.bhatbhateni && <div className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-white shadow-sm"><span className="text-slate-500 font-medium">Bhatbhateni</span><span className="font-bold text-slate-800">{home.location.bhatbhateni}</span></div>}
-                        {home?.location?.airport && <div className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-white shadow-sm"><span className="text-slate-500 font-medium">Airport</span><span className="font-bold text-slate-800">{home.location.airport}</span></div>}
-                        {home?.location?.publicTransport && <div className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-white shadow-sm"><span className="text-slate-500 font-medium">Public Transport</span><span className="font-bold text-slate-800">{home.location.publicTransport}</span></div>}
-                      </div>
-                   </section>
-                 )}
+                    <AmenityTag active={!!(home?.specs?.furnishing === 'Fully Furnished' || home?.specs?.furnishing === 'fully' || home.furnished)}>🛋️ Furnished</AmenityTag>
+                    <AmenityTag active={!!home?.highlights?.find(h => h.toLowerCase().includes('internet') || h.toLowerCase().includes('wifi') || home.internet)}>🌐 Internet/WiFi</AmenityTag>
+                    <AmenityTag active={!!(home?.specs?.parking || home.parking)}>🅿️ Parking Available</AmenityTag>
+                    <AmenityTag active={!!home.petsAllowed}>🐕 Pets Allowed</AmenityTag>
+                    {home?.highlights?.map(h => <AmenityTag key={h} active={true}>✨ {h}</AmenityTag>)}
+                  </div>
+                </section>
+
+                {/* Landmarks */}
+                {(home?.location?.ringRoad || home?.location?.hospital || home?.location?.school || home?.location?.airport || home?.location?.bhatbhateni || home?.location?.publicTransport) && (
+                  <section>
+                    <h2 className="text-lg font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2">Nearby Landmarks</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                      {home?.location?.ringRoad && <div className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-white shadow-sm"><span className="text-slate-500 font-medium">Ring Road</span><span className="font-bold text-slate-800">{home.location.ringRoad}</span></div>}
+                      {home?.location?.hospital && <div className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-white shadow-sm"><span className="text-slate-500 font-medium">Hospital</span><span className="font-bold text-slate-800">{home.location.hospital}</span></div>}
+                      {home?.location?.school && <div className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-white shadow-sm"><span className="text-slate-500 font-medium">School/College</span><span className="font-bold text-slate-800">{home.location.school}</span></div>}
+                      {home?.location?.bhatbhateni && <div className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-white shadow-sm"><span className="text-slate-500 font-medium">Bhatbhateni</span><span className="font-bold text-slate-800">{home.location.bhatbhateni}</span></div>}
+                      {home?.location?.airport && <div className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-white shadow-sm"><span className="text-slate-500 font-medium">Airport</span><span className="font-bold text-slate-800">{home.location.airport}</span></div>}
+                      {home?.location?.publicTransport && <div className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-white shadow-sm"><span className="text-slate-500 font-medium">Public Transport</span><span className="font-bold text-slate-800">{home.location.publicTransport}</span></div>}
+                    </div>
+                  </section>
+                )}
 
 
 
-                 {/* Disclaimer */}
-                 <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
-                   <div className="flex gap-3">
-                     <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
-                     <p className="text-xs text-slate-600 leading-relaxed">
-                       <strong className="text-slate-800">Safety Disclaimer:</strong> HamroGhar connects users but does not directly verify listings. Never wire money or pay a deposit before viewing the property in person and signing a lease. Report suspicious activity immediately.
-                     </p>
-                   </div>
-                 </div>
+                {/* Disclaimer */}
+                <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
+                  <div className="flex gap-3">
+                    <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong className="text-slate-800">Safety Disclaimer:</strong> HamroGhar connects users but does not directly verify listings. Never wire money or pay a deposit before viewing the property in person and signing a lease. Report suspicious activity immediately.
+                    </p>
+                  </div>
+                </div>
 
-               </div>
+              </div>
 
-               {/* Right Column (Sidebar) */}
-               <div className="space-y-6">
-                 
-                 {/* Contact Card */}
-                 <div className="rounded-2xl bg-white border border-blue-100 shadow-xl shadow-blue-500/5 p-5 sticky top-5">
-                    <h3 className="font-bold text-slate-900 mb-4">Contact Poster</h3>
-                    <OwnerSocialsPanel socials={home.owner?.socials} />
-                    
-                    <div className="h-px bg-slate-100 my-4" />
-                    
-                    {/* Action Buttons */}
-                    <div className="space-y-2">
-                      <a
-                        href={mapsUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors"
-                      >
-                        <MapPin className="h-4 w-4" /> View on Map
-                      </a>
-                      
-                      {!isOwner && (
-                        <button
-                          onClick={handleHeartClick}
-                          className={`w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold border transition-colors ${
-                            isSaved
-                              ? "bg-red-50 border-red-100 text-red-600 hover:bg-red-100"
-                              : "bg-blue-600 border-blue-600 text-white hover:bg-blue-700"
+              {/* Right Column (Sidebar) */}
+              <div className="space-y-6">
+
+                {/* Contact Card */}
+                <div className="rounded-2xl bg-white border border-blue-100 shadow-xl shadow-blue-500/5 p-5 sticky top-5">
+                  <h3 className="font-bold text-slate-900 mb-4">Contact Poster</h3>
+                  <OwnerSocialsPanel socials={home.owner?.socials} />
+
+                  <div className="h-px bg-slate-100 my-4" />
+
+                  {/* Action Buttons */}
+                  <div className="space-y-2">
+                    <a
+                      href={mapsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors"
+                    >
+                      <MapPin className="h-4 w-4" /> View on Map
+                    </a>
+
+                    {!isOwner && (
+                      <button
+                        onClick={handleHeartClick}
+                        className={`w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold border transition-colors ${isSaved
+                            ? "bg-red-50 border-red-100 text-red-600 hover:bg-red-100"
+                            : "bg-blue-600 border-blue-600 text-white hover:bg-blue-700"
                           }`}
-                        >
-                          <Heart className="h-4 w-4" fill={isSaved ? "currentColor" : "none"} />
-                          {isSaved ? "Remove from Saved" : "Save this Home"}
-                        </button>
-                      )}
-                    </div>
+                      >
+                        <Heart className="h-4 w-4" fill={isSaved ? "currentColor" : "none"} />
+                        {isSaved ? "Remove from Saved" : "Save this Home"}
+                      </button>
+                    )}
+                  </div>
 
-                    {/* Share Row */}
-                    <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-                       <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Share</span>
-                       <div className="flex gap-1">
-                          <button onClick={() => {
-                              const url = `${window.location.origin}/?listing=${home._id || home.id}`;
-                              navigator.clipboard.writeText(url).then(() => toast.success("Copied!")).catch(() => toast.error("Could not copy"));
-                            }} 
-                            className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors bg-slate-50 hover:bg-blue-50 rounded-lg"
-                            title="Copy Link">
-                            <Copy className="h-4 w-4" />
-                          </button>
-                          <button onClick={() => {
-                             const text = `Check out this home on HamroGhar: ${home.title || home.address} — Rs.${home.price}/mo\n${window.location.origin}/?listing=${home._id || home.id}`;
-                             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-                            }} 
-                            className="p-1.5 text-slate-400 hover:text-green-500 transition-colors bg-slate-50 hover:bg-green-50 rounded-lg"
-                            title="WhatsApp">
-                            <Share2 className="h-4 w-4" />
-                          </button>
-                       </div>
+                  {/* Share Row */}
+                  <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Share</span>
+                    <div className="flex gap-1">
+                      <button onClick={() => {
+                        const url = `${window.location.origin}/?listing=${home._id || home.id}`;
+                        navigator.clipboard.writeText(url).then(() => toast.success("Copied!")).catch(() => toast.error("Could not copy"));
+                      }}
+                        className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors bg-slate-50 hover:bg-blue-50 rounded-lg"
+                        title="Copy Link">
+                        <Copy className="h-4 w-4" />
+                      </button>
+                      <button onClick={() => {
+                        const text = `Check out this home on HamroGhar: ${home.title || home.address} — Rs.${home.price}/mo\n${window.location.origin}/?listing=${home._id || home.id}`;
+                        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                      }}
+                        className="p-1.5 text-slate-400 hover:text-green-500 transition-colors bg-slate-50 hover:bg-green-50 rounded-lg"
+                        title="WhatsApp">
+                        <Share2 className="h-4 w-4" />
+                      </button>
                     </div>
-                 </div>
-                 
-                 <ReportListingButton listingId={home._id || home.id} />
+                  </div>
+                </div>
 
-               </div>
+                <ReportListingButton listingId={home._id || home.id} />
+
+              </div>
             </div>
 
             {/* Price History & Reviews */}
@@ -483,11 +482,11 @@ const QuickFact = ({ label, value, icon }) => {
   if (!value) return null;
   return (
     <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-       <span className="text-xl leading-none pt-0.5">{icon}</span>
-       <div>
-         <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">{label}</p>
-         <p className="text-sm font-semibold text-slate-900">{value}</p>
-       </div>
+      <span className="text-xl leading-none pt-0.5">{icon}</span>
+      <div>
+        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">{label}</p>
+        <p className="text-sm font-semibold text-slate-900">{value}</p>
+      </div>
     </div>
   );
 };
@@ -624,7 +623,7 @@ function ReviewsSection({ listingId }) {
       return;
     }
     setLoading(true);
-    apiFetch(`/api/reviews/${listingId}`, { credentials: "omit" })
+    apiFetch(`/api/reviews/${listingId}`)
       .then((d) => {
         setReviews(d.reviews || []);
         setAvgRating(d.avgRating);
@@ -640,9 +639,9 @@ function ReviewsSection({ listingId }) {
           }
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listingId, currentUserId]);
 
   const handleSubmit = async (e) => {
@@ -736,17 +735,16 @@ function ReviewsSection({ listingId }) {
                 className="focus:outline-none"
               >
                 <Star
-                  className={`h-5 w-5 transition-colors ${
-                    n <= (hoverRating || myRating)
+                  className={`h-5 w-5 transition-colors ${n <= (hoverRating || myRating)
                       ? "text-yellow-400 fill-yellow-400"
                       : "text-slate-300"
-                  }`}
+                    }`}
                 />
               </button>
             ))}
             {myRating > 0 && (
               <span className="text-xs text-slate-500 ml-1">
-                {["Terrible","Poor","Average","Good","Excellent"][myRating - 1]}
+                {["Terrible", "Poor", "Average", "Good", "Excellent"][myRating - 1]}
               </span>
             )}
           </div>
@@ -819,11 +817,10 @@ function StarDisplay({ rating }) {
       {[1, 2, 3, 4, 5].map((n) => (
         <Star
           key={n}
-          className={`h-3 w-3 ${
-            n <= Math.round(rating)
+          className={`h-3 w-3 ${n <= Math.round(rating)
               ? "text-yellow-400 fill-yellow-400"
               : "text-slate-200"
-          }`}
+            }`}
         />
       ))}
     </div>
@@ -907,7 +904,7 @@ function ReportListingButton({ listingId }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ listingId }),
-      }).catch(() => {}); // Fire and forget — endpoint may not exist yet
+      }).catch(() => { }); // Fire and forget — endpoint may not exist yet
       setSubmitted(true);
       toast.success("Report submitted. Thank you for keeping HamroGhar safe!");
     } catch {
