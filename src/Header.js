@@ -91,8 +91,20 @@ export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang
     setIsMobileMenuOpen(false);
   };
 
+  // Handle window scroll lock when menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isMobileMenuOpen]);
+
   return (
-    <header className="fixed top-0 inset-x-0 z-40 bg-white/85 backdrop-blur-xl border-b border-blue-100/60 shadow-sm shadow-blue-500/5">
+    <header className="fixed top-0 inset-x-0 z-[100] bg-white/95 backdrop-blur-xl border-b border-blue-100 shadow-sm shadow-blue-500/5 transition-all duration-300">
       {/* TOP BAR */}
       <div className="max-w-6xl mx-auto h-16 lg:h-20 flex items-center justify-between px-4 lg:px-6 max-[425px]:px-3">
         {/* LOGO */}
@@ -236,60 +248,89 @@ export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang
             )}
           </button>
 
-          {/* MOBILE DROPDOWN MENU — floating overlay, not pushing content */}
+          {/* MOBILE DRAWER — Fixed Overlay */}
           {isMobileMenuOpen && (
             <>
-              {/* Invisible backdrop to catch outside clicks */}
+              {/* Dark backdrop with blur */}
               <div
-                className="fixed inset-0 z-40"
+                className="fixed inset-0 z-[110] bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300"
                 onClick={() => setIsMobileMenuOpen(false)}
                 aria-hidden="true"
               />
-              {/* Menu panel - Mobile Responsive Container */}
-              <div className="absolute top-full right-3 mt-2 z-50 w-56 max-[360px]:w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl shadow-slate-300/40 border border-slate-100 py-3 px-4 flex flex-col gap-1 text-sm animate-in fade-in slide-in-from-top-2 duration-200 hamburger-menu-wrapper hamburger-menu">
-                {isLoggedIn ? (
-                  <>
-                    <MobileItem
-                      icon={PlusCircle}
-                      label={t.postRequest}
-                      onClick={() => handleMobileNav("/listings/new")}
-                    />
-                    <MobileItem
-                      icon={Crown}
-                      label={t.membership}
-                      onClick={() => handleMobileNav("/membership")}
-                    />
-                    <MobileItem
-                      icon={User}
-                      label={t.profile}
-                      onClick={() => handleMobileNav("/profile")}
-                    />
-                    <div className="h-px bg-slate-100 my-1" />
-                    <button
-                      type="button"
-                      onClick={handleLogoutClick}
-                      className="w-full rounded-xl border border-slate-200 py-2 text-sm text-slate-600 hover:bg-slate-50 font-medium transition-colors"
-                    >
-                      {t.logout}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <MobileItem
-                      icon={LogIn}
-                      label={t.signIn}
-                      onClick={() => handleMobileNav("/login")}
-                    />
-                    <div className="h-px bg-slate-100 my-1" />
-                    <button
-                      type="button"
-                      onClick={() => handleMobileNav("/register")}
-                      className="w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-                    >
-                      {t.joinFree}
-                    </button>
-                  </>
-                )}
+              {/* Sidebar Menu Panel */}
+              <div
+                className="fixed top-0 right-0 h-full w-[280px] max-w-[85vw] bg-white z-[120] shadow-2xl border-l border-slate-100 flex flex-col animate-in slide-in-from-right duration-300 overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Drawer Header (Logo + Close) */}
+                <div className="flex items-center justify-between p-5 border-b border-slate-50 mb-2">
+                  <div className="flex items-center gap-2">
+                    <img src="/logo.png" alt="Logo" className="h-7 w-7" />
+                    <span className="font-bold text-slate-900 text-sm">HamroGhar</span>
+                  </div>
+                  <button
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-2 rounded-full bg-slate-50 text-slate-500 hover:bg-slate-100 transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="px-4 py-2 flex flex-col gap-1.5 flex-1">
+                  {isLoggedIn ? (
+                    <>
+                      <MobileItem
+                        icon={PlusCircle}
+                        label={t.postRequest}
+                        onClick={() => handleMobileNav("/listings/new")}
+                      />
+                      <MobileItem
+                        icon={Crown}
+                        label={t.membership}
+                        onClick={() => handleMobileNav("/membership")}
+                      />
+                      <MobileItem
+                        icon={User}
+                        label={t.profile}
+                        onClick={() => handleMobileNav("/profile")}
+                      />
+                      <div className="h-px bg-slate-100 my-1" />
+                      <button
+                        type="button"
+                        onClick={handleLogoutClick}
+                        className="w-full rounded-xl border border-slate-200 py-2 text-sm text-slate-600 hover:bg-slate-50 font-medium transition-colors"
+                      >
+                        {t.logout}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <MobileItem
+                        icon={LogIn}
+                        label={t.signIn}
+                        onClick={() => handleMobileNav("/login")}
+                      />
+                      <div className="h-px bg-slate-100 my-1" />
+                      <button
+                        type="button"
+                        onClick={() => handleMobileNav("/register")}
+                        className="w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+                      >
+                        {t.joinFree}
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {/* Drawer Footer Area (Language, etc) */}
+                <div className="p-5 border-t border-slate-50 mt-auto bg-slate-50/30">
+                  <button
+                    onClick={onToggleLang}
+                    className="flex items-center gap-2 text-xs font-bold text-slate-600 uppercase tracking-widest hover:text-blue-600 transition-colors"
+                  >
+                    <Globe className="w-4 h-4" /> {lang === "en" ? "नेपाली" : "English"}
+                  </button>
+                </div>
               </div>
             </>
           )}

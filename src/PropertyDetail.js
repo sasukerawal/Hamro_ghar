@@ -154,8 +154,8 @@ export default function PropertyDetail() {
         <meta name="twitter:image" content={images[0]} />
       </Helmet>
 
-      {/* Top Navigation */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+      {/* Top Navigation - Sticky Below Header */}
+      <div className="bg-white border-b border-slate-200 sticky top-16 lg:top-20 z-30 shadow-sm transition-all duration-300">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <button onClick={() => location.key !== "default" ? navigate(-1) : navigate("/")} className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">
             <ChevronLeft className="w-5 h-5" /> Back to Search

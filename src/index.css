@@ -49,16 +49,10 @@ li {
   word-wrap: break-word;
 }
 
-/* ─── Hamburger Menu RTL Fixes ───────────────────────────── */
+/* ─── Hamburger Menu RTL Fixes (Legacy Cleanup) ───────────────────── */
 .hamburger-menu {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-width: 280px;
-  max-height: 85vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-  overscroll-behavior: contain;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .hamburger-menu a,
