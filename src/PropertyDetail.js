@@ -155,11 +155,7 @@ export default function PropertyDetail() {
       {/* Top Navigation */}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-<<<<<<< HEAD
           <button onClick={() => window.history.length > 2 ? navigate(-1) : navigate("/")} className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">
-=======
-          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">
->>>>>>> 7a9515929bc7df666cbe345be314b9ac42018faf
             <ChevronLeft className="w-5 h-5" /> Back to Search
           </button>
           <div className="flex gap-3">
@@ -182,21 +178,12 @@ export default function PropertyDetail() {
             </div>
             <div className="flex w-1/2 h-full flex-col gap-2">
               <div className="flex h-1/2 gap-2">
-<<<<<<< HEAD
                 <div className="w-1/2 h-full overflow-hidden cursor-pointer" onClick={() => setLightboxIdx(Math.min(1, images.length - 1))}><img src={images[1] || images[0]} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" alt="Gallery 1" loading="lazy" /></div>
                 <div className="w-1/2 h-full overflow-hidden cursor-pointer" onClick={() => setLightboxIdx(Math.min(2, images.length - 1))}><img src={images[2] || images[0]} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" alt="Gallery 2" loading="lazy" /></div>
               </div>
               <div className="flex h-1/2 gap-2">
                 <div className="w-1/2 h-full overflow-hidden cursor-pointer" onClick={() => setLightboxIdx(Math.min(3, images.length - 1))}><img src={images[3] || images[0]} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" alt="Gallery 3" loading="lazy" /></div>
                 <div className="w-1/2 h-full overflow-hidden cursor-pointer" onClick={() => setLightboxIdx(Math.min(4, images.length - 1))}><img src={images[4] || images[0]} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" alt="Gallery 4" loading="lazy" /></div>
-=======
-                <div className="w-1/2 h-full overflow-hidden cursor-pointer" onClick={() => setLightboxIdx(1)}><img src={images[1] || images[0]} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" alt="Gallery 1" loading="lazy" /></div>
-                <div className="w-1/2 h-full overflow-hidden cursor-pointer" onClick={() => setLightboxIdx(2)}><img src={images[2] || images[0]} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" alt="Gallery 2" loading="lazy" /></div>
-              </div>
-              <div className="flex h-1/2 gap-2">
-                <div className="w-1/2 h-full overflow-hidden cursor-pointer" onClick={() => setLightboxIdx(3)}><img src={images[3] || images[0]} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" alt="Gallery 3" loading="lazy" /></div>
-                <div className="w-1/2 h-full overflow-hidden cursor-pointer" onClick={() => setLightboxIdx(4)}><img src={images[4] || images[0]} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" alt="Gallery 4" loading="lazy" /></div>
->>>>>>> 7a9515929bc7df666cbe345be314b9ac42018faf
               </div>
             </div>
             <button onClick={() => setLightboxIdx(0)} className="absolute bottom-5 right-5 bg-white/95 backdrop-blur-sm text-slate-900 font-extrabold px-5 py-3 rounded-2xl shadow-xl hover:bg-white hover:scale-105 transition-all flex items-center gap-2">
@@ -515,11 +502,7 @@ export default function PropertyDetail() {
                     </a>
                   )}
 
-<<<<<<< HEAD
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
-=======
-                  <div className="grid grid-cols-2 gap-3 mt-3">
->>>>>>> 7a9515929bc7df666cbe345be314b9ac42018faf
                     {home.contact?.email ? (
                       <a href={`mailto:${home.contact.email}`} className="flex items-center justify-center gap-2 bg-slate-50 text-slate-700 hover:bg-slate-100 font-bold py-3 rounded-xl text-sm transition-colors border-2 border-slate-200">
                         <Mail className="w-4 h-4" /> Email
@@ -529,7 +512,6 @@ export default function PropertyDetail() {
                         <Mail className="w-4 h-4" /> Email
                       </div>
                     )}
-<<<<<<< HEAD
 
                     {home.contact?.facebook ? (
                       <a href={home.contact.facebook.startsWith('http') ? home.contact.facebook : `https://${home.contact.facebook}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold py-3 rounded-xl text-sm transition-colors border-2 border-blue-200 overflow-hidden px-2">
@@ -548,15 +530,6 @@ export default function PropertyDetail() {
                     ) : (
                       <div className="hidden sm:flex items-center justify-center gap-2 bg-slate-50 text-slate-400 font-bold py-3 rounded-xl text-sm border-2 border-slate-100 line-through">
                         <Instagram className="w-4 h-4" /> Insta
-=======
-                    {home.contact?.socialMedia ? (
-                      <a href={home.contact.socialMedia.startsWith('http') ? home.contact.socialMedia : `https://${home.contact.socialMedia}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 bg-slate-50 text-slate-700 hover:bg-slate-100 font-bold py-3 rounded-xl text-sm transition-colors border-2 border-slate-200 overflow-hidden px-2">
-                        <ExternalLink className="w-4 h-4 shrink-0" /> <span className="truncate">Social</span>
-                      </a>
-                    ) : (
-                      <div className="flex items-center justify-center gap-2 bg-slate-50 text-slate-400 font-bold py-3 rounded-xl text-sm border-2 border-slate-100 line-through">
-                        <ExternalLink className="w-4 h-4" /> Social
->>>>>>> 7a9515929bc7df666cbe345be314b9ac42018faf
                       </div>
                     )}
                   </div>

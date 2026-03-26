@@ -226,7 +226,6 @@ export const MUNICIPALITIES = {
     "Laxmipur Patari", "Naraha", "Nawarajpur",
     "Sakhuwa Mahendranagar", "Sukhipur"
   ],
-<<<<<<< HEAD
   "Baglung": [
     "Baglung", "Galkot", "Jaimini", "Dhorpatan", "Bareng", "Kathekhola", "Nisikhola", "Tarakhola", "Badigad", "Tamankhola"
   ],
@@ -341,8 +340,6 @@ export const MUNICIPALITIES = {
   "Parasi": [
     "Ramgram", "Sunwal", "Bardaghat", "Susta", "Pratappur", "Sarawal", "Palhinandan"
   ],
-=======
->>>>>>> 7a9515929bc7df666cbe345be314b9ac42018faf
   "Saptari": [
     "Rajbiraj", "Bodebarsain", "Dakneshwori",
     "Hanumannagar Kankalini", "Kanchanrup", "Khadak",

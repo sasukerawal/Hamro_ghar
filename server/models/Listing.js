@@ -178,12 +178,10 @@ const listingSchema = new mongoose.Schema(
 
     // Contact Information
     contact: {
-      phone: { type: String, required: true },
-      email: { type: String, trim: true, lowercase: true },
+      phone: { type: String, trim: true },
+      email: { type: String, trim: true },
       whatsapp: { type: String, trim: true },
-      socialMedia: { type: String, trim: true }, // Facebook/Insta link
-      facebook: { type: String, trim: true },
-      instagram: { type: String, trim: true },
+      socialMedia: { type: String, trim: true } // Facebook/Insta link
     },
 
     // 6. House Rules (structured)

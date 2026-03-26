@@ -307,13 +307,8 @@ export default function PostListing() {
       if (totalImages < 3 && !editId) return "Please upload at least 3 high-quality images to build trust.";
     } else if (step === 6) {
       if (!form.description || form.description.trim().length < 20) return "Description is too short. Please provide more detail.";
-<<<<<<< HEAD
       if (!form.contactPhone && !form.contactEmail && !form.contactWhatsapp && !form.contactSocial && !form.contactFacebook && !form.contactInstagram) {
         return "Please provide at least one contact method (Phone, Email, WhatsApp, Facebook, or Instagram).";
-=======
-      if (!form.contactPhone && !form.contactEmail && !form.contactWhatsapp && !form.contactSocial) {
-        return "Please provide at least one contact method (Phone, Email, WhatsApp, or Social Link).";
->>>>>>> 7a9515929bc7df666cbe345be314b9ac42018faf
       }
     }
     return null;
@@ -1082,7 +1077,6 @@ export default function PostListing() {
                       <input type="email" placeholder="e.g. owner@example.com" value={form.contactEmail} onChange={handleChange("contactEmail")} className="w-full border-2 border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 bg-slate-50 focus:bg-white font-bold transition-colors" />
                     </div>
                     <div>
-<<<<<<< HEAD
                       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Facebook Link</label>
                       <input type="url" placeholder="https://facebook.com/..." value={form.contactFacebook || ''} onChange={handleChange("contactFacebook")} className="w-full border-2 border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 bg-slate-50 focus:bg-white font-bold transition-colors" />
                     </div>
@@ -1090,11 +1084,6 @@ export default function PostListing() {
                       <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Instagram Link/ID</label>
                       <input type="text" placeholder="@username or URL" value={form.contactInstagram || ''} onChange={handleChange("contactInstagram")} className="w-full border-2 border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 bg-slate-50 focus:bg-white font-bold transition-colors" />
                     </div>
-=======
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Social Media Link</label>
-                      <input type="url" placeholder="Facebook/Insta profile link" value={form.contactSocial} onChange={handleChange("contactSocial")} className="w-full border-2 border-slate-200 p-3 rounded-xl outline-none focus:border-blue-500 bg-slate-50 focus:bg-white font-bold transition-colors" />
-                    </div>
->>>>>>> 7a9515929bc7df666cbe345be314b9ac42018faf
                   </div>
                 </div>
               </div>
