@@ -23,7 +23,7 @@ export function MeasurementProvider({ children }) {
    */
   const formatPrice = (price) => {
     if (!price || isNaN(price)) return "Rs. 0";
-    
+
     if (unitSystem === "nepali") {
       if (price >= 10000000) {
         return `Rs. ${(price / 10000000).toFixed(2).replace(/\.00$/, '')} Cr`;
@@ -50,34 +50,44 @@ export function MeasurementProvider({ children }) {
    * international: SqFt
    */
   const formatArea = (landData, sqftFallback) => {
-    if (!landData && !sqftFallback) return "N/A";
+    try {
+      if (!landData && !sqftFallback) return "N/A";
 
-    const { ropani = 0, aana = 0, paisa = 0, daam = 0, totalSqFt = 0 } = landData || {};
+      // If landData is a string, it might be pre-formatted or a legacy value
+      if (typeof landData === 'string' && landData.trim()) return landData;
 
-    if (unitSystem === "nepali") {
-       const parts = [];
-       if (ropani > 0) parts.push(`${ropani} Ropani`);
-       if (aana > 0) parts.push(`${aana} Aana`);
-       if (paisa > 0) parts.push(`${paisa} Paisa`);
-       if (daam > 0) parts.push(`${daam} Daam`);
-       
-       if (parts.length > 0) return parts.join(" ");
-       if (sqftFallback) return `${sqftFallback} SqFt`;
-       return "N/A";
-    } else {
-       // Convert Aana to SqFt if totalSqFt is not defined but Aana is
-       let finalSqft = totalSqFt || sqftFallback || 0;
-       if (!finalSqft && (ropani > 0 || aana > 0)) {
+      const { ropani = 0, aana = 0, paisa = 0, daam = 0, totalSqFt = 0 } = landData || {};
+
+      if (unitSystem === "nepali") {
+        const parts = [];
+        if (ropani > 0) parts.push(`${ropani} Ropani`);
+        if (aana > 0) parts.push(`${aana} Aana`);
+        if (paisa > 0) parts.push(`${paisa} Paisa`);
+        if (daam > 0) parts.push(`${daam} Daam`);
+
+        if (parts.length > 0) return parts.join(" ");
+        if (sqftFallback && typeof sqftFallback !== 'object') return `${sqftFallback} SqFt`;
+        return "N/A";
+      } else {
+        // Convert Aana to SqFt if totalSqFt is not defined but Aana is
+        let finalSqft = totalSqFt || sqftFallback || 0;
+        if (typeof finalSqft === 'object') finalSqft = 0;
+
+        if (!finalSqft && (ropani > 0 || aana > 0)) {
           // 1 Aana = 342.25 sqft
           // 1 Ropani = 16 aana
           const totalAana = (ropani * 16) + aana + (paisa / 4);
           finalSqft = totalAana * 342.25;
-       }
-       
-       if (finalSqft > 0) {
+        }
+
+        if (finalSqft > 0) {
           return `${Math.round(finalSqft).toLocaleString('en-US')} SqFt`;
-       }
-       return "N/A";
+        }
+        return "N/A";
+      }
+    } catch (err) {
+      console.error("formatArea error:", err);
+      return "N/A";
     }
   };
 
