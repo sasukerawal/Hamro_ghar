@@ -207,7 +207,7 @@ export default function PropertyDetail() {
                     onClick={() => setLightboxIdx(idx)}
                     className="shrink-0 h-16 w-20 rounded-xl overflow-hidden border-2 border-transparent hover:border-blue-400 transition-colors bg-slate-100"
                   >
-                    <img src={img} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                    <img src={img} alt={`Property view ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   </button>
                 ))}
               </div>
@@ -224,7 +224,7 @@ export default function PropertyDetail() {
             <div className="relative w-full h-full flex items-center justify-center px-4" onClick={(e) => e.stopPropagation()}>
               <img
                 src={images[lightboxIdx]}
-                alt={`Photo ${lightboxIdx + 1}`}
+                alt={`Property view ${lightboxIdx + 1}`}
                 className="max-w-full max-h-[85vh] object-contain rounded-xl"
               />
               {images.length > 1 && (
