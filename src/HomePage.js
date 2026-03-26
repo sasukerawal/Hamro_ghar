@@ -179,6 +179,13 @@ const PAGE_LANG = {
 
 
 // ---------------------------------------------------------------------------
+// ⏱️  FAB_HIDE_DELAY_MS
+// How long (in milliseconds) to keep the mobile floating action button
+// visible after the user stops scrolling upward.
+// ---------------------------------------------------------------------------
+const FAB_HIDE_DELAY_MS = 3000;
+
+// ---------------------------------------------------------------------------
 // 🏠 HomePage Component
 // ---------------------------------------------------------------------------
 
@@ -296,9 +303,16 @@ export default function HomePage({
         if (delta < 0 && currentY > 100) {
           // User scrolled down (swipe up) — hide the FAB
           setShowMobileFab(false);
+          clearTimeout(fabHideTimer.current);
         } else {
           // User scrolled up (swipe down) — show the FAB
           setShowMobileFab(true);
+
+          // Reset/Start auto-hide timer
+          clearTimeout(fabHideTimer.current);
+          fabHideTimer.current = setTimeout(() => {
+            setShowMobileFab(false);
+          }, FAB_HIDE_DELAY_MS);
         }
       }
 
@@ -307,10 +321,12 @@ export default function HomePage({
 
     window.addEventListener("scroll", handleScroll, { passive: true });
 
+    const currentTimer = fabHideTimer.current;
+
     // Cleanup: remove listener and cancel any pending timer on unmount
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      clearTimeout(fabHideTimer.current);
+      clearTimeout(currentTimer);
     };
   }, []); // run once on mount — no external dependencies needed
 
