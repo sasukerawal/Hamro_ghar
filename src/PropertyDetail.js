@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { apiFetch } from "./api";
 import { Helmet } from "react-helmet";
 import { toast } from "react-toastify";
@@ -59,6 +59,8 @@ export default function PropertyDetail() {
     revalidateOnFocus: false,
     dedupingInterval: 300000,
   });
+
+  const location = useLocation();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -155,7 +157,7 @@ export default function PropertyDetail() {
       {/* Top Navigation */}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <button onClick={() => window.history.length > 2 ? navigate(-1) : navigate("/")} className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">
+          <button onClick={() => location.key !== "default" ? navigate(-1) : navigate("/")} className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">
             <ChevronLeft className="w-5 h-5" /> Back to Search
           </button>
           <div className="flex gap-3">
@@ -542,8 +544,17 @@ export default function PropertyDetail() {
                     </div>
                     <div>
                       <p className="font-extrabold text-slate-900 text-lg">{home.owner.name || "HamroGhar User"}</p>
-                      <p className="text-xs font-bold text-slate-500">Member • Verified Phone</p>
+                      <p className="text-xs font-bold text-slate-500 mb-2">Member • Verified</p>
+                      <button onClick={() => navigate(`/?owner=${home.owner._id || home.owner.id}`)} className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors underline decoration-2 underline-offset-2">
+                        View all listings by {home.owner.name?.split(' ')[0] || "this host"}
+                      </button>
                     </div>
+                  </div>
+                )}
+
+                {(!home.contact?.phone && !home.contact?.email && !home.contact?.whatsapp && !home.contact?.facebook && !home.contact?.instagram) && (
+                  <div className="mt-4 flex items-center justify-center p-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl">
+                    <span className="text-sm font-bold text-slate-500">No public contact info provided.</span>
                   </div>
                 )}
 

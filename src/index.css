@@ -15,6 +15,66 @@ body {
   background-color: #f8fafc;
   color: #0f172a;
   overflow-x: hidden;
+  width: 100%;
+}
+
+html {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Prevent image/media breaking grids */
+img,
+video,
+iframe,
+canvas {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Prevent ultra-long URLs or titles from causing side-scroll */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+a,
+span,
+div,
+li {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* ─── Hamburger Menu RTL Fixes ───────────────────────────── */
+.hamburger-menu {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 280px;
+  max-height: 85vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.hamburger-menu a,
+.hamburger-menu button {
+  padding: 12px 16px;
+  word-wrap: break-word;
+  white-space: normal;
+  text-align: start;
+}
+
+[dir="rtl"] .hamburger-menu {
+  direction: rtl;
+}
+
+[dir="rtl"] .hamburger-menu-wrapper {
+  left: 12px;
+  right: auto;
 }
 
 h1,

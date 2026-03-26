@@ -177,12 +177,6 @@ const PAGE_LANG = {
   },
 };
 
-// ---------------------------------------------------------------------------
-// ⏱️  FAB_HIDE_DELAY_MS
-// How long (in milliseconds) to keep the mobile floating action button
-// visible after the user stops scrolling upward.
-// ---------------------------------------------------------------------------
-const FAB_HIDE_DELAY_MS = 3000;
 
 // ---------------------------------------------------------------------------
 // 🏠 HomePage Component
@@ -270,7 +264,7 @@ export default function HomePage({
   /** Array of listing _id strings the current user has saved */
   const [savedIds, setSavedIds] = useState([]);
 
-  // ── Refs for scroll tracking ───────────────────────────────────────────────
+  // ── Refs for scroll tracking ───────────────────────────────────────
   /**
    * lastScrollY — records the window.scrollY value from the *previous*
    * scroll event so we can detect direction (up vs. down).
@@ -298,15 +292,14 @@ export default function HomePage({
       setShowBackToTop(currentY > 400);
 
       // ── Mobile FAB ──────────────────────────────────────────────────────
-      if (Math.abs(delta) > 10 && currentY > 150) {
-        // User scrolled — reveal the FAB
-        setShowMobileFab(true);
-
-        // Reset auto-hide timer on every scroll event
-        clearTimeout(fabHideTimer.current);
-        fabHideTimer.current = setTimeout(() => {
+      if (Math.abs(delta) > 5) {
+        if (delta < 0 && currentY > 100) {
+          // User scrolled down (swipe up) — hide the FAB
           setShowMobileFab(false);
-        }, FAB_HIDE_DELAY_MS);
+        } else {
+          // User scrolled up (swipe down) — show the FAB
+          setShowMobileFab(true);
+        }
       }
 
       lastScrollY.current = currentY;
