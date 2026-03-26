@@ -298,19 +298,15 @@ export default function HomePage({
       setShowBackToTop(currentY > 400);
 
       // ── Mobile FAB ──────────────────────────────────────────────────────
-      if (delta > 0 && currentY > 150) {
-        // User scrolled upward — reveal the FAB
+      if (Math.abs(delta) > 10 && currentY > 150) {
+        // User scrolled — reveal the FAB
         setShowMobileFab(true);
 
-        // Reset auto-hide timer on every upward scroll event
+        // Reset auto-hide timer on every scroll event
         clearTimeout(fabHideTimer.current);
         fabHideTimer.current = setTimeout(() => {
           setShowMobileFab(false);
         }, FAB_HIDE_DELAY_MS);
-      } else if (delta < 0) {
-        // User scrolled downward — immediately hide the FAB
-        setShowMobileFab(false);
-        clearTimeout(fabHideTimer.current);
       }
 
       lastScrollY.current = currentY;
@@ -768,7 +764,7 @@ export default function HomePage({
       />
 
       {/* ── Back-to-top button ────────────────────────────────────────────── */}
-      {showBackToTop && (
+      {showBackToTop && !isFilterModalOpen && (
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           className="fixed bottom-24 sm:bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition-all hover:scale-110 active:scale-95"

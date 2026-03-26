@@ -92,8 +92,7 @@ function App() {
 
   const handleLoginSuccess = () => {
     setIsLoggedIn(true);
-    navigate("/membership");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.location.href = "/membership";
   };
 
   const handleLogout = async () => {
