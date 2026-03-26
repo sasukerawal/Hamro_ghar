@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 import {
   MapPin, Share2, ChevronLeft, ChevronRight, X, Loader, Phone, CheckCircle2,
   AlertTriangle, Home, Ruler, Layers, Droplets, Wifi, Car, Bike, Grid, Maximize2, Tag, Building,
-  MessageCircle, Mail, ExternalLink, Facebook, Instagram
+  MessageCircle, Mail, Facebook, Instagram
 } from "lucide-react";
 import { useMeasurement } from "./contexts/MeasurementContext";
 import VideoEmbed from "./components/VideoEmbed";
