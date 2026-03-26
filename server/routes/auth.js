@@ -9,7 +9,9 @@ const router = express.Router();
 
 // We use Gmail directly with the verified App Password.
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp-relay.brevo.com',
+  port: 587,
+  secure: false, // true for 465, false for 587
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -36,8 +38,8 @@ router.get('/test-email', async (req, res) => {
     });
     res.json({ success: true, messageId: info.messageId, authMethod: 'Gmail App Password' });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       errorName: error.name,
       errorMessage: error.message,
       errorCode: error.code,
@@ -86,7 +88,7 @@ router.post('/register', async (req, res) => {
       name: name.trim(),
       email: emailLower,
       passwordHash,
-      verificationCode, 
+      verificationCode,
       isVerified: true, // DEV TEMP: Auto-verify to bypass Render email blocks
     });
 
@@ -112,7 +114,7 @@ router.post('/register', async (req, res) => {
     const sendMailWithTimeout = (options) => {
       return Promise.race([
         transporter.sendMail(options),
-        new Promise((_, reject) => 
+        new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Email send timed out')), 15000)
         )
       ]);
@@ -124,7 +126,7 @@ router.post('/register', async (req, res) => {
       .catch((e) => console.error(`[REGISTER] Background email FAILED for ${emailLower}:`, e.message));
 
     console.log(`[REGISTER] Responding to ${emailLower} immediately...`);
-    
+
     // Auto-login the user since we bypassed verification
     const token = generateToken(newUser);
     res.cookie('token', token, {
@@ -248,10 +250,10 @@ router.post('/login', async (req, res) => {
 
     // 🛑 Check if Verified
     if (!user.isVerified) {
-      return res.status(403).json({ 
-        error: 'Please verify your email first.', 
+      return res.status(403).json({
+        error: 'Please verify your email first.',
         requiresVerification: true, // Signal frontend
-        email: user.email 
+        email: user.email
       });
     }
 
@@ -280,14 +282,14 @@ router.post('/logout', (req, res) => {
 router.get('/me', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.startsWith('Bearer ') 
-      ? authHeader.split(' ')[1] 
+    const token = authHeader && authHeader.startsWith('Bearer ')
+      ? authHeader.split(' ')[1]
       : req.cookies?.token;
 
     if (!token) return res.status(401).json({ error: 'No token' });
 
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     // Double check user still exists and is verified
     const user = await User.findById(payload.id);
     if (!user) return res.status(401).json({ error: 'User not found' });
@@ -381,8 +383,8 @@ router.post('/reset-password', async (req, res) => {
 router.post('/refresh', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.startsWith('Bearer ') 
-      ? authHeader.split(' ')[1] 
+    const token = authHeader && authHeader.startsWith('Bearer ')
+      ? authHeader.split(' ')[1]
       : req.cookies?.token;
 
     if (!token) return res.status(401).json({ error: 'No token' });
@@ -418,4 +420,4 @@ router.post('/refresh', async (req, res) => {
   }
 });
 
-export default router;
+export default router;

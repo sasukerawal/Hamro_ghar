@@ -46,47 +46,57 @@ export function MeasurementProvider({ children }) {
 
   /**
    * Format Area
-   * nepali: Ropani-Aana-Paisa-Daam 
+   * nepali: Ropani-Aana-Paisa-Daam (hills) OR Bigha-Katha-Dhur (terai)
    * international: SqFt
    */
   const formatArea = (landData, sqftFallback) => {
-    try {
-      if (!landData && !sqftFallback) return "N/A";
+    if (!landData && !sqftFallback) return "N/A";
 
-      // If landData is a string, it might be pre-formatted or a legacy value
-      if (typeof landData === 'string' && landData.trim()) return landData;
+    const {
+      ropani = 0, aana = 0, paisa = 0, daam = 0,
+      bigha = 0, katha = 0, dhur = 0,
+      unitSystem: landUnitSystem = '',
+      totalSqFt = 0
+    } = landData || {};
 
-      const { ropani = 0, aana = 0, paisa = 0, daam = 0, totalSqFt = 0 } = landData || {};
+    const isTerai = landUnitSystem === 'terai' || (bigha > 0 || katha > 0 || dhur > 0);
 
-      if (unitSystem === "nepali") {
+    if (unitSystem === "nepali") {
+      if (isTerai) {
+        // Display in Bigha-Katha-Dhur
         const parts = [];
-        if (ropani > 0) parts.push(`${ropani} Ropani`);
-        if (aana > 0) parts.push(`${aana} Aana`);
-        if (paisa > 0) parts.push(`${paisa} Paisa`);
-        if (daam > 0) parts.push(`${daam} Daam`);
-
+        if (bigha > 0) parts.push(`${bigha} Bigha`);
+        if (katha > 0) parts.push(`${katha} Katha`);
+        if (dhur > 0) parts.push(`${dhur} Dhur`);
         if (parts.length > 0) return parts.join(" ");
-        if (sqftFallback && typeof sqftFallback !== 'object') return `${sqftFallback} SqFt`;
-        return "N/A";
-      } else {
-        // Convert Aana to SqFt if totalSqFt is not defined but Aana is
-        let finalSqft = totalSqFt || sqftFallback || 0;
-        if (typeof finalSqft === 'object') finalSqft = 0;
+      }
+      // Display in Ropani-Aana-Paisa-Daam
+      const parts = [];
+      if (ropani > 0) parts.push(`${ropani} Ropani`);
+      if (aana > 0) parts.push(`${aana} Aana`);
+      if (paisa > 0) parts.push(`${paisa} Paisa`);
+      if (daam > 0) parts.push(`${daam} Daam`);
 
-        if (!finalSqft && (ropani > 0 || aana > 0)) {
-          // 1 Aana = 342.25 sqft
-          // 1 Ropani = 16 aana
+      if (parts.length > 0) return parts.join(" ");
+      if (sqftFallback) return `${sqftFallback} SqFt`;
+      return "N/A";
+    } else {
+      // International → always SqFt
+      let finalSqft = totalSqFt || sqftFallback || 0;
+      if (!finalSqft) {
+        if (isTerai) {
+          // 1 Bigha = 72,900 sqft, 1 Katha = 3,645 sqft, 1 Dhur = 182.25 sqft
+          finalSqft = bigha * 72900 + katha * 3645 + dhur * 182.25;
+        } else if (ropani > 0 || aana > 0) {
+          // 1 Ropani = 16 Aana, 1 Aana = 342.25 sqft
           const totalAana = (ropani * 16) + aana + (paisa / 4);
           finalSqft = totalAana * 342.25;
         }
-
-        if (finalSqft > 0) {
-          return `${Math.round(finalSqft).toLocaleString('en-US')} SqFt`;
-        }
-        return "N/A";
       }
-    } catch (err) {
-      console.error("formatArea error:", err);
+
+      if (finalSqft > 0) {
+        return `${Math.round(finalSqft).toLocaleString('en-US')} SqFt`;
+      }
       return "N/A";
     }
   };

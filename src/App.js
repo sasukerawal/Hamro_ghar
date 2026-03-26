@@ -29,6 +29,7 @@ const PostListing = lazy(() => import("./PostListing"));
 const NotFound = lazy(() => import("./NotFound"));
 const AdminDashboard = lazy(() => import("./AdminDashboard"));
 const PropertyDetail = lazy(() => import("./PropertyDetail"));
+const SafetyTips = lazy(() => import("./SafetyTips"));
 
 // Loading fallback for suspended routes
 const FallbackSpinner = () => (
@@ -82,7 +83,7 @@ function App() {
       if (localStorage.getItem("token")) {
         try {
           await apiFetch("/api/auth/refresh", { method: "POST" });
-        } catch (_) {}
+        } catch (_) { }
       }
     };
     window.addEventListener("focus", onFocus);
@@ -117,134 +118,137 @@ function App() {
     <MeasurementProvider>
       <div className="min-h-screen flex flex-col bg-white text-slate-900">
         {/* Header appears on all pages */}
-      <Header
-        isLoggedIn={isLoggedIn}
-        onLogout={handleLogout}
-        lang={lang}
-        onToggleLang={() => setLang((p) => (p === "en" ? "ne" : "en"))}
-      />
+        <Header
+          isLoggedIn={isLoggedIn}
+          onLogout={handleLogout}
+          lang={lang}
+          onToggleLang={() => setLang((p) => (p === "en" ? "ne" : "en"))}
+        />
 
-      <main className="flex-1 pt-24 lg:pt-28 flex flex-col">
-        <Suspense fallback={<FallbackSpinner />}>
-          <Routes>
-            {/* Home */}
-            <Route
-              path="/"
-              element={
-                <HomePage
-                  onGoLogin={() => navigate("/login")}
-                  onGoRegister={() => navigate("/register")}
-                  onGoMembership={() =>
-                    navigate(isLoggedIn ? "/membership" : "/login")
-                  }
-                  lang={lang}
-                />
-              }
-            />
-
-            {/* Auth */}
-            <Route
-              path="/login"
-              element={
-                <Login
-                  onLogin={handleLoginSuccess}
-                  onGoRegister={() => navigate("/register")}
-                  onForgotPassword={() => navigate("/forgot-password")}
-                />
-              }
-            />
-            <Route
-              path="/forgot-password"
-              element={<ForgotPassword onGoLogin={() => navigate("/login")} />}
-            />
-            <Route
-              path="/register"
-              element={<Register onGoLogin={() => navigate("/login")} />}
-            />
-
-            {/* Profile (protected) */}
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute
-                  isLoggedIn={isLoggedIn}
-                  authChecked={authChecked}
-                >
-                  <UserProfile
-                    onGoHome={goHome}
-                    onLogout={handleLogout}
+        <main className="flex-1 pt-24 lg:pt-28 flex flex-col">
+          <Suspense fallback={<FallbackSpinner />}>
+            <Routes>
+              {/* Home */}
+              <Route
+                path="/"
+                element={
+                  <HomePage
+                    onGoLogin={() => navigate("/login")}
+                    onGoRegister={() => navigate("/register")}
+                    onGoMembership={() =>
+                      navigate(isLoggedIn ? "/membership" : "/login")
+                    }
+                    lang={lang}
                   />
-                </ProtectedRoute>
-              }
-            />
+                }
+              />
 
-            {/* Membership dashboard (protected) */}
-            <Route
-              path="/membership"
-              element={
-                <ProtectedRoute
-                  isLoggedIn={isLoggedIn}
-                  authChecked={authChecked}
-                >
-                  <Membership onLogout={handleLogout} />
-                </ProtectedRoute>
-              }
-            />
+              {/* Auth */}
+              <Route
+                path="/login"
+                element={
+                  <Login
+                    onLogin={handleLoginSuccess}
+                    onGoRegister={() => navigate("/register")}
+                    onForgotPassword={() => navigate("/forgot-password")}
+                  />
+                }
+              />
+              <Route
+                path="/forgot-password"
+                element={<ForgotPassword onGoLogin={() => navigate("/login")} />}
+              />
+              <Route
+                path="/register"
+                element={<Register onGoLogin={() => navigate("/login")} />}
+              />
 
-            {/* New listing (protected) */}
-            <Route
-              path="/listings/new"
-              element={
-                <ProtectedRoute
-                  isLoggedIn={isLoggedIn}
-                  authChecked={authChecked}
-                >
-                  <PostListing />
-                </ProtectedRoute>
-              }
-            />
+              {/* Profile (protected) */}
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute
+                    isLoggedIn={isLoggedIn}
+                    authChecked={authChecked}
+                  >
+                    <UserProfile
+                      onGoHome={goHome}
+                      onLogout={handleLogout}
+                    />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Edit listing (protected) */}
-            <Route
-              path="/listings/:id/edit"
-              element={
-                <ProtectedRoute
-                  isLoggedIn={isLoggedIn}
-                  authChecked={authChecked}
-                >
-                  <PostListing />
-                </ProtectedRoute>
-              }
-            />
+              {/* Membership dashboard (protected) */}
+              <Route
+                path="/membership"
+                element={
+                  <ProtectedRoute
+                    isLoggedIn={isLoggedIn}
+                    authChecked={authChecked}
+                  >
+                    <Membership onLogout={handleLogout} />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Main Property Detail Page */}
-            <Route path="/property/:id" element={<PropertyDetail />} />
+              {/* New listing (protected) */}
+              <Route
+                path="/listings/new"
+                element={
+                  <ProtectedRoute
+                    isLoggedIn={isLoggedIn}
+                    authChecked={authChecked}
+                  >
+                    <PostListing />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Fallback: proper 404 page */}
-            <Route path="*" element={<NotFound />} />
+              {/* Edit listing (protected) */}
+              <Route
+                path="/listings/:id/edit"
+                element={
+                  <ProtectedRoute
+                    isLoggedIn={isLoggedIn}
+                    authChecked={authChecked}
+                  >
+                    <PostListing />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Admin dashboard */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute isLoggedIn={isLoggedIn} authChecked={authChecked}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </Suspense>
-      </main>
+              {/* Main Property Detail Page */}
+              <Route path="/property/:id" element={<PropertyDetail />} />
 
-      {/* New Footer (no props) */}
-      <Footer />
+              {/* Safety Tips */}
+              <Route path="/safety" element={<SafetyTips />} />
 
-      <ToastContainer
-        position="top-center"
-        autoClose={2000}
-        pauseOnHover={false}
-        theme="light"
-      />
+              {/* Fallback: proper 404 page */}
+              <Route path="*" element={<NotFound />} />
+
+              {/* Admin dashboard */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute isLoggedIn={isLoggedIn} authChecked={authChecked}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </Suspense>
+        </main>
+
+        {/* New Footer (no props) */}
+        <Footer />
+
+        <ToastContainer
+          position="top-center"
+          autoClose={2000}
+          pauseOnHover={false}
+          theme="light"
+        />
       </div>
     </MeasurementProvider>
   );

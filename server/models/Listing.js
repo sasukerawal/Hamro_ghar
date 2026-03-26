@@ -62,7 +62,7 @@ const listingSchema = new mongoose.Schema(
         default: [0, 0]
       },
       precision: { type: String, enum: ['exact', 'approximate'], default: 'approximate' },
-      
+
       // Legacy backwards-compatible fields
       ringRoad: { type: String, trim: true },
       hospital: { type: String, trim: true },
@@ -95,12 +95,19 @@ const listingSchema = new mongoose.Schema(
     // 5. Property Specs
     specs: {
       landArea: {
+        // Hill units (Ropani system)
         ropani: { type: Number, default: 0 },
         aana: { type: Number, default: 0 },
         paisa: { type: Number, default: 0 },
         daam: { type: Number, default: 0 },
-        totalSqFt: { type: Number }, // Raw normalized value (sq.ft) for backend sorting
-        display: { type: String }    // e.g. "4 Aana 2 Paisa"
+        // Terai units (Bigha system)
+        bigha: { type: Number, default: 0 },
+        katha: { type: Number, default: 0 },
+        dhur: { type: Number, default: 0 },
+        // Which system the owner used
+        unitSystem: { type: String, enum: ['hills', 'terai', ''], default: '' },
+        totalSqFt: { type: Number }, // Normalized value (sq.ft) for backend sorting/filtering
+        display: { type: String }    // e.g. "4 Aana 2 Paisa" or "2 Bigha 5 Katha"
       },
       roadAccess: {
         widthFeet: { type: Number },
@@ -108,7 +115,7 @@ const listingSchema = new mongoose.Schema(
       },
       facing: { type: String, enum: ['East', 'West', 'North', 'South', 'North-East', 'South-East', 'North-West', 'South-West', ''] },
       builtYear: { type: Number },
-      
+
       builtUpAreaSqFt: { type: Number },
       bedrooms: { type: Number, min: 0 },
       bathrooms: { type: Number, min: 0 },
@@ -124,7 +131,7 @@ const listingSchema = new mongoose.Schema(
       carParking: { type: Number, min: 0 },
       bikeParking: { type: Number, min: 0 },
       furnishing: { type: String, enum: ["unfurnished", "semi", "fully", "Semi Furnished", "Fully Furnished", "Unfurnished", ""] },
-      
+
       water: {
         available: { type: Boolean, default: false },
         source: { type: String, enum: ['Government', 'Boring', 'Tanker', 'Well', 'Mixed', ''] },
@@ -152,7 +159,7 @@ const listingSchema = new mongoose.Schema(
     petsAllowed: { type: Boolean, default: false },
     // New Detailed Facilities & Amenities
     amenities: [{ type: String }],
-    nearby: [{ 
+    nearby: [{
       facility: { type: String },
       distance: { type: String }
     }],
@@ -177,8 +184,26 @@ const listingSchema = new mongoose.Schema(
       socialMedia: { type: String, trim: true } // Facebook/Insta link
     },
 
-    // 6. Trust & Analytics
+    // 6. House Rules (structured)
+    houseRules: {
+      petsAllowed: { type: Boolean, default: false },
+      smokingAllowed: { type: Boolean, default: false },
+      partiesAllowed: { type: Boolean, default: false },
+      guestsLimit: { type: Number, min: 0 },
+      quietHoursStart: { type: String, trim: true }, // e.g. "22:00"
+      quietHoursEnd: { type: String, trim: true },   // e.g. "06:00"
+      shoesOff: { type: Boolean, default: false },
+      customRules: [{ type: String, trim: true }],
+    },
+
+    // 7. Trust & Analytics
     isVerified: { type: Boolean, default: false },
+    verificationStatus: {
+      type: String,
+      enum: ['unverified', 'pending_review', 'verified', 'rejected'],
+      default: 'unverified',
+    },
+    verificationNote: { type: String, trim: true }, // Admin context
     completenessScore: { type: Number, default: 0 },
     views: { type: Number, default: 0 },
 
@@ -188,6 +213,35 @@ const listingSchema = new mongoose.Schema(
   }
 );
 
+// ── Pre-save: auto-compute completeness score & normalize totalSqFt ──────────
+listingSchema.pre('save', function (next) {
+  // 1. Compute totalSqFt from whichever unit system is used
+  const la = this.specs?.landArea;
+  if (la) {
+    if (la.unitSystem === 'terai' && (la.bigha > 0 || la.katha > 0 || la.dhur > 0)) {
+      // 1 Bigha = 72,900 sqft, 1 Katha = 3,645 sqft, 1 Dhur = 182.25 sqft
+      la.totalSqFt = (la.bigha || 0) * 72900 + (la.katha || 0) * 3645 + (la.dhur || 0) * 182.25;
+    } else if (la.ropani > 0 || la.aana > 0 || la.paisa > 0 || la.daam > 0) {
+      // 1 Ropani = 5476 sqft, 1 Aana = 342.25 sqft, 1 Paisa = 85.56 sqft, 1 Daam = 21.39 sqft
+      la.totalSqFt = (la.ropani || 0) * 5476 + (la.aana || 0) * 342.25 + (la.paisa || 0) * 85.56 + (la.daam || 0) * 21.39;
+    }
+  }
+
+  // 2. Compute completeness score (0–100)
+  let score = 0;
+  if (this.images && this.images.length > 0) score += 25;
+  if (this.description && this.description.length > 50) score += 15;
+  if (this.location?.coordinates?.[0] !== 0 || this.location?.coordinates?.[1] !== 0) score += 15;
+  if (this.amenities && this.amenities.length > 0) score += 10;
+  if (this.contact?.phone || this.contact?.whatsapp || this.contact?.email) score += 10;
+  if (this.video || this.videoUrl) score += 10;
+  if (this.location?.nearestLandmark || this.location?.nearestChowk) score += 5;
+  if (this.specs?.bedrooms > 0 && this.specs?.bathrooms > 0) score += 10;
+  this.completenessScore = score;
+
+  next();
+});
+
 // ✅ Full 2D geospatial index for "near me" / map search
 listingSchema.index({ "location.coordinates": "2dsphere" });
 
@@ -196,6 +250,7 @@ listingSchema.index({ status: 1, type: 1, propertyType: 1 });
 listingSchema.index({ "location.district": 1, "location.municipality": 1, status: 1 });
 listingSchema.index({ price: 1, status: 1 });
 listingSchema.index({ ownerId: 1, status: 1 });
+listingSchema.index({ completenessScore: -1, status: 1 });
 
 const Listing = mongoose.model("Listing", listingSchema);
 

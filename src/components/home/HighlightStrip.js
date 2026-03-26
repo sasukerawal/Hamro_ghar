@@ -1,72 +1,45 @@
 import React from "react";
-import { ShieldCheck, PhoneCall, Zap, AlertCircle } from "lucide-react";
+import { Home as HomeIcon, Phone, AlertTriangle, Wifi, Users } from "lucide-react";
 
-/**
- * HighlightStrip - Premium feature highlights with glassmorphism.
- */
+const ICONS = {
+  home: <HomeIcon className="h-5 w-5 text-blue-500" />,
+  wifi: <Wifi className="h-5 w-5 text-blue-500" />,
+  phone: <Phone className="h-5 w-5 text-blue-500" />,
+  users: <Users className="h-5 w-5 text-blue-500" />,
+};
+
 export const HighlightStrip = ({ t }) => (
-  <section className="relative z-10 py-12 px-6">
-    <div className="max-w-7xl mx-auto">
-      <div className="grid gap-8 md:grid-cols-3">
-        <HighlightItem
-          icon={<ShieldCheck className="h-6 w-6 text-blue-600" />}
-          title={t.strip1Title}
-          text={t.strip1Text}
-          delay="0s"
-        />
-        <HighlightItem
-          icon={<Zap className="h-6 w-6 text-blue-600" />}
-          title={t.strip2Title}
-          text={t.strip2Text}
-          delay="0.1s"
-        />
-        <HighlightItem
-          icon={<PhoneCall className="h-6 w-6 text-blue-600" />}
-          title={t.strip3Title}
-          text={t.strip3Text}
-          delay="0.2s"
-        />
-      </div>
+  <section className="bg-white border-y border-blue-50">
+    <div className="max-w-6xl mx-auto px-4 py-8 grid gap-5 sm:grid-cols-3">
+      <HighlightItem icon={ICONS.users} title={t.strip1Title} text={t.strip1Text} delay="0ms" />
+      <HighlightItem icon={ICONS.wifi} title={t.strip2Title} text={t.strip2Text} delay="80ms" />
+      <HighlightItem icon={ICONS.phone} title={t.strip3Title} text={t.strip3Text} delay="160ms" />
+    </div>
 
-      {/* Risk notice - Premium Alert */}
-      <div className="mt-12 group">
-        <div className="relative overflow-hidden rounded-[2rem] glass border border-amber-100 bg-amber-50/30 p-6 shadow-xl shadow-amber-500/5 transition-all hover:bg-white hover:shadow-2xl hover:shadow-amber-500/10">
-          {/* Decor Glow */}
-          <div className="absolute -top-12 -right-12 h-32 w-32 bg-amber-200/20 blur-[40px] rounded-full group-hover:bg-amber-200/40 transition-colors" />
-
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100/50 text-amber-600 animate-pulse-glow">
-              <AlertCircle className="h-6 w-6" />
-            </div>
-            <div className="space-y-1">
-              <h4 className="text-xs font-black uppercase tracking-[0.2em] text-amber-700">
-                {t.riskTitle}
-              </h4>
-              <p className="text-sm font-medium text-amber-900/70 leading-relaxed">
-                {t.riskText}
-              </p>
-            </div>
-          </div>
-        </div>
+    {/* Risk notice */}
+    <div className="max-w-6xl mx-auto px-4 pb-5">
+      <div className="flex items-start gap-3 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3.5 shadow-sm">
+        <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+        <p className="text-[11px] text-amber-800 leading-relaxed">
+          <span className="font-bold">{t.riskTitle} —</span> {t.riskText}
+        </p>
       </div>
     </div>
   </section>
 );
 
-const HighlightItem = ({ icon, title, text, delay }) => (
+const HighlightItem = ({ icon, title, text, delay = "0ms" }) => (
   <div
-    className="group relative rounded-[2.5rem] glass p-8 border border-white hover:bg-white hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-500"
+    className="flex items-start gap-3.5 p-4 rounded-2xl bg-slate-50/80 border border-slate-100 hover:border-blue-200 hover:bg-blue-50/40 transition-all duration-300 animate-fade-in-up"
     style={{ animationDelay: delay }}
   >
-    <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 shadow-inner group-hover:bg-blue-600 group-hover:text-white group-hover:rotate-[10deg] transition-all duration-500">
+    <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 shadow-sm">
       {icon}
     </div>
-    <h3 className="mb-2 text-lg font-black text-slate-900 tracking-tight">
-      {title}
-    </h3>
-    <p className="text-sm font-medium text-slate-500 leading-relaxed">
-      {text}
-    </p>
+    <div>
+      <p className="font-semibold text-slate-900 text-sm">{title}</p>
+      <p className="text-slate-500 text-xs mt-0.5 leading-relaxed">{text}</p>
+    </div>
   </div>
 );
 
