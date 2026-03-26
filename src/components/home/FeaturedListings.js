@@ -104,8 +104,8 @@ export const FeaturedListings = ({
                   key={pg}
                   onClick={() => pg !== page && onPageChange(pg)}
                   className={`h-8 w-8 rounded-full text-xs font-semibold transition-all ${pg === page
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "border border-slate-200 text-slate-600 hover:bg-slate-50"
                     }`}
                 >
                   {pg}
@@ -147,6 +147,10 @@ export const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved, isVirtual
         <img
           src={imageSrc}
           alt={home.address}
+          width={400}
+          height={160}
+          loading="lazy"
+          decoding="async"
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           onError={(e) => {
             e.target.onerror = null;

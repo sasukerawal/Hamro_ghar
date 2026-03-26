@@ -11,6 +11,7 @@ import userRoutes from './routes/user.js';
 import reviewsRoutes from './routes/reviews.js';
 import siteReviewsRoutes from './routes/siteReviews.js';
 import adsRoutes from './routes/ads.js';
+import savedSearchRoutes from './routes/savedSearches.js';
 import './services/listingExpiry.js'; // starts cron on boot
 
 const app = express();
@@ -48,7 +49,7 @@ app.use(
   cors({
     // Dynamically reflects the exact incoming origin perfectly, 
     // guaranteeing credentials (cookies) are accepted cross-domain
-    origin: true, 
+    origin: true,
     credentials: true,
   })
 );
@@ -75,6 +76,7 @@ app.use('/api/site-reviews', apiLimiter, siteReviewsRoutes);
 app.use("/uploads", express.static("uploads"));
 app.use("/api/listings", apiLimiter, listingsRoutes);
 app.use("/api/ads", apiLimiter, adsRoutes);
+app.use("/api/saved-searches", apiLimiter, savedSearchRoutes);
 
 // --- Health
 app.get('/api/health', (_req, res) => res.json({ ok: true }));

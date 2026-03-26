@@ -1,6 +1,6 @@
 // src/Header.js
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Menu,
   X,
@@ -19,7 +19,7 @@ import { useMeasurement } from "./contexts/MeasurementContext";
 // ---------------------------------------------------------------------------
 const LANG = {
   en: {
-    tagline: "Blue & White Homes",
+    tagline: "Where your heart is",
     signIn: "Sign in",
     joinFree: "Join free",
     postRequest: "Post / Request",
@@ -30,7 +30,7 @@ const LANG = {
     langToggle: "नेपाली",
   },
   ne: {
-    tagline: "नीलो र सेतो घर",
+    tagline: "जहाँ तपाईंको मन छ",
     signIn: "साइन इन",
     joinFree: "निःशुल्क जोडिनुस्",
     postRequest: "पोस्ट / अनुरोध",
@@ -45,9 +45,36 @@ const LANG = {
 export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { unitSystem, toggleUnitSystem } = useMeasurement();
+  const menuRef = useRef(null);
 
   const t = LANG[lang] || LANG.en;
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    // Use a small timeout so the toggle click doesn't immediately re-close
+    const timer = setTimeout(() => {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
+    }, 10);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [isMobileMenuOpen]);
 
   const toggleMobile = () => setIsMobileMenuOpen((prev) => !prev);
 
@@ -71,18 +98,19 @@ export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang
         {/* LOGO */}
         <Link
           to="/"
-          className="flex items-center gap-2 max-[425px]:gap-1 cursor-pointer group"
+          className="flex items-center gap-2 max-[425px]:gap-1.5 cursor-pointer group"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         >
-          <div className="relative h-9 w-9 max-[425px]:h-8 max-[425px]:w-8 rounded-full bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center text-white font-black text-sm shadow-md shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-shadow">
-            HG
-            <div className="absolute inset-0 rounded-full bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="Ghar Logo"
+            className="h-10 w-10 max-[425px]:h-8 max-[425px]:w-8 object-contain rounded-lg group-hover:scale-105 transition-transform"
+          />
           <div className="text-left leading-tight">
             <p className="text-sm max-[425px]:text-xs font-bold text-slate-900 tracking-tight">
               HamroGhar
             </p>
-            <p className="text-[11px] max-[425px]:text-[10px] text-blue-500 font-medium">
+            <p className="text-[11px] max-[425px]:text-[10px] text-emerald-600 font-medium">
               {t.tagline}
             </p>
           </div>
@@ -174,7 +202,7 @@ export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang
         </div>
 
         {/* MOBILE RIGHT SIDE */}
-        <div className="flex md:hidden items-center gap-2 max-[425px]:gap-1">
+        <div className="flex md:hidden items-center gap-2 max-[425px]:gap-1" ref={menuRef}>
           {/* Language toggle (mobile) */}
           <button
             type="button"
@@ -207,57 +235,66 @@ export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang
               <Menu className="h-5 w-5 max-[425px]:h-4 max-[425px]:w-4" />
             )}
           </button>
+
+          {/* MOBILE DROPDOWN MENU — floating overlay, not pushing content */}
+          {isMobileMenuOpen && (
+            <>
+              {/* Invisible backdrop to catch outside clicks */}
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setIsMobileMenuOpen(false)}
+                aria-hidden="true"
+              />
+              {/* Menu panel */}
+              <div className="absolute top-full right-3 mt-2 z-50 w-56 bg-white rounded-2xl shadow-2xl shadow-slate-300/40 border border-slate-100 py-3 px-4 flex flex-col gap-2 text-sm animate-in fade-in slide-in-from-top-2 duration-200">
+                {isLoggedIn ? (
+                  <>
+                    <MobileItem
+                      icon={PlusCircle}
+                      label={t.postRequest}
+                      onClick={() => handleMobileNav("/listings/new")}
+                    />
+                    <MobileItem
+                      icon={Crown}
+                      label={t.membership}
+                      onClick={() => handleMobileNav("/membership")}
+                    />
+                    <MobileItem
+                      icon={User}
+                      label={t.profile}
+                      onClick={() => handleMobileNav("/profile")}
+                    />
+                    <div className="h-px bg-slate-100 my-1" />
+                    <button
+                      type="button"
+                      onClick={handleLogoutClick}
+                      className="w-full rounded-xl border border-slate-200 py-2 text-sm text-slate-600 hover:bg-slate-50 font-medium transition-colors"
+                    >
+                      {t.logout}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <MobileItem
+                      icon={LogIn}
+                      label={t.signIn}
+                      onClick={() => handleMobileNav("/login")}
+                    />
+                    <div className="h-px bg-slate-100 my-1" />
+                    <button
+                      type="button"
+                      onClick={() => handleMobileNav("/register")}
+                      className="w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+                    >
+                      {t.joinFree}
+                    </button>
+                  </>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
-
-      {/* MOBILE MENU */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden border-t border-blue-100 bg-white">
-          <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-3 text-sm max-[425px]:px-3">
-            {isLoggedIn ? (
-              <>
-                <MobileItem
-                  icon={PlusCircle}
-                  label={t.postRequest}
-                  onClick={() => handleMobileNav("/listings/new")}
-                />
-                <MobileItem
-                  icon={Crown}
-                  label={t.membership}
-                  onClick={() => handleMobileNav("/membership")}
-                />
-                <MobileItem
-                  icon={User}
-                  label={t.profile}
-                  onClick={() => handleMobileNav("/profile")}
-                />
-                <button
-                  type="button"
-                  onClick={handleLogoutClick}
-                  className="w-full rounded-full border border-slate-200 py-2 text-sm text-slate-700 mt-2 hover:bg-slate-50"
-                >
-                  {t.logout}
-                </button>
-              </>
-            ) : (
-              <>
-                <MobileItem
-                  icon={LogIn}
-                  label={t.signIn}
-                  onClick={() => handleMobileNav("/login")}
-                />
-                <button
-                  type="button"
-                  onClick={() => handleMobileNav("/register")}
-                  className="w-full rounded-full bg-blue-600 py-2 text-sm font-semibold text-white mt-2"
-                >
-                  {t.joinFree}
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </header>
   );
 }
@@ -267,7 +304,7 @@ function MobileItem({ icon: Icon, label, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-2 text-sm text-slate-700 hover:text-blue-700 py-1"
+      className="flex items-center gap-3 text-sm text-slate-700 hover:text-blue-700 py-2 px-1 rounded-lg hover:bg-blue-50 transition-colors font-medium"
     >
       <Icon className="h-4 w-4 text-blue-500" />
       <span>{label}</span>
