@@ -589,18 +589,36 @@ export default function PropertyDetail() {
         </div>
         <div className="flex gap-2">
           {home.contact?.whatsapp && (
-            <a href={`https://wa.me/${home.contact.whatsapp.replace(/[^0-9+]/g, '')}`} target="_blank" rel="noreferrer" className="bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 active:scale-95 font-black p-3.5 rounded-2xl flex items-center justify-center transition-transform">
+            <a href={`https://wa.me/${home.contact.whatsapp.replace(/[^0-9+]/g, '')}`} target="_blank" rel="noreferrer" className="bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 active:scale-95 font-black h-12 w-12 rounded-xl flex items-center justify-center transition-transform">
               <MessageCircle className="w-5 h-5" />
             </a>
           )}
+          {home.contact?.email && (
+            <a href={`mailto:${home.contact.email}`} className="bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 active:scale-95 font-black h-12 w-12 rounded-xl flex items-center justify-center transition-transform">
+              <Mail className="w-5 h-5" />
+            </a>
+          )}
+          {home.contact?.facebook && (
+            <a href={home.contact.facebook.startsWith('http') ? home.contact.facebook : `https://${home.contact.facebook}`} target="_blank" rel="noreferrer" className="bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 active:scale-95 font-black h-12 w-12 rounded-xl flex items-center justify-center transition-transform">
+              <Facebook className="w-5 h-5" />
+            </a>
+          )}
+          {home.contact?.instagram && (
+            <a href={home.contact.instagram.startsWith('http') ? home.contact.instagram : `https://instagram.com/${home.contact.instagram.replace('@', '')}`} target="_blank" rel="noreferrer" className="bg-pink-50 text-pink-600 border border-pink-200 hover:bg-pink-100 active:scale-95 font-black h-12 w-12 rounded-xl flex items-center justify-center transition-transform">
+              <Instagram className="w-5 h-5" />
+            </a>
+          )}
+
           {home.contact?.phone ? (
-            <a href={`tel:${home.contact.phone}`} className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-black px-6 py-3.5 rounded-2xl shadow-xl shadow-blue-500/30 flex items-center gap-2 transition-transform">
+            <a href={`tel:${home.contact.phone}`} className="grow bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-black px-4 h-12 rounded-xl shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 transition-transform">
               <Phone className="w-5 h-5" /> Call
             </a>
           ) : (
-            <button disabled className="bg-slate-200 text-slate-500 font-black px-6 py-3.5 rounded-2xl flex items-center gap-2 cursor-not-allowed">
-              No Phone
-            </button>
+            (!home.contact?.whatsapp && !home.contact?.email && !home.contact?.facebook && !home.contact?.instagram) && (
+              <button disabled className="bg-slate-200 text-slate-500 font-extrabold px-6 h-12 rounded-xl flex items-center gap-2 cursor-not-allowed">
+                No Contact info
+              </button>
+            )
           )}
         </div>
       </div>

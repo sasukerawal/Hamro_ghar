@@ -186,7 +186,10 @@ function App() {
                     isLoggedIn={isLoggedIn}
                     authChecked={authChecked}
                   >
-                    <Membership onLogout={handleLogout} />
+                    <Membership
+                      onLogout={handleLogout}
+                      onGoHome={goHome}
+                    />
                   </ProtectedRoute>
                 }
               />
