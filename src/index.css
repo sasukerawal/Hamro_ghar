@@ -58,6 +58,7 @@ li {
   max-height: 85vh;
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
 }
 
 .hamburger-menu a,

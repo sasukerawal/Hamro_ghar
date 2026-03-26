@@ -245,8 +245,8 @@ export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang
                 onClick={() => setIsMobileMenuOpen(false)}
                 aria-hidden="true"
               />
-              {/* Menu panel */}
-              <div className="absolute top-full right-3 mt-2 z-50 w-56 bg-white rounded-2xl shadow-2xl shadow-slate-300/40 border border-slate-100 py-3 px-4 flex flex-col gap-2 text-sm animate-in fade-in slide-in-from-top-2 duration-200 hamburger-menu-wrapper hamburger-menu">
+              {/* Menu panel - Mobile Responsive Container */}
+              <div className="absolute top-full right-3 mt-2 z-50 w-56 max-[360px]:w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl shadow-slate-300/40 border border-slate-100 py-3 px-4 flex flex-col gap-1 text-sm animate-in fade-in slide-in-from-top-2 duration-200 hamburger-menu-wrapper hamburger-menu">
                 {isLoggedIn ? (
                   <>
                     <MobileItem
