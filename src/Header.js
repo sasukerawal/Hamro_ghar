@@ -49,6 +49,7 @@ export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang
   const location = useLocation();
   const { unitSystem, toggleUnitSystem } = useMeasurement();
   const menuRef = useRef(null);
+  const drawerRef = useRef(null);
 
   const t = LANG[lang] || LANG.en;
 
@@ -61,7 +62,10 @@ export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang
   useEffect(() => {
     if (!isMobileMenuOpen) return;
     const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+      if (
+        menuRef.current && !menuRef.current.contains(e.target) &&
+        drawerRef.current && !drawerRef.current.contains(e.target)
+      ) {
         setIsMobileMenuOpen(false);
       }
     };
@@ -260,6 +264,7 @@ export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang
               />
               {/* Sidebar Menu Panel */}
               <div
+                ref={drawerRef}
                 className="fixed top-0 right-0 h-full w-[280px] max-w-[85vw] bg-white z-[120] shadow-2xl border-l border-slate-100 flex flex-col animate-in slide-in-from-right duration-300 overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
               >
