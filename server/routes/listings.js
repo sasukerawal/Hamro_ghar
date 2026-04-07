@@ -6,6 +6,7 @@ import cloudinary from "../config/cloudinary.js";
 import { requireAuth } from "../middleware/auth.js";
 import User from "../models/User.js";
 import sanitizeHtml from "sanitize-html";
+import { validateLocationHierarchy } from "../../src/utils/nepalLocations.js";
 // import redis from "../config/redis.js";
 
 const router = express.Router();
@@ -216,6 +217,8 @@ router.post("/create", requireAuth, (req, res) => {
       const {
         type,
         propertyType,
+        category,
+        hostelType,
         title,
         description,
         price,
@@ -261,6 +264,20 @@ router.post("/create", requireAuth, (req, res) => {
         if (contactRaw) contact = JSON.parse(contactRaw);
       } catch (err) {
         return res.status(400).json({ error: "Invalid JSON format for location, specs, facilities, amenities, nearby, highlights, or contact" });
+      }
+
+      // Validate category / hostelType
+      const cleanCategory = (category === "hostel") ? "hostel" : "home";
+      if (cleanCategory === "hostel" && !["boys", "girls", "mix"].includes(hostelType)) {
+        return res.status(400).json({ error: "Hostel listings require hostelType: boys, girls, or mix" });
+      }
+
+      // Validate province → district → municipality hierarchy
+      if (location.province || location.district || location.municipality) {
+        const locResult = validateLocationHierarchy(location.province, location.district, location.municipality);
+        if (!locResult.valid) {
+          return res.status(400).json({ error: locResult.error });
+        }
       }
 
       // Legacy fallback mapping
@@ -309,6 +326,8 @@ router.post("/create", requireAuth, (req, res) => {
         ownerId: userId,
         type: type || "sale",
         propertyType: propertyType || "house",
+        category: cleanCategory,
+        hostelType: cleanCategory === "hostel" ? hostelType : "",
         title: sanitize(generatedTitle),
         description: sanitize(description),
         price: numericPrice,
@@ -613,6 +632,8 @@ router.get("/all", async (req, res) => {
     const {
       type,        // offer/wanted/sale/rent
       propertyType,
+      category,    // home/hostel
+      hostelType,  // boys/girls/mix
       city,        // generic search mapped to district/municipality/locality
       province,
       district,
@@ -645,6 +666,14 @@ router.get("/all", async (req, res) => {
 
     if (propertyType) {
       query.propertyType = propertyType;
+    }
+
+    // Filter by category (home vs hostel)
+    if (category) {
+      query.category = category;
+    }
+    if (hostelType && ["boys", "girls", "mix"].includes(hostelType)) {
+      query.hostelType = hostelType;
     }
 
     // Location search

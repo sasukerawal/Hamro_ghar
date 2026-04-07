@@ -21,6 +21,17 @@ const listingSchema = new mongoose.Schema(
       enum: ["land", "house", "apartment", "flat", "room", "commercial"],
       default: "house"
     },
+    category: {
+      type: String,
+      enum: ["home", "hostel"],
+      default: "home",
+      index: true,
+    },
+    hostelType: {
+      type: String,
+      enum: ["boys", "girls", "mix", ""],
+      default: "",
+    },
     status: {
       type: String,
       enum: ["draft", "pending_approval", "active", "sold", "rented", "archived", "unavailable"],
@@ -43,7 +54,7 @@ const listingSchema = new mongoose.Schema(
 
     // 3. Nepal Location Model (Embedded)
     location: {
-      province: { type: String, enum: ['Koshi', 'Madhesh', 'Bagmati', 'Gandaki', 'Lumbini', 'Karnali', 'Sudurpashchim', ''] },
+      province: { type: String, enum: ['Koshi Pradesh', 'Madhesh Pradesh', 'Bagmati Pradesh', 'Gandaki Pradesh', 'Lumbini Pradesh', 'Karnali Pradesh', 'Sudurpashchim Pradesh', ''] },
       district: { type: String, trim: true, index: true },
       municipality: { type: String, trim: true, index: true },
       ward: { type: Number, min: 1 },

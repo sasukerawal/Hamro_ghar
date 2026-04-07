@@ -238,6 +238,10 @@ export default function HomePage({
   const [facing, setFacing] = useState("");
   const [amenities, setAmenities] = useState([]);
 
+  // ── Category filter (home vs hostel) ────────────────────────────────────
+  const [category, setCategory] = useState("");
+  const [hostelType, setHostelType] = useState("");
+
   /** Controls whether the advanced filter modal overlay is open */
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
@@ -405,6 +409,10 @@ export default function HomePage({
     if (roadAccess) params.append("roadAccess", roadAccess);
     if (facing) params.append("facing", facing);
     if (amenities && amenities.length) params.append("amenities", amenities.join(","));
+
+    // ── Category (home/hostel) ───────────────────────────────────────────
+    if (category) params.append("category", category);
+    if (hostelType) params.append("hostelType", hostelType);
 
     // ── Pagination ─────────────────────────────────────────────────────────
     params.append("page", page);
@@ -579,6 +587,9 @@ export default function HomePage({
     setRoadAccess("");
     setFacing("");
 
+    setCategory("");
+    setHostelType("");
+
     setSuggestions([]);
     setPage(1);
   };
@@ -667,6 +678,12 @@ export default function HomePage({
         setShowSuggestions={setShowSuggestions}
         showMap={showMap}
         onToggleMap={() => setShowMap((prev) => !prev)}
+        category={category}
+        setCategory={setCategory}
+        hostelType={hostelType}
+        setHostelType={setHostelType}
+        setListingType={setListingType}
+        setPage={setPage}
       />
 
       {/* ── Hero ad slot (hidden when map is showing) ─────────────────────── */}

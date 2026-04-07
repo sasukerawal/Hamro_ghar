@@ -325,8 +325,8 @@ export default function PropertyDetail() {
                 {(isApt || home.propertyType === 'room') && specs.floorNumber && <DetailRow label="Floor Level" value={specs.floorNumber} icon={Layers} />}
 
                 {/* Room specifics if available */}
-                {specs.attachedBathrooms > 0 && <DetailRow label="Attached Baths" value={specs.attachedBathrooms} icon={Tag} />}
-                {specs.commonBathrooms > 0 && <DetailRow label="Common Baths" value={specs.commonBathrooms} icon={Tag} />}
+                {specs.attachedBathrooms > 0 && <DetailRow label="Attached Bathrooms" value={specs.attachedBathrooms} icon={Tag} />}
+                {specs.commonBathrooms > 0 && <DetailRow label="Common Bathrooms" value={specs.commonBathrooms} icon={Tag} />}
 
                 {/* Parking Sub-section */}
                 {(specs.parking > 0 || fac.carParking > 0 || fac.bikeParking > 0 || home.parkingFeature) && (

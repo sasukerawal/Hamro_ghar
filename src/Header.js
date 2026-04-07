@@ -1,5 +1,6 @@
 // src/Header.js
 import React, { useState, useEffect, useRef } from "react";
+import ReactDOM from "react-dom";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Menu,
@@ -248,8 +249,8 @@ export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang
             )}
           </button>
 
-          {/* MOBILE DRAWER — Fixed Overlay */}
-          {isMobileMenuOpen && (
+          {/* MOBILE DRAWER — Portal rendered to <body> to escape stacking context */}
+          {isMobileMenuOpen && ReactDOM.createPortal(
             <>
               {/* Dark backdrop with blur */}
               <div
@@ -332,7 +333,8 @@ export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang
                   </button>
                 </div>
               </div>
-            </>
+            </>,
+            document.body
           )}
         </div>
       </div>

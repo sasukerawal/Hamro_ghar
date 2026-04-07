@@ -173,6 +173,11 @@ export const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved, isVirtual
               ⚡ Urgent
             </span>
           )}
+          {home.category === "hostel" && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-purple-600/95 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm backdrop-blur-sm tracking-wider uppercase">
+              🏨 {home.hostelType ? home.hostelType.charAt(0).toUpperCase() + home.hostelType.slice(1) : "Hostel"}
+            </span>
+          )}
         </div>
 
         <button

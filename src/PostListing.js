@@ -6,10 +6,8 @@ import {
   ArrowLeft, ArrowRight, CheckCircle, MapPin, UploadCloud, X, Plus, Trash, Youtube
 } from "lucide-react";
 import { apiFetch } from "./api";
-import { MUNICIPALITIES, FACING_DIRECTIONS } from "./utils/nepalLocations";
+import { NEPAL_DATA, PROVINCES, FACING_DIRECTIONS } from "./utils/nepalLocations";
 
-const PROVINCES = ["Koshi", "Madhesh", "Bagmati", "Gandaki", "Lumbini", "Karnali", "Sudurpashchim"];
-const DISTRICTS = Object.keys(MUNICIPALITIES).sort();
 const ROAD_TYPES = ["Pitched", "Gravel", "Soil", "Alley", "None", "Blacktopped"];
 
 // Helper to cleanly extract Latitude/Longitude from standard Google Maps URLs
@@ -45,6 +43,8 @@ export default function PostListing() {
   const [form, setForm] = useState({
     type: "sale",
     propertyType: "house",
+    category: "home",
+    hostelType: "",
     price: "",
 
     // Location
@@ -63,8 +63,6 @@ export default function PostListing() {
     // Specs
     bedrooms: "",
     bathrooms: "",
-    attachedBathrooms: "",
-    commonBathrooms: "",
     builtUpAreaSqFt: "",
     ropani: "",
     aana: "",
@@ -159,8 +157,6 @@ export default function PostListing() {
 
             bedrooms: l.specs?.bedrooms ?? l.beds ?? "",
             bathrooms: l.specs?.bathrooms ?? l.baths ?? "",
-            attachedBathrooms: l.specs?.attachedBathrooms ?? "",
-            commonBathrooms: l.specs?.commonBathrooms ?? "",
             builtUpAreaSqFt: l.specs?.builtUpAreaSqFt ?? l.sqft ?? "",
             ropani: l.specs?.landArea?.ropani ?? "",
             aana: l.specs?.landArea?.aana ?? l.specs?.landAreaAana ?? "",
@@ -209,7 +205,10 @@ export default function PostListing() {
             contactPhone: l.contact?.phone || "",
             contactEmail: l.contact?.email || "",
             contactWhatsapp: l.contact?.whatsapp || "",
-            contactSocial: l.contact?.socialMedia || ""
+            contactSocial: l.contact?.socialMedia || "",
+
+            category: l.category || "home",
+            hostelType: l.hostelType || "",
           });
           const imgs = l.images || [];
           setExistingImages(imgs);
@@ -235,6 +234,20 @@ export default function PostListing() {
     const val = e.target.type === "checkbox" ? e.target.checked : e.target.value;
     setForm(prev => {
       const next = { ...prev, [field]: val };
+
+      // Cascade resets for location hierarchy
+      if (field === 'province') {
+        next.district = '';
+        next.municipality = '';
+      }
+      if (field === 'district') {
+        next.municipality = '';
+      }
+      // Reset hostelType when category changes to home
+      if (field === 'category' && val === 'home') {
+        next.hostelType = '';
+      }
+
       if (['propertyType', 'facing', 'aana', 'tole', 'municipality', 'type'].includes(field)) {
         if (!next.title || next.title.includes(" facing ") || next.title.includes(" BHK ")) {
           const isHouse = next.propertyType === 'house' || next.propertyType === 'land';
@@ -297,11 +310,12 @@ export default function PostListing() {
   const validateStep = (step) => {
     if (step === 1) {
       if (!form.price || Number(form.price) <= 0) return "Valid Price is required";
+      if (form.category === 'hostel' && !form.hostelType) return "Hostel subtype (Boys/Girls/Mix) is required";
     } else if (step === 2) {
       if (!form.province) return "Province is required";
       if (!form.district) return "District is required";
       if (!form.municipality) return "Municipality is required";
-      if (!form.tole) return "Locality/Tole is required";
+      if (form.category !== 'hostel' && !form.tole) return "Locality/Tole is required";
     } else if (step === 5) {
       const totalImages = mediaFiles.length + existingImages.filter((_, i) => keepExisting[i]).length;
       if (totalImages < 3 && !editId) return "Please upload at least 3 high-quality images to build trust.";
@@ -347,8 +361,6 @@ export default function PostListing() {
       const specsJSON = JSON.stringify({
         bedrooms: form.bedrooms ? Number(form.bedrooms) : undefined,
         bathrooms: form.bathrooms ? Number(form.bathrooms) : undefined,
-        attachedBathrooms: form.attachedBathrooms ? Number(form.attachedBathrooms) : undefined,
-        commonBathrooms: form.commonBathrooms ? Number(form.commonBathrooms) : undefined,
         kitchen: form.kitchen ? Number(form.kitchen) : undefined,
         diningRoom: form.diningRoom ? Number(form.diningRoom) : undefined,
         livingRoom: form.livingRoom ? Number(form.livingRoom) : undefined,
@@ -402,6 +414,8 @@ export default function PostListing() {
 
       fd.append("type", form.type);
       fd.append("propertyType", form.propertyType);
+      fd.append("category", form.category);
+      if (form.category === "hostel") fd.append("hostelType", form.hostelType);
       fd.append("title", form.title.trim() || `${form.propertyType} for ${form.type}`);
       fd.append("description", form.description.trim());
       fd.append("price", form.price);
@@ -495,6 +509,49 @@ export default function PostListing() {
                   <h2 className="text-2xl font-extrabold mb-1">The Basics</h2>
                   <p className="text-sm text-slate-500 font-medium">What kind of property are you listing?</p>
                 </div>
+
+                {/* Category selector: Home vs Hostel */}
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Listing Category *</label>
+                  <div className="flex gap-3">
+                    {[{ val: "home", label: "🏠 Home / Property" }, { val: "hostel", label: "🏨 Hostel" }].map(({ val, label }) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => handleChange("category")({ target: { value: val } })}
+                        className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${form.category === val
+                          ? "border-blue-500 bg-blue-50 text-blue-800 shadow-sm"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                          }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Hostel subtype selector */}
+                {form.category === "hostel" && (
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Hostel Type *</label>
+                    <div className="flex gap-3">
+                      {[{ val: "boys", label: "👦 Boys" }, { val: "girls", label: "👧 Girls" }, { val: "mix", label: "🤝 Mix" }].map(({ val, label }) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => handleChange("hostelType")({ target: { value: val } })}
+                          className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${form.hostelType === val
+                            ? "border-blue-500 bg-blue-50 text-blue-800 shadow-sm"
+                            : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                            }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Deal Type *</label>
@@ -541,9 +598,9 @@ export default function PostListing() {
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">District *</label>
-                    <select value={form.district} onChange={handleChange("district")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors font-bold text-slate-800">
-                      <option value="">Select District</option>
-                      {DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
+                    <select value={form.district} onChange={handleChange("district")} disabled={!form.province} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors font-bold text-slate-800 disabled:opacity-50">
+                      <option value="">{form.province ? 'Select District' : 'Select Province first'}</option>
+                      {form.province && NEPAL_DATA[form.province] && Object.keys(NEPAL_DATA[form.province]).sort().map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
                   </div>
                 </div>
@@ -551,9 +608,9 @@ export default function PostListing() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Municipality / VDC *</label>
-                    <select value={form.municipality} onChange={handleChange("municipality")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors font-bold text-slate-800">
-                      <option value="">Select Municipality</option>
-                      {(MUNICIPALITIES[form.district] || []).map(m => <option key={m} value={m}>{m}</option>)}
+                    <select value={form.municipality} onChange={handleChange("municipality")} disabled={!form.district} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors font-bold text-slate-800 disabled:opacity-50">
+                      <option value="">{form.district ? 'Select Municipality' : 'Select District first'}</option>
+                      {form.province && form.district && NEPAL_DATA[form.province]?.[form.district]?.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -570,7 +627,7 @@ export default function PostListing() {
 
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Tole / Area *</label>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Tole / Area {form.category !== 'hostel' ? '*' : '(Optional)'}</label>
                     <input type="text" placeholder="e.g. Shantinagar" value={form.tole} onChange={handleChange("tole")} className="w-full border-2 border-slate-200 p-4 outline-none rounded-xl focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors font-bold text-lg" />
                   </div>
                   <div>
@@ -695,22 +752,14 @@ export default function PostListing() {
 
                 {!isLand && (
                   <>
-                    <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-                      <div className="col-span-2 md:col-span-1">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="col-span-1">
                         <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Bedrooms</label>
                         <input type="number" min="0" placeholder="0" value={form.bedrooms} onChange={handleChange("bedrooms")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold text-lg" />
                       </div>
-                      <div className="col-span-2 md:col-span-1">
-                        <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Total Baths</label>
+                      <div className="col-span-1">
+                        <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Total Bathrooms</label>
                         <input type="number" min="0" placeholder="0" value={form.bathrooms} onChange={handleChange("bathrooms")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold text-lg" />
-                      </div>
-                      <div className="col-span-1">
-                        <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Attached</label>
-                        <input type="number" min="0" placeholder="0" value={form.attachedBathrooms} onChange={handleChange("attachedBathrooms")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
-                      </div>
-                      <div className="col-span-1">
-                        <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Common</label>
-                        <input type="number" min="0" placeholder="0" value={form.commonBathrooms} onChange={handleChange("commonBathrooms")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
                       </div>
                       <div className="col-span-1">
                         <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Kitchens</label>

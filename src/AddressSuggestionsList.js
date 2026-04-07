@@ -18,7 +18,7 @@ export default function AddressSuggestionsList({
   }
 
   return (
-    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto">
+    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-[60] max-h-60 overflow-y-auto">
       {suggestions.map((s) => (
         <button
           key={s.id}

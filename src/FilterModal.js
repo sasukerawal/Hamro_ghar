@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { X, Search, ChevronDown, ChevronUp, MapPin, Building, Tag, Layers, CheckCircle } from "lucide-react";
 import { AMENITIES_LIST } from "./PostListing";
-import { PROVINCES_TO_DISTRICTS, MUNICIPALITIES } from "./utils/nepalLocations";
+import { NEPAL_DATA, PROVINCES } from "./utils/nepalLocations";
 
 function FilterSection({ title, icon: Icon, children, defaultOpen = false }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -134,21 +134,21 @@ export default function FilterModal({
                 <p className="font-bold text-slate-600 mb-2 uppercase tracking-wide text-[10px]">Province</p>
                 <select value={province} onChange={e => { setProvince(e.target.value); setDistrict(''); setMunicipality(''); }} className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3 py-3 outline-none focus:border-blue-400 font-bold text-slate-700">
                   <option value="">Any Province</option>
-                  {Object.keys(PROVINCES_TO_DISTRICTS).map(p => <option key={p} value={p}>{p}</option>)}
+                  {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
               <div>
                 <p className="font-bold text-slate-600 mb-2 uppercase tracking-wide text-[10px]">District</p>
-                <select value={district} onChange={e => { setDistrict(e.target.value); setMunicipality(''); }} className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3 py-3 outline-none focus:border-blue-400 font-bold text-slate-700">
-                  <option value="">Any District</option>
-                  {(province ? PROVINCES_TO_DISTRICTS[province] : Object.keys(MUNICIPALITIES).sort()).map(d => <option key={d} value={d}>{d}</option>)}
+                <select value={district} onChange={e => { setDistrict(e.target.value); setMunicipality(''); }} disabled={!province} className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3 py-3 outline-none focus:border-blue-400 font-bold text-slate-700 disabled:opacity-50">
+                  <option value="">{province ? 'Any District' : 'Select Province first'}</option>
+                  {province && NEPAL_DATA[province] && Object.keys(NEPAL_DATA[province]).sort().map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
               <div>
                 <p className="font-bold text-slate-600 mb-2 uppercase tracking-wide text-[10px]">Municipality</p>
                 <select value={municipality} onChange={e => setMunicipality(e.target.value)} disabled={!district} className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3 py-3 outline-none focus:border-blue-400 font-bold text-slate-700 disabled:opacity-50">
-                  <option value="">Any Municipality</option>
-                  {district && MUNICIPALITIES[district]?.map(m => <option key={m} value={m}>{m}</option>)}
+                  <option value="">{district ? 'Any Municipality' : 'Select District first'}</option>
+                  {province && district && NEPAL_DATA[province]?.[district]?.map(m => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
             </div>
