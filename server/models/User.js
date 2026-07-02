@@ -54,7 +54,19 @@ const userSchema = new Schema(
     },
     verificationCode: {
       type: String,
-      select: false, // Don't return this by default in queries
+      select: false,
+    },
+    // ⭐ Password reset
+    resetToken: { type: String, select: false },
+    resetTokenExpiry: { type: Date, select: false },
+
+
+    // ⭐ Social links
+    socials: {
+      facebook:  { type: String, default: "", trim: true },
+      instagram: { type: String, default: "", trim: true },
+      whatsapp:  { type: String, default: "", trim: true },
+      tiktok:    { type: String, default: "", trim: true },
     },
 
     // ⭐ Wishlist

@@ -1,81 +1,108 @@
 // src/App.js
-import React, { useState, useEffect } from "react";
-import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import React, { useState, useEffect, Suspense, lazy } from "react";
+import {
+  Routes,
+  Route,
+  useNavigate,
+  Navigate,
+} from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Loader } from "lucide-react";
 
 import { apiFetch } from "./api";
+import { MeasurementProvider } from "./contexts/MeasurementContext";
 
+// Core components needed immediately
 import Header from "./Header";
 import HomePage from "./HomePage";
-import Login from "./Login";
-import Register from "./Register";
-import Membership from "./Membership";
 import Footer from "./Footer";
-import UserProfile from "./UserProfile";
-import PostListing from "./PostListing";
-import ChatWidget from "./ChatWidget"; // ✅ NEW
 import "leaflet/dist/leaflet.css";
+
+// Lazy-loaded pages (code-split)
+const Login = lazy(() => import("./Login"));
+const ForgotPassword = lazy(() => import("./ForgotPassword"));
+const Register = lazy(() => import("./Register"));
+const Membership = lazy(() => import("./Membership"));
+const UserProfile = lazy(() => import("./UserProfile"));
+const PostListing = lazy(() => import("./PostListing"));
+const NotFound = lazy(() => import("./NotFound"));
+const AdminDashboard = lazy(() => import("./AdminDashboard"));
+const PropertyDetail = lazy(() => import("./PropertyDetail"));
+const SafetyTips = lazy(() => import("./SafetyTips"));
+
+// Loading fallback for suspended routes
+const FallbackSpinner = () => (
+  <div className="flex-1 flex items-center justify-center min-h-[50vh]">
+    <Loader className="h-8 w-8 animate-spin text-blue-500" />
+  </div>
+);
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [authChecked, setAuthChecked] = useState(false); // to prevent flicker
-
-  const [currentUser, setCurrentUser] = useState(null); // ✅ store user object
-  const [activeChat, setActiveChat] = useState(null); // ✅ { id, name }
+  const [authChecked, setAuthChecked] = useState(false);
+  const [lang, setLang] = useState("en"); // 🌐 "en" | "ne" — global language toggle
 
   const navigate = useNavigate();
 
-  // Check Login Status once on load
+  // Check Login Status once on load — also silently refresh the JWT so it stays valid
   useEffect(() => {
     const checkUser = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setIsLoggedIn(false);
+        setAuthChecked(true);
+        return;
+      }
+
       try {
+        // 1. Verify we have a session
         const data = await apiFetch("/api/auth/me");
         if (data && data.user) {
           setIsLoggedIn(true);
-          setCurrentUser(data.user); // ✅ save user
+          // 2. Silently refresh the cookie to extend the 7-day window
+          try {
+            await apiFetch("/api/auth/refresh", { method: "POST" });
+          } catch (_) {
+            // Refresh failing is non-fatal — user is still logged in for now
+          }
         } else {
           setIsLoggedIn(false);
-          setCurrentUser(null);
         }
       } catch (err) {
         console.error("Auth check failed", err);
         setIsLoggedIn(false);
-        setCurrentUser(null);
       } finally {
         setAuthChecked(true);
       }
     };
     checkUser();
+
+    // Token Auto-Refresh on focus
+    const onFocus = async () => {
+      if (localStorage.getItem("token")) {
+        try {
+          await apiFetch("/api/auth/refresh", { method: "POST" });
+        } catch (_) { }
+      }
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, []);
 
   const handleLoginSuccess = () => {
     setIsLoggedIn(true);
-    // refresh user data after login
-    (async () => {
-      try {
-        const data = await apiFetch("/api/auth/me");
-        if (data && data.user) {
-          setCurrentUser(data.user);
-        }
-      } catch (err) {
-        console.error("Failed to refresh user after login", err);
-      }
-    })();
-
-    navigate("/membership");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.location.href = "/membership";
   };
 
   const handleLogout = async () => {
+    localStorage.removeItem("token");
     try {
       await apiFetch("/api/auth/logout", { method: "POST" });
     } catch (err) {
       console.error("Logout failed", err);
     }
     setIsLoggedIn(false);
-    setCurrentUser(null);
-    setActiveChat(null);
     navigate("/");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -86,141 +113,153 @@ function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // ✅ open chat with another user
-  const handleChatWithUser = (userInfo) => {
-    if (!isLoggedIn) {
-      navigate("/login");
-      return;
-    }
-    // userInfo: { id, name }
-    setActiveChat(userInfo);
-  };
-
   return (
-    <div className="min-h-screen flex flex-col bg-white text-slate-900">
-      {/* Header appears on all pages */}
-      <Header isLoggedIn={isLoggedIn} onLogout={handleLogout} />
+    <MeasurementProvider>
+      <div className="min-h-screen flex flex-col bg-white text-slate-900">
+        {/* Header appears on all pages */}
+        <Header
+          isLoggedIn={isLoggedIn}
+          onLogout={handleLogout}
+          lang={lang}
+          onToggleLang={() => setLang((p) => (p === "en" ? "ne" : "en"))}
+        />
 
-      <main className="flex-1 pt-24 lg:pt-28">
-        <Routes>
-          {/* Home */}
-          <Route
-            path="/"
-            element={
-              <HomePage
-                onGoLogin={() => navigate("/login")}
-                onGoRegister={() => navigate("/register")}
-                onGoMembership={() =>
-                  navigate(isLoggedIn ? "/membership" : "/login")
+        <main className="flex-1 pt-24 lg:pt-28 flex flex-col">
+          <Suspense fallback={<FallbackSpinner />}>
+            <Routes>
+              {/* Home */}
+              <Route
+                path="/"
+                element={
+                  <HomePage
+                    onGoLogin={() => navigate("/login")}
+                    onGoRegister={() => navigate("/register")}
+                    onGoMembership={() =>
+                      navigate(isLoggedIn ? "/membership" : "/login")
+                    }
+                    lang={lang}
+                  />
                 }
-                // you can later use this on the home page too
-                // onChatWithUser={handleChatWithUser}
               />
-            }
-          />
 
-          {/* Auth */}
-          <Route
-            path="/login"
-            element={
-              <Login
-                onLogin={handleLoginSuccess}
-                onGoRegister={() => navigate("/register")}
+              {/* Auth */}
+              <Route
+                path="/login"
+                element={
+                  <Login
+                    onLogin={handleLoginSuccess}
+                    onGoRegister={() => navigate("/register")}
+                    onForgotPassword={() => navigate("/forgot-password")}
+                  />
+                }
               />
-            }
-          />
-          <Route
-            path="/register"
-            element={<Register onGoLogin={() => navigate("/login")} />}
-          />
+              <Route
+                path="/forgot-password"
+                element={<ForgotPassword onGoLogin={() => navigate("/login")} />}
+              />
+              <Route
+                path="/register"
+                element={<Register onGoLogin={() => navigate("/login")} />}
+              />
 
-          {/* Profile (protected) */}
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute
-                isLoggedIn={isLoggedIn}
-                authChecked={authChecked}
-              >
-                <UserProfile onGoHome={goHome} onLogout={handleLogout} />
-              </ProtectedRoute>
-            }
-          />
+              {/* Profile (protected) */}
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute
+                    isLoggedIn={isLoggedIn}
+                    authChecked={authChecked}
+                  >
+                    <UserProfile
+                      onGoHome={goHome}
+                      onLogout={handleLogout}
+                    />
+                  </ProtectedRoute>
+                }
+              />
 
-          {/* Membership dashboard (protected) */}
-          <Route
-            path="/membership"
-            element={
-              <ProtectedRoute
-                isLoggedIn={isLoggedIn}
-                authChecked={authChecked}
-              >
-                <Membership
-                  onLogout={handleLogout}
-                  onGoHome={goHome}
-                  // ✅ pass callback to membership so it can open chat
-                  onChatWithUser={handleChatWithUser}
-                />
-              </ProtectedRoute>
-            }
-          />
+              {/* Membership dashboard (protected) */}
+              <Route
+                path="/membership"
+                element={
+                  <ProtectedRoute
+                    isLoggedIn={isLoggedIn}
+                    authChecked={authChecked}
+                  >
+                    <Membership
+                      onLogout={handleLogout}
+                      onGoHome={goHome}
+                    />
+                  </ProtectedRoute>
+                }
+              />
 
-          {/* New listing (protected) */}
-          <Route
-            path="/listings/new"
-            element={
-              <ProtectedRoute
-                isLoggedIn={isLoggedIn}
-                authChecked={authChecked}
-              >
-                <PostListing />
-              </ProtectedRoute>
-            }
-          />
+              {/* New listing (protected) */}
+              <Route
+                path="/listings/new"
+                element={
+                  <ProtectedRoute
+                    isLoggedIn={isLoggedIn}
+                    authChecked={authChecked}
+                  >
+                    <PostListing />
+                  </ProtectedRoute>
+                }
+              />
 
-          {/* Edit listing (protected) */}
-          <Route
-            path="/listings/:id/edit"
-            element={
-              <ProtectedRoute
-                isLoggedIn={isLoggedIn}
-                authChecked={authChecked}
-              >
-                <PostListing />
-              </ProtectedRoute>
-            }
-          />
+              {/* Edit listing (protected) */}
+              <Route
+                path="/listings/:id/edit"
+                element={
+                  <ProtectedRoute
+                    isLoggedIn={isLoggedIn}
+                    authChecked={authChecked}
+                  >
+                    <PostListing />
+                  </ProtectedRoute>
+                }
+              />
 
-          {/* Fallback: anything unknown -> home */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
+              {/* Main Property Detail Page */}
+              <Route path="/property/:id" element={<PropertyDetail />} />
 
-      {/* New Footer (no props) */}
-      <Footer />
+              {/* Safety Tips */}
+              <Route path="/safety" element={<SafetyTips />} />
 
-      {/* ✅ Global Chat Widget */}
-      <ChatWidget
-        isOpen={!!activeChat}
-        onClose={() => setActiveChat(null)}
-        currentUser={currentUser}
-        receiver={activeChat}
-      />
+              {/* Fallback: proper 404 page */}
+              <Route path="*" element={<NotFound />} />
 
-      <ToastContainer
-        position="top-center"
-        autoClose={2000}
-        pauseOnHover={false}
-        theme="light"
-      />
-    </div>
+              {/* Admin dashboard */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute isLoggedIn={isLoggedIn} authChecked={authChecked}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </Suspense>
+        </main>
+
+        {/* New Footer (no props) */}
+        <Footer />
+
+        <ToastContainer
+          position="top-center"
+          autoClose={2000}
+          pauseOnHover={false}
+          theme="light"
+        />
+      </div>
+    </MeasurementProvider>
   );
 }
 
 /* Simple ProtectedRoute wrapper */
 function ProtectedRoute({ isLoggedIn, authChecked, children }) {
   if (!authChecked) {
-    // Optional: you can return a spinner here
+    // Optional: return a loading spinner instead of null
     return null;
   }
   if (!isLoggedIn) {

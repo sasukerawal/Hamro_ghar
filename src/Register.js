@@ -93,7 +93,7 @@ export default function Register({ onGoLogin }) {
     setLoading(true);
 
     try {
-      await apiFetch('/api/auth/verify', {
+      const data = await apiFetch('/api/auth/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -101,6 +101,10 @@ export default function Register({ onGoLogin }) {
           code: verificationCode
         }),
       });
+
+      if (data && data.token) {
+        localStorage.setItem('token', data.token);
+      }
 
       toast.success('Email verified! Logging you in...');
       // The backend sets the auth cookie on success, so we can just go to login/dashboard
@@ -113,6 +117,23 @@ export default function Register({ onGoLogin }) {
       setError(err.message || 'Verification failed. Check code.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const [resending, setResending] = useState(false);
+  const handleResendCode = async () => {
+    setResending(true);
+    try {
+      await apiFetch('/api/auth/resend-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      toast.success('New code sent!');
+    } catch (err) {
+      toast.error(err.message || 'Failed to resend code');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -201,6 +222,15 @@ export default function Register({ onGoLogin }) {
               className="mt-1 w-full rounded-full bg-blue-600 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-70"
             >
               {loading ? 'Verifying...' : 'Verify & Login'}
+            </button>
+
+            <button 
+              type="button"
+              disabled={resending}
+              onClick={handleResendCode}
+              className="w-full text-xs text-blue-600 font-semibold hover:underline mt-4"
+            >
+              {resending ? 'Sending...' : 'Didn\'t get it? Resend code'}
             </button>
 
             <button 

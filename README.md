@@ -2,29 +2,6 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-## Setup (fix: `react-scripts` not recognized)
-
-If you see an error like `'react-scripts' is not recognized...`, install dependencies first:
-
-```bash
-npm ci
-```
-
-## Running
-
-Backend (defaults to port 4000):
-
-```bash
-cd server
-npm start
-```
-
-Frontend (recommended: run on port 3001 to avoid any old Service Worker cache on 3000):
-
-```bash
-npm run start:3001
-```
-
 ## Available Scripts
 
 In the project directory, you can run:

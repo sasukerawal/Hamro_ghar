@@ -33,13 +33,21 @@ router.get('/me', requireAuth, async (req, res) => {
  */
 router.put('/me', requireAuth, async (req, res) => {
   try {
-    const { name, phone, city, profilePic } = req.body;
+    const { name, phone, city, profilePic, socials } = req.body;
 
     const updates = {};
     if (name !== undefined) updates.name = name;
     if (phone !== undefined) updates.phone = phone;
     if (city !== undefined) updates.city = city;
     if (profilePic !== undefined) updates.profilePic = profilePic;
+
+    // Persist social links if provided
+    if (socials && typeof socials === 'object') {
+      if (socials.facebook  !== undefined) updates['socials.facebook']  = socials.facebook;
+      if (socials.instagram !== undefined) updates['socials.instagram'] = socials.instagram;
+      if (socials.whatsapp  !== undefined) updates['socials.whatsapp']  = socials.whatsapp;
+      if (socials.tiktok    !== undefined) updates['socials.tiktok']    = socials.tiktok;
+    }
 
     const user = await User.findByIdAndUpdate(
       req.user.id,

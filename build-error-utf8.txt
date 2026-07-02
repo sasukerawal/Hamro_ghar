@@ -1,0 +1,64 @@
+﻿
+> hamro-ghar@0.1.0 build
+> npm run build:css && react-scripts build
+
+
+> hamro-ghar@0.1.0 build:css
+> npx tailwindcss -i ./src/index.css -o ./src/output.css
+
+node.exe : [baseline-bro
+wser-mapping] The data 
+in this module is over 
+two months old.  To 
+ensure accurate 
+Baseline data, please 
+update: `npm i baseline-
+browser-mapping@latest 
+-D`
+At C:\Program 
+Files\nodejs\npm.ps1:29 
+char:3
++   & $NODE_EXE 
+$NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~
+    + CategoryInfo      
+        : NotSpecified  
+  : ([baseline-brows.   
+ ..ping@latest -D`:S    
+tring) [], RemoteEx    
+ception
+    + FullyQualifiedErr 
+   orId : NativeComman  
+  dError
+ 
+
+Rebuilding...
+
+Done in 294ms.
+[baseline-browser-mappin
+g] The data in this 
+module is over two 
+months old.  To ensure 
+accurate Baseline data, 
+please update: `npm i ba
+seline-browser-mapping@l
+atest -D`
+Creating an optimized production build...
+[baseline-browser-mappin
+g] The data in this 
+module is over two 
+months old.  To ensure 
+accurate Baseline data, 
+please update: `npm i ba
+seline-browser-mapping@l
+atest -D`
+Failed to compile.
+
+[eslint] 
+src\HomePage.js
+  Line 600:25:  'Layers' is not defined  react/jsx-no-undef
+
+Search for the keywords to learn more about each error.
+
+

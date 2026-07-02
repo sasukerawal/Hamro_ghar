@@ -1,135 +1,88 @@
-// server/server.js
-import "dotenv/config";
-import express from "express";
-import mongoose from "mongoose";
-import cors from "cors";
-import cookieParser from "cookie-parser";
-import { createServer } from "http";      // ✅ NEW: HTTP server wrapper
-import { Server } from "socket.io";       // ✅ NEW: Socket.io
-import jwt from "jsonwebtoken";           // ✅ For auth in sockets
-import cookie from "cookie";              // ✅ To read cookie from headers
-
-// --- Routes & Models ---
-import authRoutes from "./routes/auth.js";
-import membershipRoutes from "./routes/membership.js";
+import 'dotenv/config';
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
+import authRoutes from './routes/auth.js';
+import membershipRoutes from './routes/membership.js';
 import listingsRoutes from "./routes/listings.js";
-import userRoutes from "./routes/user.js";
-import seedRoutes from "./routes/seed.js";
-import messageRoutes from "./routes/messages.js"; // ✅ New messages API
-import Message from "./models/Message.js";        // ✅ Message model
+import userRoutes from './routes/user.js';
+import reviewsRoutes from './routes/reviews.js';
+import siteReviewsRoutes from './routes/siteReviews.js';
+import adsRoutes from './routes/ads.js';
+import savedSearchRoutes from './routes/savedSearches.js';
+import './services/listingExpiry.js'; // starts cron on boot
 
 const app = express();
-const httpServer = createServer(app); // ✅ Wrap Express in HTTP server
+app.set('trust proxy', 1);
+
+// --- Rate Limiters
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  message: { error: 'Too many attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const createLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 15,
+  message: { error: 'Too many submissions. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 120, // limit each IP to 120 requests per windowMs
+  message: { error: 'Too many requests, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // --- Middleware
 app.use(express.json());
 app.use(cookieParser());
-
-const corsOptions = {
-  origin: "http://localhost:3000", // your React dev server
-  credentials: true,               // allow cookies
-};
-app.use(cors(corsOptions));
+app.use(
+  cors({
+    // Dynamically reflects the exact incoming origin perfectly, 
+    // guaranteeing credentials (cookies) are accepted cross-domain
+    origin: true,
+    credentials: true,
+  })
+);
 
 // --- DB
-const { MONGO_URI, PORT = 4000, JWT_SECRET } = process.env;
-
+const { MONGO_URI, PORT = 4000 } = process.env;
 mongoose
-  .connect(MONGO_URI, { dbName: "hamroghar" })
-  .then(() => console.log("✅ MongoDB connected"))
+  .connect(MONGO_URI, { dbName: 'hamroghar' })
+  .then(() => console.log('✅ MongoDB connected'))
   .catch((err) => {
-    console.error("❌ MongoDB error:", err.message);
+    console.error('❌ MongoDB error:', err.message);
     process.exit(1);
   });
 
 // --- Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/membership", membershipRoutes);
-app.use("/api", seedRoutes);
-app.use("/api/users", userRoutes);
-
-// serve uploaded files
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api/auth', authRoutes);
+app.use('/api/membership', membershipRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/reviews', apiLimiter, reviewsRoutes);
+app.use('/api/site-reviews', apiLimiter, siteReviewsRoutes);
 app.use("/uploads", express.static("uploads"));
-
-// listings routes
-app.use("/api/listings", listingsRoutes);
-
-// ✅ messages routes
-app.use("/api/messages", messageRoutes);
+app.use("/api/listings", apiLimiter, listingsRoutes);
+app.use("/api/ads", apiLimiter, adsRoutes);
+app.use("/api/saved-searches", apiLimiter, savedSearchRoutes);
 
 // --- Health
-app.get("/api/health", (_req, res) => res.json({ ok: true }));
+app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
-// --------------------------------------------------
-// 🔌 SOCKET.IO CHAT SETUP
-// --------------------------------------------------
-const io = new Server(httpServer, {
-  cors: corsOptions,
-});
+app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
 
-// Socket auth using the same JWT cookie as HTTP
-io.use((socket, next) => {
-  try {
-    const cookieStr = socket.handshake.headers.cookie;
-    if (!cookieStr) return next(new Error("Authentication error"));
+// Export createLimiter so routes can use it
+export { createLimiter };
 
-    const cookies = cookie.parse(cookieStr);
-    const token = cookies.token;
-    if (!token) return next(new Error("Authentication error"));
-
-    jwt.verify(token, JWT_SECRET, (err, decoded) => {
-      if (err) return next(new Error("Authentication error"));
-      socket.user = decoded; // { id, email, ... } from your JWT
-      next();
-    });
-  } catch (err) {
-    console.error("Socket auth error:", err);
-    next(new Error("Authentication error"));
-  }
-});
-
-io.on("connection", (socket) => {
-  if (!socket.user?.id) {
-    console.warn("Socket connected without user.id");
-    socket.disconnect();
-    return;
-  }
-
-  console.log(`⚡ User connected: ${socket.user.id}`);
-
-  // Each user joins a room with their own ID (for private messages)
-  socket.join(socket.user.id);
-
-  // Listen for outgoing messages
-  socket.on("sendMessage", async ({ to, content }) => {
-    try {
-      if (!to || !content || !content.trim()) return;
-
-      // 1. Save message to DB
-      const message = new Message({
-        senderId: socket.user.id,
-        receiverId: to,
-        content: content.trim(),
-      });
-
-      await message.save();
-
-      // 2. Deliver to receiver (if online)
-      io.to(to).emit("receiveMessage", message);
-
-      // 3. Also send back to sender so UI gets final saved version
-      socket.emit("receiveMessage", message);
-    } catch (err) {
-      console.error("Socket message error:", err);
-    }
-  });
-
-  socket.on("disconnect", () => {
-    console.log(`❌ User disconnected: ${socket.user.id}`);
-  });
-});
-
-// ✅ Use httpServer.listen instead of app.listen
-httpServer.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-});

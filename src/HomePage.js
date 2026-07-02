@@ -1,235 +1,474 @@
+/**
+ * @file HomePage.js
+ * @description Main landing page for HamroGhar.
+ *
+ * Architecture overview:
+ *  - Data fetching is handled via SWR for automatic caching, deduplication,
+ *    and revalidation on reconnect. Three data queries run in parallel:
+ *      1. /api/listings/stats  — hero stats card (cached 60 s)
+ *      2. /api/ads/active      — ad placements (cached 5 min)
+ *      3. /api/listings/all    — filtered, paginated listing grid (no TTL)
+ *  - All filter state lives here and is threaded down as props. Changing any
+ *    filter simply causes `buildListingsUrl()` to return a new key, triggering
+ *    an automatic SWR refetch.
+ *  - The mobile sticky FAB (Map/List & Filters pill) uses a scroll-direction
+ *    heuristic: it appears when the user scrolls *up*, auto-hides after 3 s
+ *    of inactivity, and is hidden while the filter modal is open.
+ */
+
 // src/HomePage.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { apiFetch } from "./api";
+import useSWR from "swr";
+import { useNavigate } from "react-router-dom";
+
 import FilterModal from "./FilterModal";
-// ✅ Import reusable utilities
-import {
-  ListingModal,
-  handleToggleSaveHome,
-  formatArea,
-  formatPrice,
-} from "./ListingUtils";
-import AddressSuggestionsList from "./AddressSuggestionsList";
-import ListingMapView from "./ListingMapView"; // ✅ NEW
-import { HOSTEL_TYPE_LABELS } from "./data/nepalLocations";
+import { ListingModal, handleToggleSaveHome } from "./ListingUtils";
+import ListingMapView from "./ListingMapView";
 
-import {
-  MapPin,
-  Search,
-  Heart,
-  Shield,
-  Star,
-  ArrowRight,
-  Phone,
-  Home as HomeIcon,
-  Eye,
-  SlidersHorizontal,
-} from "lucide-react";
+import HeroSection from "./components/home/HeroSection";
+import FiltersBar from "./components/home/FiltersBar";
+import HighlightStrip from "./components/home/HighlightStrip";
+import { FeaturedListings } from "./components/home/FeaturedListings";
+import CallToAction from "./components/home/CallToAction";
+import SiteReviewsSection from "./components/home/SiteReviewsSection";
+import AdBanner from "./components/ads/AdBanner";
 
-// Fallback listings if backend fails
-const FALLBACK_LISTINGS = [
-  {
-    _id: "demo-1",
-    price: "Rs. 45,000 / month",
-    beds: 3,
-    baths: 2,
-    sqft: "1,450",
-    address: "Modern Apartment, Lazimpat",
-    city: "Kathmandu",
-    image:
-      "https://images.unsplash.com/photo-1600596542815-7b95e06b5f3c?auto=format&fit=crop&w=900&q=80",
-    views: 0,
-  },
-  {
-    _id: "demo-2",
-    price: "Rs. 35,000 / month",
-    beds: 2,
-    baths: 1,
-    sqft: "1,020",
-    address: "Cozy Flat, Baneshwor",
-    city: "Kathmandu",
-    image:
-      "https://images.unsplash.com/photo-1590490359854-dfba19688d70?auto=format&fit=crop&w=900&q=80",
-    views: 0,
-  },
-  {
-    _id: "demo-3",
-    price: "Rs. 60,000 / month",
-    beds: 4,
-    baths: 3,
-    sqft: "1,900",
-    address: "Family House, Pokhara Lakeside",
-    city: "Pokhara",
-    image:
-      "https://images.unsplash.com/photo-1600585154340-0ef3c08c0632?auto=format&fit=crop&w=900&q=80",
-    views: 0,
-  },
-];
+import { MapPin, ChevronUp, Tag, Layers } from "lucide-react";
 
-const TESTIMONIALS = [
-  {
-    id: 1,
-    name: "Sara K.",
-    role: "Student",
-    quote: "HamroGhar made it easy to find a safe, clean flat near my college.",
+// ---------------------------------------------------------------------------
+// 🌐 Full page translation map
+// Add more language keys here as needed; fallback is always "en".
+// ---------------------------------------------------------------------------
+const PAGE_LANG = {
+  en: {
+    heroTag: "No broker spam · Real listings only",
+    heroH1a: "Find a home that",
+    heroH1b: "feels like you.",
+    heroSub: "Search rooms and homes across Nepal in just a few clicks. No hidden fees, no middlemen.",
+    searchPlaceholder: "Enter area or city, e.g. Baneshwor, Kathmandu",
+    searchBtn: "Search homes",
+    heroTrust: "Trusted by members across Nepal",
+    heroSignIn: "Already a member? Sign in",
+    statsLive: "Live listings",
+    statsProps: "properties available right now",
+    statsViews: "Average homes viewed per user",
+    statsCities: "Cities covered",
+    statsQuote: "\u201cClean, simple and fast. Found my flat in 2 days.\u201d",
+    strip1Title: "Community platform",
+    strip1Text: "Listings are posted by real users — not agencies. Always verify before paying.",
+    strip2Title: "Student friendly",
+    strip2Text: "Filter by furnished rooms, Wi-Fi, and walking distance.",
+    strip3Title: "Human support",
+    strip3Text: "Talk to a real person when you feel stuck.",
+    riskTitle: "⚠️ Use caution",
+    riskText: "HamroGhar does not verify listings. Always visit in person and never pay without seeing the property.",
+    filterTypeLabel: "Type:",
+    filterForRent: "🏠 Homes for Rent",
+    filterWanted: "🔍 Wanted Rooms",
+    filterForRentMobile: "For Rent",
+    filterWantedMobile: "Wanted",
+    filterMap: "🗺️ Show map",
+    filterList: "📋 Show list",
+    filterApply: "Apply filters",
+    filterClear: "Clear",
+    filterCityLabel: "City / Area",
+    filterCityPlaceholder: "Baneshwor",
+    filterMinRent: "Min rent (Rs)",
+    filterMaxRent: "Max rent (Rs)",
+    filterMinBeds: "Min beds",
+    filterPets: "Pets allowed",
+    filterFurnished: "Furnished only",
+    filterShowing: "Showing",
+    filterHomesIn: "homes in",
+    filterAllAreas: "All Areas",
+    filterBed: "+ bed ",
+    listingsLabel: "Featured",
+    listingsTitle: "Homes picked for you",
+    listingsPage: "Page",
+    listingsOf: "of",
+    listingsEmpty: "No homes found",
+    listingsEmptyHint: "Try adjusting your filters or clearing your search.",
+    listingsPrev: "Prev",
+    listingsNext: "Next",
+    ctaTag: "Membership",
+    ctaTitle: "Unlock member-only homes & support",
+    ctaSub: "Get saved searches, instant alerts, and priority help from our team — all in one clean dashboard.",
+    ctaBtn1: "Get started free",
+    ctaBtn2: "View member dashboard",
+    communityTitle: "What members say about us",
+    communityTag: "Community",
+    reviewPlaceholder: "Tell us about your experience finding a home on HamroGhar...",
+    reviewSubmit: "Submit review",
+    reviewUpdate: "Update",
+    reviewRemove: "Remove",
+    reviewUpdate2: "Update your review",
+    reviewShare: "Share your experience with HamroGhar",
+    reviewNone: "No reviews yet. Be the first to share your experience!",
+    mapTitle: "Map view",
+    mapHint: "Click a district to explore listings in that area.",
   },
-  {
-    id: 2,
-    name: "Ram B.",
-    role: "Working professional",
-    quote:
-      "Clean interface, no spam calls, just real homes that matched my budget.",
+  ne: {
+    heroTag: "ब्रोकर स्प्याम छैन · वास्तविक लिस्टिङ मात्र",
+    heroH1a: "आफ्नो लागि घर खोज्नुस्",
+    heroH1b: "ज्युन तपाईंलाई मनपर्छ।",
+    heroSub: "नेपालभर कोठा र घर खोज्नुस् — कुनै लुकेको शुल्क वा बिचौलिया छैन।",
+    searchPlaceholder: "क्षेत्र वा सहर लेख्नुस्, जस्तै: बानेश्वर, काठमाडौं",
+    searchBtn: "घर खोज्नुस्",
+    heroTrust: "नेपालभरका सदस्यहरूले भरोसा गर्छन्",
+    heroSignIn: "पहिलेदेखि सदस्य हुनुहुन्छ? साइन इन गर्नुस्",
+    statsLive: "लाइभ लिस्टिङ",
+    statsProps: "अहिले उपलब्ध सम्पत्तिहरू",
+    statsViews: "प्रति प्रयोगकर्ता औसत हेरिएका घरहरू",
+    statsCities: "शहरहरू समेटिएका",
+    statsQuote: "\u201cसरल र छिटो। २ दिनमा फ्ल्याट फेला पाएँ।\u201d",
+    strip1Title: "सम्प्रदाय प्लेटफर्म",
+    strip1Text: "लिस्टिङहरू एजेन्सीले होइन, वास्तविक प्रयोगकर्ताले पोस्ट गर्छन्। भुक्तानी गर्नु अघि सत्यापन गर्नुस्।",
+    strip2Title: "विद्यार्थी अनुकूल",
+    strip2Text: "फर्निसड कोठा, Wi-Fi र हिँड्न मिल्ने दूरीका घरहरू फिल्टर गर्नुस्।",
+    strip3Title: "मानव सहयोग",
+    strip3Text: "अलमलमा परेमा वास्तविक व्यक्तिसँग कुरा गर्नुस्।",
+    riskTitle: "⚠️ सावधान रहनुस्",
+    riskText: "HamroGhar ले लिस्टिङ प्रमाणित गर्दैन। सधैँ व्यक्तिगत रूपमा भेट्नुस् र सम्पत्ति नदेखी भुक्तानी नगर्नुस्।",
+    filterTypeLabel: "प्रकार:",
+    filterForRent: "🏠 भाडाको घर",
+    filterWanted: "🔍 खोज्दै छु",
+    filterForRentMobile: "भाडामा",
+    filterWantedMobile: "खोज्दै",
+    filterMap: "🗺️ नक्सा देखाउनुस्",
+    filterList: "📋 सूची देखाउनुस्",
+    filterApply: "फिल्टर लागू गर्नुस्",
+    filterClear: "हटाउनुस्",
+    filterCityLabel: "सहर / क्षेत्र",
+    filterCityPlaceholder: "बानेश्वर",
+    filterMinRent: "न्यूनतम भाडा (रु)",
+    filterMaxRent: "अधिकतम भाडा (रु)",
+    filterMinBeds: "न्यूनतम कोठा",
+    filterPets: "पाल्तु जनावर मिल्छ",
+    filterFurnished: "फर्निसड मात्र",
+    filterShowing: "देखाइँदै छ",
+    filterHomesIn: "घरहरू",
+    filterAllAreas: "सबै क्षेत्र",
+    filterBed: "+ ओछ्यान ",
+    listingsLabel: "विशेष",
+    listingsTitle: "तपाईंको लागि छानिएका घरहरू",
+    listingsPage: "पृष्ठ",
+    listingsOf: "मध्ये",
+    listingsEmpty: "कुनै घर फेला परेन",
+    listingsEmptyHint: "फिल्टर परिवर्तन गर्नुस् वा खोजी हटाउनुस्।",
+    listingsPrev: "अघिल्लो",
+    listingsNext: "अर्को",
+    ctaTag: "सदस्यता",
+    ctaTitle: "सदस्य-मात्र घर र सहयोग अनलक गर्नुस्",
+    ctaSub: "सेभ गरिएका खोजहरू, तत्काल अलर्ट र प्राथमिक सहयोग पाउनुस्।",
+    ctaBtn1: "निःशुल्क सुरु गर्नुस्",
+    ctaBtn2: "सदस्य ड्यासबोर्ड हेर्नुस्",
+    communityTitle: "सदस्यहरूले हाम्रोबारे के भन्छन्",
+    communityTag: "समुदाय",
+    reviewPlaceholder: "HamroGhar मा घर खोज्ने अनुभव साझा गर्नुस्...",
+    reviewSubmit: "समीक्षा पेश गर्नुस्",
+    reviewUpdate: "अपडेट",
+    reviewRemove: "हटाउनुस्",
+    reviewUpdate2: "आफ्नो समीक्षा अपडेट गर्नुस्",
+    reviewShare: "HamroGhar सँगको आफ्नो अनुभव साझा गर्नुस्",
+    reviewNone: "अझै समीक्षा छैन। पहिलो हुनुस्!",
+    mapTitle: "नक्सा दृश्य",
+    mapHint: "जिल्लामा क्लिक गरेर त्यहाँका लिस्टिङहरू हेर्नुस्।",
   },
-  {
-    id: 3,
-    name: "Anushka R.",
-    role: "First-time renter",
-    quote:
-      "I liked how simple everything looked — blue and white, no confusion.",
-  },
-];
+};
 
+
+// ---------------------------------------------------------------------------
+// ⏱️  FAB_HIDE_DELAY_MS
+// How long (in milliseconds) to keep the mobile floating action button
+// visible after the user stops scrolling upward.
+// ---------------------------------------------------------------------------
+const FAB_HIDE_DELAY_MS = 3000;
+
+// ---------------------------------------------------------------------------
+// 🏠 HomePage Component
+// ---------------------------------------------------------------------------
+
+/**
+ * HomePage — root shell component for the application landing page.
+ *
+ * @param {Function} onGoLogin       — navigate to the login screen
+ * @param {Function} onGoRegister    — navigate to the register screen
+ * @param {Function} onGoMembership  — navigate to the membership screen
+ * @param {"en"|"ne"} lang           — active language key (defaults to "en")
+ */
 export default function HomePage({
   onGoLogin,
   onGoRegister,
   onGoMembership,
+  lang = "en",
 }) {
-  const [listings, setListings] = useState(FALLBACK_LISTINGS);
-  const [loadingListings, setLoadingListings] = useState(false);
+  /** Active translation object */
+  const t = PAGE_LANG[lang] || PAGE_LANG.en;
 
-  // 🔄 List vs Map toggle
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
+
+  // ── View toggle ────────────────────────────────────────────────────────────
+  /** Controls whether the map or the listing grid is displayed */
   const [showMap, setShowMap] = useState(false);
 
-  // Filters
+  // ── Basic filter state ─────────────────────────────────────────────────────
   const [searchCity, setSearchCity] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [beds, setBeds] = useState("");
   const [petsOnly, setPetsOnly] = useState(false);
   const [furnishedOnly, setFurnishedOnly] = useState(false);
-  const [listingMode, setListingMode] = useState("homes");
-  const [hostelTypeFilter, setHostelTypeFilter] = useState("");
+
+  /**
+   * listingType — deal type filter.
+   * Possible values: "" (all) | "sale" | "rent" | "offer" | "wanted"
+   */
+  const [listingType, setListingType] = useState("");
+
+  // ── V2 filter state ────────────────────────────────────────────────────────
+  const [propertyType, setPropertyType] = useState("");
+  const [province, setProvince] = useState("");
+  const [district, setDistrict] = useState("");
+  const [municipality, setMunicipality] = useState("");
+  const [minLandArea, setMinLandArea] = useState("");
+  const [maxLandArea, setMaxLandArea] = useState("");
+  const [roadAccess, setRoadAccess] = useState("");
+  const [facing, setFacing] = useState("");
+  const [amenities, setAmenities] = useState([]);
+
+  // ── Category filter (home vs hostel) ────────────────────────────────────
+  const [category, setCategory] = useState("");
+  const [hostelType, setHostelType] = useState("");
+
+  /** Controls whether the advanced filter modal overlay is open */
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
-  // Address Suggestions
-  const [suggestions, setSuggestions] = useState([]);
-  const [activeSuggestionSurface, setActiveSuggestionSurface] = useState(null);
+  // ── Pagination ─────────────────────────────────────────────────────────────
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Modal
+  /** Number of listings to request per page */
+  const LISTINGS_PER_PAGE = 12;
+
+  // ── UI state ───────────────────────────────────────────────────────────────
+  /** Whether the back-to-top FAB should be visible */
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  /**
+   * showMobileFab — controls the mobile sticky action pill visibility.
+   * true  → pill is visible (user scrolled up recently)
+   * false → pill is hidden (user scrolled down, or timer elapsed)
+   */
+  const [showMobileFab, setShowMobileFab] = useState(false);
+
+  // ── Address suggestions ────────────────────────────────────────────────────
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // ── Listing modal ──────────────────────────────────────────────────────────
   const [selectedHome, setSelectedHome] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Hero stats
-  const [stats, setStats] = useState({
-    totalListings: null,
-    citiesCount: null,
-    avgViews: null,
-  });
-
-  // ❤️ Saved homes (for hearts)
+  // ── Saved homes ────────────────────────────────────────────────────────────
+  /** Array of listing _id strings the current user has saved */
   const [savedIds, setSavedIds] = useState([]);
 
-  // Memoize the handler for use in ListingCard and Modal
-  const saveHomeHandler = (listing) =>
-    handleToggleSaveHome(listing, savedIds, setSavedIds, onGoLogin);
+  // ── Refs for scroll tracking ───────────────────────────────────────
+  /**
+   * lastScrollY — records the window.scrollY value from the *previous*
+   * scroll event so we can detect direction (up vs. down).
+   */
+  const lastScrollY = useRef(window.scrollY);
+  /** Stores the setTimeout handle for the FAB auto-hide timer */
+  const fabHideTimer = useRef(null);
 
-  // Load listings from backend
-  const fetchListings = async (opts = {}) => {
-    const {
-      city = searchCity,
-      min = minPrice,
-      max = maxPrice,
-      minBeds = beds,
-      pets = petsOnly,
-      furnished = furnishedOnly,
-      mode = listingMode,
-      hostelFilter = hostelTypeFilter,
-    } = opts;
-
-    try {
-      setLoadingListings(true);
-
-      const params = new URLSearchParams();
-      if (mode === "requests") {
-        params.append("type", "wanted");
-        params.append("category", "home");
-      } else if (mode === "hostels") {
-        params.append("type", "offer");
-        params.append("category", "hostel");
-        if (hostelFilter) {
-          params.append("hostelType", hostelFilter);
-        }
-      } else {
-        params.append("type", "offer");
-        params.append("category", "home");
-      }
-      if (city.trim()) params.append("city", city.trim());
-      if (min) params.append("minPrice", min);
-      if (max) params.append("maxPrice", max);
-      if (minBeds) params.append("beds", minBeds);
-      if (pets) params.append("petsAllowed", "true");
-      if (furnished) params.append("furnished", "true");
-
-      const qs = params.toString();
-
-      const data = await apiFetch(`/api/listings/all${qs ? `?${qs}` : ""}`, {
-        credentials: "omit",
-      });
-
-      if (Array.isArray(data.listings) && data.listings.length > 0) {
-        setListings(data.listings);
-      } else {
-        setListings([]);
-      }
-    } catch (err) {
-      console.error("Error loading listings", err);
-      if (listings.length === 0) setListings(FALLBACK_LISTINGS);
-    } finally {
-      setLoadingListings(false);
-    }
-  };
-
-  // Load stats
-  const fetchStats = async () => {
-    try {
-      const data = await apiFetch("/api/listings/stats", {
-        credentials: "omit",
-      });
-      setStats({
-        totalListings: data.totalListings ?? null,
-        citiesCount: data.citiesCount ?? null,
-        avgViews: data.avgViews ?? null,
-      });
-    } catch (err) {
-      console.error("Error loading listing stats", err);
-    }
-  };
-
-  // Initial load
+  // ── Scroll listener: back-to-top + FAB direction heuristic ────────────────
   useEffect(() => {
-    fetchListings();
-    fetchStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    /**
+     * handleScroll — fires on every scroll event.
+     *
+     * Logic:
+     *  1. Compare current scrollY to lastScrollY to determine direction.
+     *  2. Show back-to-top button when scrollY > 400 px.
+     *  3. Show the mobile FAB only when the user scrolls *up* (positive delta).
+     *  4. Start/restart a timer to auto-hide the FAB after FAB_HIDE_DELAY_MS.
+     */
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      const delta = lastScrollY.current - currentY; // positive = scrolled up
+
+      // ── Back-to-top button ──────────────────────────────────────────────
+      setShowBackToTop(currentY > 400);
+
+      // ── Mobile FAB ──────────────────────────────────────────────────────
+      if (Math.abs(delta) > 5) {
+        if (delta < 0 && currentY > 100) {
+          // User scrolled down (swipe up) — hide the FAB
+          setShowMobileFab(false);
+          clearTimeout(fabHideTimer.current);
+        } else {
+          // User scrolled up (swipe down) — show the FAB
+          setShowMobileFab(true);
+
+          // Reset/Start auto-hide timer
+          clearTimeout(fabHideTimer.current);
+          fabHideTimer.current = setTimeout(() => {
+            setShowMobileFab(false);
+          }, FAB_HIDE_DELAY_MS);
+        }
+      }
+
+      lastScrollY.current = currentY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    const currentTimer = fabHideTimer.current;
+
+    // Cleanup: remove listener and cancel any pending timer on unmount
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      clearTimeout(currentTimer);
+    };
+  }, []); // run once on mount — no external dependencies needed
+
+  // ── Auth check ─────────────────────────────────────────────────────────────
+  /**
+   * Detect whether the current visitor is authenticated so we can conditionally
+   * render the CTA section (hidden for logged-in users).
+   */
+  useEffect(() => {
+    apiFetch("/api/auth/me")
+      .then((d) => setIsLoggedIn(!!(d?.user)))
+      .catch(() => setIsLoggedIn(false));
   }, []);
 
-  // Load saved homes
+  // ── SWR fetcher ────────────────────────────────────────────────────────────
+  /**
+   * swrFetcher — shared async fetcher passed to all useSWR hooks on this page.
+   * `credentials: "omit"` is intentionally set for public endpoints (stats,
+   * ads, listings) to avoid attaching cookies to cross-origin requests.
+   *
+   * @param {string} url — API endpoint URL
+   * @returns {Promise<any>} — parsed JSON response
+   */
+  const swrFetcher = useCallback(async (url) => {
+    return apiFetch(url, { credentials: "omit" });
+  }, []);
+
+  // ── 1. Platform stats ──────────────────────────────────────────────────────
+  const { data: statsData } = useSWR("/api/listings/stats", swrFetcher, {
+    revalidateOnFocus: false, // Don't hammer the DB on every tab switch
+    dedupingInterval: 60000, // Cache result for 1 minute
+  });
+
+  /** Normalised stats object used by HeroSection */
+  const stats = {
+    totalListings: statsData?.totalListings ?? statsData?.totalActive ?? null,
+    citiesCount: statsData?.citiesCount ?? null,
+    avgViews: statsData?.avgViews ?? null,
+  };
+
+  // ── 2. Ad placements ───────────────────────────────────────────────────────
+  const { data: adsData } = useSWR("/api/ads/active", swrFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 300_000, // Cache for 5 minutes — ads rarely change
+  });
+
+  // ── 3. Listings (filtered + paginated) ────────────────────────────────────
+  /**
+   * buildListingsUrl — constructs the API URL for the listing query.
+   *
+   * Every piece of filter/pagination state is encoded as a query parameter.
+   * Because SWR uses the URL string as its cache key, changing any filter
+   * state automatically triggers a new fetch — no manual invalidation needed.
+   *
+   * @returns {string} — fully-formed API URL
+   */
+  const buildListingsUrl = () => {
+    const params = new URLSearchParams();
+
+    // ── Basic filters ──────────────────────────────────────────────────────
+    if (searchCity.trim()) params.append("city", searchCity.trim());
+    if (minPrice) params.append("minPrice", minPrice);
+    if (maxPrice) params.append("maxPrice", maxPrice);
+    if (beds) params.append("beds", beds);
+    if (petsOnly) params.append("petsAllowed", "true");
+    if (furnishedOnly) params.append("furnished", "true");
+    if (listingType) params.append("type", listingType);
+
+    // ── V2 filters ─────────────────────────────────────────────────────────
+    if (propertyType) params.append("propertyType", propertyType);
+    if (province) params.append("province", province);
+    if (district) params.append("district", district);
+    if (municipality) params.append("municipality", municipality);
+    if (minLandArea) params.append("minLandArea", minLandArea);
+    if (maxLandArea) params.append("maxLandArea", maxLandArea);
+    if (roadAccess) params.append("roadAccess", roadAccess);
+    if (facing) params.append("facing", facing);
+    if (amenities && amenities.length) params.append("amenities", amenities.join(","));
+
+    // ── Category (home/hostel) ───────────────────────────────────────────
+    if (category) params.append("category", category);
+    if (hostelType) params.append("hostelType", hostelType);
+
+    // ── Pagination ─────────────────────────────────────────────────────────
+    params.append("page", page);
+    params.append("limit", LISTINGS_PER_PAGE);
+
+    return `/api/listings/all?${params.toString()}`;
+  };
+
+  const { data: listingsData, isLoading: loadingListings } = useSWR(
+    buildListingsUrl(),
+    swrFetcher,
+    {
+      keepPreviousData: true,   // Keep stale listings visible during page transitions
+      revalidateOnFocus: false,
+    }
+  );
+
+  /** Safely extract the listings array from the SWR response */
+  const listings = Array.isArray(listingsData?.listings) ? listingsData.listings : [];
+
+  /**
+   * Sync pagination state from the server response.
+   * The server returns the authoritative page count; if the current page
+   * is out of bounds, reset it (handles cases where filters reduce total pages).
+   */
+  useEffect(() => {
+    if (listingsData?.totalPages) setTotalPages(listingsData.totalPages);
+    if (listingsData?.page && listingsData.page < page) setPage(listingsData.page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listingsData]);
+
+  // ── Saved homes loader ─────────────────────────────────────────────────────
+  /**
+   * Loads the current user's saved listing IDs on mount.
+   * Silently swallows 401 errors (when the user is not logged in).
+   */
   useEffect(() => {
     const loadSaved = async () => {
       try {
         const data = await apiFetch("/api/listings/saved/me");
         if (Array.isArray(data.saved)) {
-          const ids = data.saved.map((h) => h._id || h.id);
-          setSavedIds(ids);
+          setSavedIds(data.saved.map((h) => h._id || h.id));
         }
       } catch (err) {
-        if (err.message.includes("401")) return;
+        if (err.message.includes("401")) return; // Expected for anonymous users
         console.error("Error loading saved homes", err);
       }
     };
     loadSaved();
   }, []);
 
-  // 🟢 Address Auto-Suggestion Effect
+  // ── Address auto-suggestion ────────────────────────────────────────────────
+  /**
+   * Debounces the geo/search API call (400 ms) whenever the search city input
+   * changes. Requires at least 3 characters to trigger a suggestion request.
+   */
   useEffect(() => {
     const query = searchCity.trim();
     if (query.length < 3) {
@@ -245,6 +484,7 @@ export default function HomePage({
         );
         if (data && Array.isArray(data.suggestions)) {
           setSuggestions(data.suggestions);
+          setShowSuggestions(data.suggestions.length > 0);
         }
       } catch (err) {
         console.error("Geo search error", err);
@@ -254,55 +494,80 @@ export default function HomePage({
     return () => clearTimeout(timer);
   }, [searchCity]);
 
+  // ── Event handlers ─────────────────────────────────────────────────────────
+
+  /**
+   * handleSelectSuggestion — called when the user clicks an address suggestion.
+   * Sets the search city to the suggestion value and immediately runs search.
+   *
+   * @param {{ city?: string, label: string }} suggestion
+   */
   const handleSelectSuggestion = (suggestion) => {
-    const value = suggestion.label.split(",").slice(0, 3).join(", ").trim();
-    setSearchCity(value);
+    const val = suggestion.city || suggestion.label.split(",")[0];
+    setSearchCity(val);
     setSuggestions([]);
-    setActiveSuggestionSurface(null);
-    fetchListings({ city: value });
+    setShowSuggestions(false);
+    handleRunSearch();
   };
 
-  // Modal handlers
-  const openHomeModal = async (home) => {
-    setSelectedHome(home);
-    setIsModalOpen(true);
-
+  /**
+   * openHomeModal — navigates to the property detail page.
+   * Also fires a view-count PATCH in the background (fire-and-forget).
+   *
+   * @param {{ _id?: string, id?: string }} home — listing object
+   */
+  const openHomeModal = (home) => {
     const id = home?._id || home?.id;
-    if (!id || String(id).startsWith("demo-")) return;
+    if (!id) return;
 
-    try {
-      const data = await apiFetch(`/api/listings/${id}/view`, {
+    // Increment the view counter asynchronously — no await needed
+    if (!String(id).startsWith("demo-")) {
+      apiFetch(`/api/listings/${id}/view`, {
         method: "PATCH",
         credentials: "omit",
-      });
-
-      if (typeof data.views === "number") {
-        setListings((prev) =>
-          prev.map((l) =>
-            (l._id || l.id) === id ? { ...l, views: data.views } : l
-          )
-        );
-        setSelectedHome((prev) =>
-          prev && (prev._id || prev.id) === id
-            ? { ...prev, views: data.views }
-            : prev
-        );
-      }
-    } catch (err) {
-      console.error("Increment view error", err);
+      }).catch(() => { }); // Intentionally swallowed — non-critical
     }
+
+    navigate(`/property/${id}`);
   };
 
+  /** closeHomeModal — clears the selected listing and closes the modal */
   const closeHomeModal = () => {
     setSelectedHome(null);
     setIsModalOpen(false);
   };
 
+  /**
+   * handleRunSearch — resets to page 1, closing the suggestion dropdown.
+   * Mutating `page` causes `buildListingsUrl()` to return a new key,
+   * triggering a SWR refetch automatically.
+   */
   const handleRunSearch = () => {
-    setActiveSuggestionSurface(null);
-    fetchListings();
+    setShowSuggestions(false);
+    setPage(1);
   };
 
+  /**
+   * handleTypeFilter — toggles a deal-type filter (sale/rent).
+   * Selecting the already-active type clears the filter (acts as a toggle).
+   *
+   * @param {"sale"|"rent"|"offer"|"wanted"} type
+   */
+  const handleTypeFilter = (type) => {
+    setListingType(listingType === type ? "" : type);
+    setPage(1);
+  };
+
+  /** handlePageChange — updates the page and smoothly scrolls to listings */
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+    window.scrollTo({ top: 500, behavior: "smooth" });
+  };
+
+  /**
+   * handleClearFilters — resets all filter state back to empty defaults.
+   * SWR will automatically refetch after state clears.
+   */
   const handleClearFilters = () => {
     setSearchCity("");
     setMinPrice("");
@@ -310,62 +575,68 @@ export default function HomePage({
     setBeds("");
     setPetsOnly(false);
     setFurnishedOnly(false);
-    setHostelTypeFilter("");
+    setListingType("");
+
+    // V2 filters
+    setPropertyType("");
+    setProvince("");
+    setDistrict("");
+    setMunicipality("");
+    setMinLandArea("");
+    setMaxLandArea("");
+    setRoadAccess("");
+    setFacing("");
+
+    setCategory("");
+    setHostelType("");
+
     setSuggestions([]);
-    setActiveSuggestionSurface(null);
-    fetchListings({
-      city: "",
-      min: "",
-      max: "",
-      minBeds: "",
-      pets: false,
-      furnished: false,
-      hostelFilter: "",
-    });
+    setPage(1);
   };
 
-  const handleListingModeChange = (nextMode) => {
-    const nextHostelType = nextMode === "hostels" ? hostelTypeFilter : "";
-    setListingMode(nextMode);
-    if (nextMode !== "hostels") {
-      setHostelTypeFilter("");
-    }
-    fetchListings({
-      mode: nextMode,
-      hostelFilter: nextHostelType,
-    });
+  /**
+   * openFilterModal — opens the advanced filter modal.
+   * Also hides the mobile FAB to avoid layering stacking issues.
+   */
+  const openFilterModal = () => {
+    setIsFilterModalOpen(true);
+    // FAB is hidden while the modal is open (controlled via `isFilterModalOpen`
+    // in the render gate below, so no extra setState is needed here).
   };
 
-  const handleHostelTypeFilterChange = (nextType) => {
-    setHostelTypeFilter(nextType);
-    fetchListings({
-      mode: "hostels",
-      hostelFilter: nextType,
-    });
-  };
+  /** closeFilterModal — closes the advanced filter modal */
+  const closeFilterModal = () => setIsFilterModalOpen(false);
 
+  /** saveHomeHandler — memoised save/unsave toggler passed to listing cards */
+  const saveHomeHandler = (listing) =>
+    handleToggleSaveHome(listing, savedIds, setSavedIds, onGoLogin);
+
+  // ── Whether any V2 filter is active (used for badge indicator) ─────────────
+  const hasActiveFilters = !!(propertyType || province || district || minPrice || maxPrice);
+
+  // ---------------------------------------------------------------------------
+  // 📐 Render
+  // ---------------------------------------------------------------------------
   return (
     <>
+      {/* ── Hero section ────────────────────────────────────────────────── */}
       <HeroSection
+        t={t}
         searchCity={searchCity}
         setSearchCity={setSearchCity}
         onSearch={handleRunSearch}
         onGoLogin={onGoLogin}
         stats={stats}
         suggestions={suggestions}
-        showSuggestions={activeSuggestionSurface === "hero"}
+        showSuggestions={showSuggestions}
         onSelectSuggestion={handleSelectSuggestion}
-        onFocusSuggestions={() => setActiveSuggestionSurface("hero")}
-        onBlurSuggestions={() =>
-          setTimeout(() => {
-            setActiveSuggestionSurface((current) =>
-              current === "hero" ? null : current
-            );
-          }, 180)
-        }
+        setShowSuggestions={setShowSuggestions}
       />
-      <HighlightStrip />
 
+      {/* ── Trust / highlight strip ──────────────────────────────────────── */}
+      <HighlightStrip t={t} />
+
+      {/* ── Desktop + mobile filters bar ─────────────────────────────────── */}
       <FiltersBar
         searchCity={searchCity}
         setSearchCity={setSearchCity}
@@ -379,40 +650,58 @@ export default function HomePage({
         setPetsOnly={setPetsOnly}
         furnishedOnly={furnishedOnly}
         setFurnishedOnly={setFurnishedOnly}
+        listingType={listingType}
+        onTypeFilter={handleTypeFilter}
+        propertyType={propertyType}
+        setPropertyType={setPropertyType}
+        province={province}
+        setProvince={setProvince}
+        district={district}
+        setDistrict={setDistrict}
+        municipality={municipality}
+        setMunicipality={setMunicipality}
+        minLandArea={minLandArea}
+        setMinLandArea={setMinLandArea}
+        maxLandArea={maxLandArea}
+        setMaxLandArea={setMaxLandArea}
+        roadAccess={roadAccess}
+        setRoadAccess={setRoadAccess}
+        facing={facing}
+        setFacing={setFacing}
+
         onSearch={handleRunSearch}
         onClear={handleClearFilters}
-        onOpenModal={() => setIsFilterModalOpen(true)}
+        onOpenModal={openFilterModal}
         suggestions={suggestions}
-        showSuggestions={activeSuggestionSurface === "filters"}
+        showSuggestions={showSuggestions}
         onSelectSuggestion={handleSelectSuggestion}
-        onFocusSuggestions={() => setActiveSuggestionSurface("filters")}
-        onBlurSuggestions={() =>
-          setTimeout(() => {
-            setActiveSuggestionSurface((current) =>
-              current === "filters" ? null : current
-            );
-          }, 180)
-        }
-        listingMode={listingMode}
-        onListingModeChange={handleListingModeChange}
-        hostelTypeFilter={hostelTypeFilter}
-        onHostelTypeFilterChange={handleHostelTypeFilterChange}
-        // ✅ Map toggle props
+        setShowSuggestions={setShowSuggestions}
         showMap={showMap}
         onToggleMap={() => setShowMap((prev) => !prev)}
+        category={category}
+        setCategory={setCategory}
+        hostelType={hostelType}
+        setHostelType={setHostelType}
+        setListingType={setListingType}
+        setPage={setPage}
       />
 
-      {/* ✅ Either show Map or Featured list */}
+      {/* ── Hero ad slot (hidden when map is showing) ─────────────────────── */}
+      {adsData?.hero && adsData.hero.length > 0 && !showMap && (
+        <div className="max-w-6xl mx-auto px-4 mt-6">
+          <AdBanner ad={adsData.hero[0]} className="h-24 sm:h-32 mb-6" />
+        </div>
+      )}
+
+      {/* ── Map view / Listing grid ───────────────────────────────────────── */}
       {showMap ? (
         <section className="bg-slate-50 py-10">
           <div className="max-w-6xl mx-auto px-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
-                Map view
+                {t.mapTitle}
               </h2>
-              <p className="text-xs text-slate-500">
-                Tap a pin or card to see full details.
-              </p>
+              <p className="text-xs text-slate-500">{t.mapHint}</p>
             </div>
             <ListingMapView
               listings={listings}
@@ -422,22 +711,32 @@ export default function HomePage({
         </section>
       ) : (
         <FeaturedListings
+          t={t}
           listings={listings}
           loading={loadingListings}
           onToggleSave={saveHomeHandler}
           onOpenHome={openHomeModal}
           savedIds={savedIds}
-          listingMode={listingMode}
-          hostelTypeFilter={hostelTypeFilter}
+          page={page}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          feedAd={adsData?.feed?.[0]}
         />
       )}
 
-      <Testimonials />
-      <CallToAction
-        onGoRegister={onGoRegister}
-        onGoMembership={onGoMembership}
-      />
+      {/* ── Community reviews ────────────────────────────────────────────── */}
+      <SiteReviewsSection isLoggedIn={isLoggedIn} t={t} />
 
+      {/* ── CTA (hidden when already logged in) ──────────────────────────── */}
+      {!isLoggedIn && (
+        <CallToAction
+          t={t}
+          onGoRegister={onGoRegister}
+          onGoMembership={onGoMembership}
+        />
+      )}
+
+      {/* ── Listing detail modal (kept in DOM for back-nav support) ──────── */}
       {isModalOpen && selectedHome && (
         <ListingModal
           home={selectedHome}
@@ -447,9 +746,10 @@ export default function HomePage({
         />
       )}
 
+      {/* ── Advanced filter modal ─────────────────────────────────────────── */}
       <FilterModal
         isOpen={isFilterModalOpen}
-        onClose={() => setIsFilterModalOpen(false)}
+        onClose={closeFilterModal}
         searchCity={searchCity}
         setSearchCity={setSearchCity}
         minPrice={minPrice}
@@ -462,652 +762,103 @@ export default function HomePage({
         setPetsOnly={setPetsOnly}
         furnishedOnly={furnishedOnly}
         setFurnishedOnly={setFurnishedOnly}
+        propertyType={propertyType}
+        setPropertyType={setPropertyType}
+        province={province}
+        setProvince={setProvince}
+        district={district}
+        setDistrict={setDistrict}
+        municipality={municipality}
+        setMunicipality={setMunicipality}
+        minLandArea={minLandArea}
+        setMinLandArea={setMinLandArea}
+        maxLandArea={maxLandArea}
+        setMaxLandArea={setMaxLandArea}
+        roadAccess={roadAccess}
+        setRoadAccess={setRoadAccess}
+        facing={facing}
+        setFacing={setFacing}
+        amenities={amenities}
+        setAmenities={setAmenities}
+
         onApply={handleRunSearch}
         onClear={handleClearFilters}
         suggestions={suggestions}
-        showSuggestions={activeSuggestionSurface === "modal"}
+        showSuggestions={showSuggestions}
         onSelectSuggestion={handleSelectSuggestion}
-        onFocusSuggestions={() => setActiveSuggestionSurface("modal")}
-        onBlurSuggestions={() =>
-          setTimeout(() => {
-            setActiveSuggestionSurface((current) =>
-              current === "modal" ? null : current
-            );
-          }, 180)
-        }
-        listingMode={listingMode}
-        onListingModeChange={handleListingModeChange}
-        hostelTypeFilter={hostelTypeFilter}
-        onHostelTypeFilterChange={handleHostelTypeFilterChange}
+        setShowSuggestions={setShowSuggestions}
       />
+
+      {/* ── Back-to-top button ────────────────────────────────────────────── */}
+      {showBackToTop && !isFilterModalOpen && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-24 sm:bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition-all hover:scale-110 active:scale-95"
+          aria-label="Back to top"
+        >
+          <ChevronUp className="h-5 w-5" />
+        </button>
+      )}
+
+      {/*
+       * ── Mobile sticky action pill (Map/List & Filters) ─────────────────
+       *
+       * Visibility rules:
+       *  • Only rendered on mobile (sm:hidden).
+       *  • Visible only when `showMobileFab` is true (user scrolled up).
+       *  • Hidden entirely while the filter modal is open (`isFilterModalOpen`).
+       *  • Fades in/out via CSS transition on the `opacity` and `translate-y`.
+       *
+       * The pill contains two actions separated by a divider:
+       *  1. Map/List toggle — switches between district map and listing grid.
+       *  2. Filters — opens the advanced filter modal overlay.
+       *
+       * A small blue dot badge appears over "Filters" when any filter is active.
+       */}
+      <div
+        className={`sm:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center bg-slate-900/95 backdrop-blur-md text-white rounded-full p-1.5 shadow-2xl border border-slate-700/50 transition-all duration-300 ${showMobileFab && !isFilterModalOpen
+          ? "opacity-100 translate-y-0 pointer-events-auto"
+          : "opacity-0 translate-y-4 pointer-events-none"
+          }`}
+        aria-hidden={!showMobileFab || isFilterModalOpen}
+      >
+        {/* Map / List toggle */}
+        <button
+          onClick={() => setShowMap((prev) => !prev)}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-full hover:bg-slate-800 transition-colors active:scale-95"
+          aria-label={showMap ? "Switch to list view" : "Switch to map view"}
+        >
+          {showMap
+            ? <Layers className="w-4 h-4 text-blue-400" />
+            : <MapPin className="w-4 h-4 text-blue-400" />
+          }
+          <span className="text-sm font-bold tracking-wide">
+            {showMap ? "List" : "Map"}
+          </span>
+        </button>
+
+        {/* Divider */}
+        <div className="w-[1px] h-6 bg-slate-700 mx-1" />
+
+        {/* Filters button — hides FAB while modal is open */}
+        <button
+          onClick={openFilterModal}
+          className="relative flex items-center gap-2 px-5 py-2.5 rounded-full hover:bg-slate-800 transition-colors active:scale-95"
+          aria-label="Open filters"
+        >
+          <Tag className="w-4 h-4 text-blue-400" />
+          <span className="text-sm font-bold tracking-wide">Filters</span>
+
+          {/* Active-filter badge dot */}
+          {hasActiveFilters && (
+            <span className="absolute top-2 right-4 w-2 h-2 rounded-full bg-blue-500" />
+          )}
+        </button>
+      </div>
     </>
   );
 }
 
-/* -------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
    UI COMPONENTS
-------------------------------------------------------------------- */
-
-const HeroSection = ({
-  searchCity,
-  setSearchCity,
-  onSearch,
-  onGoLogin,
-  stats,
-  suggestions,
-  showSuggestions,
-  onSelectSuggestion,
-  onFocusSuggestions,
-  onBlurSuggestions,
-}) => {
-  const total = stats.totalListings ?? "12,430";
-  const cities = stats.citiesCount ?? "32";
-  const avgViews = stats.avgViews ?? "9+";
-
-  return (
-    <section className="bg-gradient-to-br from-blue-50 via-white to-blue-100">
-      <div className="max-w-6xl mx-auto px-4 py-16 lg:py-24 grid gap-10 lg:grid-cols-2 items-center">
-        <div className="animate-fade-up">
-          <p className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 border border-blue-100 mb-4">
-            <Shield className="h-3.5 w-3.5" />
-            Verified homes · No broker spam
-          </p>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 leading-tight">
-            Find a home that
-            <span className="text-blue-600"> feels like you.</span>
-          </h1>
-          <p className="mt-3 text-slate-600 text-sm sm:text-base max-w-md">
-            Search modern blue &amp; white homes, cozy apartments, and family
-            spaces across the city in just a few clicks.
-          </p>
-
-          <div className="mt-6 rounded-2xl bg-white shadow-lg border border-blue-50 p-3 flex flex-col gap-3 sm:flex-row sm:items-center relative z-[70]">
-            <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 relative">
-              <MapPin className="h-4 w-4 text-blue-500" />
-              <input
-                type="text"
-                value={searchCity}
-                onChange={(e) => {
-                  setSearchCity(e.target.value);
-                  onFocusSuggestions();
-                }}
-                onFocus={onFocusSuggestions}
-                onBlur={onBlurSuggestions}
-                placeholder="Enter address or area, e.g. Sifal Road, Baneshwor"
-                className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400 focus-visible:outline-none"
-              />
-              {/* ✅ Shared Address Suggestions */}
-              <AddressSuggestionsList
-                suggestions={suggestions}
-                show={showSuggestions}
-                onSelect={onSelectSuggestion}
-              />
-            </div>
-            <button
-              type="button"
-              onClick={onSearch}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-            >
-              <Search className="h-4 w-4" />
-              Search homes
-            </button>
-          </div>
-
-          <div className="mt-4 flex items-center gap-4 text-xs text-slate-500">
-            <div className="flex items-center gap-1">
-              <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-              <span>4.9/5 from 2k+ users</span>
-            </div>
-            <button
-              type="button"
-              onClick={onGoLogin}
-              className="underline-offset-2 hover:underline text-blue-700"
-            >
-              Already a member? Sign in
-            </button>
-          </div>
-        </div>
-
-        <HeroStatsCard
-          totalListings={total}
-          cities={cities}
-          avgViews={avgViews}
-          className="hidden lg:block animate-fade-up anim-delay-150"
-        />
-      </div>
-    </section>
-  );
-};
-
-const HeroStatsCard = ({
-  totalListings,
-  cities,
-  avgViews,
-  className = "",
-}) => (
-  <div className={`relative ${className}`}>
-    <div className="relative rounded-3xl bg-gradient-to-tr from-blue-600 to-sky-500 text-white p-6 sm:p-8 shadow-xl overflow-hidden">
-      <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10" />
-      <div className="absolute -bottom-8 -left-12 h-32 w-32 rounded-full bg-white/10" />
-
-      <p className="text-xs uppercase tracking-[0.2em] text-blue-100 mb-2">
-        Live listings
-      </p>
-      <p className="text-3xl font-bold mb-1">{totalListings}</p>
-      <p className="text-xs text-blue-100 mb-6">
-        properties available right now
-      </p>
-
-      <div className="space-y-3 text-xs">
-        <HeroStat label="Average homes viewed per user" value={avgViews} />
-        <HeroStat label="Cities covered" value={cities} />
-      </div>
-
-      <div className="mt-6 flex items-center gap-3">
-        <div className="flex -space-x-2">
-          <AvatarInitial label="A" />
-          <AvatarInitial label="B" />
-          <AvatarInitial label="C" />
-        </div>
-        <p className="text-[11px] text-blue-100">
-          “Clean, simple and fast. Found my flat in 2 days.”
-        </p>
-      </div>
-    </div>
-  </div>
-);
-
-const HeroStat = ({ label, value }) => (
-  <div className="flex items-center justify-between rounded-xl bg-white/10 px-3 py-2">
-    <p className="text-[11px] text-blue-100">{label}</p>
-    <p className="text-xs font-semibold">{value}</p>
-  </div>
-);
-
-const AvatarInitial = ({ label }) => (
-  <div className="h-7 w-7 rounded-full bg-white/90 flex items-center justify-center text-xs font-semibold text-blue-700 border border-blue-100">
-    {label}
-  </div>
-);
-
-const FiltersBar = ({
-  searchCity,
-  setSearchCity,
-  minPrice,
-  setMinPrice,
-  maxPrice,
-  setMaxPrice,
-  beds,
-  setBeds,
-  petsOnly,
-  setPetsOnly,
-  furnishedOnly,
-  setFurnishedOnly,
-  onSearch,
-  onClear,
-  onOpenModal,
-  suggestions,
-  showSuggestions,
-  onSelectSuggestion,
-  onFocusSuggestions,
-  onBlurSuggestions,
-  listingMode,
-  onListingModeChange,
-  hostelTypeFilter,
-  onHostelTypeFilterChange,
-  showMap,
-  onToggleMap,
-}) => {
-  const listingLabel =
-    listingMode === "hostels"
-      ? "hostels"
-      : listingMode === "requests"
-      ? "requests"
-      : "homes";
-
-  return (
-    <section className="bg-white border-y border-blue-50 relative z-10">
-      <div className="max-w-6xl mx-auto px-4 py-4">
-        <div className="mb-4 flex flex-col gap-3">
-          <ListingModeSwitch
-            listingMode={listingMode}
-            onListingModeChange={onListingModeChange}
-          />
-          {listingMode === "hostels" && (
-            <HostelTypeChips
-              hostelTypeFilter={hostelTypeFilter}
-              onHostelTypeFilterChange={onHostelTypeFilterChange}
-            />
-          )}
-        </div>
-
-        <div className="hidden sm:flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="grid gap-3 sm:grid-cols-4 flex-1">
-            <div className="relative text-xs">
-              <p className="font-semibold text-slate-700 mb-1">Address / Area</p>
-              <div className="relative">
-                <input
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-                  placeholder="Sifal Road, Baneshwor"
-                  value={searchCity}
-                  onChange={(e) => {
-                    setSearchCity(e.target.value);
-                    onFocusSuggestions();
-                  }}
-                  onFocus={onFocusSuggestions}
-                  onBlur={onBlurSuggestions}
-                />
-                <AddressSuggestionsList
-                  suggestions={suggestions}
-                  show={showSuggestions}
-                  onSelect={onSelectSuggestion}
-                />
-              </div>
-            </div>
-
-            <FilterInput
-              label="Min rent (Rs)"
-              type="number"
-              value={minPrice}
-              onChange={(e) => setMinPrice(e.target.value)}
-            />
-            <FilterInput
-              label="Max rent (Rs)"
-              type="number"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
-            />
-            <FilterInput
-              label="Min beds"
-              type="number"
-              value={beds}
-              onChange={(e) => setBeds(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-wrap gap-2 mt-2 sm:mt-0 sm:ml-4">
-            <FilterCheckbox
-              label="Pets allowed"
-              checked={petsOnly}
-              onChange={(e) => setPetsOnly(e.target.checked)}
-            />
-            <FilterCheckbox
-              label="Furnished only"
-              checked={furnishedOnly}
-              onChange={(e) => setFurnishedOnly(e.target.checked)}
-            />
-            <button
-              type="button"
-              onClick={onSearch}
-              className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
-            >
-              Apply filters
-            </button>
-            <button
-              type="button"
-              onClick={onClear}
-              className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
-            >
-              Clear
-            </button>
-            <button
-              type="button"
-              onClick={onToggleMap}
-              className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-700 hover:bg-blue-100"
-            >
-              {showMap ? "Show list" : "Show map"}
-            </button>
-          </div>
-        </div>
-
-        <div className="sm:hidden flex items-center justify-between gap-2">
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-slate-700">
-              Showing {beds ? `${beds}+ bed ` : ""}
-              {listingLabel} in {searchCity || "All Areas"}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onToggleMap}
-              className="inline-flex items-center justify-center gap-1 rounded-full bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-700 border border-blue-200 hover:bg-blue-100"
-            >
-              {showMap ? "List" : "Map"}
-            </button>
-            <button
-              type="button"
-              onClick={onOpenModal}
-              className="inline-flex items-center justify-center gap-1 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 border border-blue-200 hover:bg-blue-100"
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              Filter
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-};
-
-const ListingModeSwitch = ({ listingMode, onListingModeChange }) => (
-  <div className="inline-flex max-w-full flex-wrap gap-2 rounded-2xl bg-slate-100 p-1">
-    <ModeFilterButton
-      active={listingMode === "homes"}
-      label="Homes"
-      onClick={() => onListingModeChange("homes")}
-    />
-    <ModeFilterButton
-      active={listingMode === "requests"}
-      label="Requests"
-      onClick={() => onListingModeChange("requests")}
-    />
-    <ModeFilterButton
-      active={listingMode === "hostels"}
-      label="Hostels"
-      onClick={() => onListingModeChange("hostels")}
-    />
-  </div>
-);
-
-const ModeFilterButton = ({ active, label, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
-      active
-        ? "bg-white text-blue-700 shadow-sm"
-        : "text-slate-500 hover:text-slate-700"
-    }`}
-  >
-    {label}
-  </button>
-);
-
-const HostelTypeChips = ({
-  hostelTypeFilter,
-  onHostelTypeFilterChange,
-}) => (
-  <div className="flex flex-wrap items-center gap-2">
-    <button
-      type="button"
-      onClick={() => onHostelTypeFilterChange("")}
-      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-        !hostelTypeFilter
-          ? "border-blue-600 bg-blue-50 text-blue-700"
-          : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700"
-      }`}
-    >
-      All Hostels
-    </button>
-    {Object.entries(HOSTEL_TYPE_LABELS).map(([value, label]) => (
-      <button
-        key={value}
-        type="button"
-        onClick={() => onHostelTypeFilterChange(value)}
-        className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-          hostelTypeFilter === value
-            ? "border-blue-600 bg-blue-50 text-blue-700"
-            : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700"
-        }`}
-      >
-        {label}
-      </button>
-    ))}
-  </div>
-);
-
-const FilterInput = ({ label, ...props }) => (
-  <div className="text-xs">
-    <p className="font-semibold text-slate-700 mb-1">{label}</p>
-    <input
-      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-      {...props}
-    />
-  </div>
-);
-
-const FilterCheckbox = ({ label, ...props }) => (
-  <label className="inline-flex items-center gap-1.5 text-[11px] text-slate-700 cursor-pointer">
-    <input
-      type="checkbox"
-      className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-      {...props}
-    />
-    <span>{label}</span>
-  </label>
-);
-
-const HighlightStrip = () => (
-  <section className="bg-white border-y border-blue-50">
-    <div className="max-w-6xl mx-auto px-4 py-6 grid gap-4 sm:grid-cols-3 text-xs sm:text-sm">
-      <HighlightItem
-        icon={<Shield className="h-4 w-4 text-blue-500" />}
-        title="Verified listings"
-        text="Every home is checked by our team before it goes live."
-      />
-      <HighlightItem
-        icon={<HomeIcon className="h-4 w-4 text-blue-500" />}
-        title="Student friendly"
-        text="Filter by furnished rooms, Wi-Fi, and walking distance."
-      />
-      <HighlightItem
-        icon={<Phone className="h-4 w-4 text-blue-500" />}
-        title="Human support"
-        text="Talk to a real person when you feel stuck."
-      />
-    </div>
-  </section>
-);
-
-const HighlightItem = ({ icon, title, text }) => (
-  <div className="flex items-start gap-3">
-    <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-blue-50">
-      {icon}
-    </div>
-    <div>
-      <p className="font-semibold text-slate-900">{title}</p>
-      <p className="text-slate-500 text-xs">{text}</p>
-    </div>
-  </div>
-);
-
-const FeaturedListings = ({
-  listings,
-  loading,
-  onToggleSave,
-  onOpenHome,
-  savedIds,
-  listingMode,
-  hostelTypeFilter,
-}) => (
-  <section className="bg-slate-50 py-10">
-    <div className="max-w-6xl mx-auto px-4">
-      <div className="flex items.end justify-between gap-4 mb-6">
-        <div>
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-blue-500 uppercase">
-            Featured
-          </p>
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
-            {listingMode === "hostels"
-              ? hostelTypeFilter
-                ? `${HOSTEL_TYPE_LABELS[hostelTypeFilter]} hostels`
-                : "Hostels picked for you"
-              : listingMode === "requests"
-              ? "Housing requests"
-              : "Homes picked for you"}
-          </h2>
-        </div>
-      </div>
-
-      {loading ? (
-        <p className="text-xs text-slate-500">Loading listings…</p>
-      ) : listings.length === 0 ? (
-        <p className="text-xs text-slate-500">
-          No homes match these filters yet. Try adjusting your search.
-        </p>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {listings.map((home) => {
-            const id = home._id || home.id;
-            const isSaved = savedIds.includes(id);
-            return (
-              <ListingCard
-                key={id}
-                home={home}
-                onToggleSave={onToggleSave}
-                onOpenHome={onOpenHome}
-                isSaved={isSaved}
-              />
-            );
-          })}
-        </div>
-      )}
-    </div>
-  </section>
-);
-
-const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved }) => {
-  const imageSrc =
-    home.images?.[0] ||
-    home.image ||
-    "https://placehold.co/600x400/eff6ff/0f172a?text=Home";
-
-  const handleSaveClick = (e) => {
-    e.stopPropagation();
-    onToggleSave(home);
-  };
-
-  return (
-    <div
-      className="group rounded-2xl border border-blue-50 bg-white shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer flex flex-col sm:block"
-      onClick={() => onOpenHome(home)}
-    >
-      <div className="relative h-40 w-full overflow-hidden">
-        <img
-          src={imageSrc}
-          alt={home.address}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src =
-              "https://placehold.co/600x400/eff6ff/0f172a?text=Home";
-          }}
-        />
-        <button
-          type="button"
-          onClick={handleSaveClick}
-          className={`absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 shadow-sm hover:bg-blue-50 ${
-            isSaved ? "text-red-500" : "text-slate-700"
-          }`}
-        >
-          <Heart className="h-4 w-4" fill={isSaved ? "currentColor" : "none"} />
-        </button>
-        <span className="absolute left-3 bottom-3 rounded-full bg-blue-600/90 px-2.5 py-1 text-[11px] font-semibold text-white">
-          {formatPrice(home.price)}
-        </span>
-      </div>
-        <div className="p-3.5 space-y-2">
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-semibold text-slate-900 truncate">
-            {home.title || home.address}
-          </p>
-          {home.category === "hostel" && home.hostelType && (
-            <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
-              {HOSTEL_TYPE_LABELS[home.hostelType]} hostel
-            </span>
-          )}
-        </div>
-        <p className="text-xs text-slate-500 flex items-center gap-1">
-          <MapPin className="h-3.5 w-3.5 text-blue-500" />
-          {home.municipality || home.city}
-        </p>
-        <div className="flex items-center justify-between text-[11px] text-slate-500 mt-2">
-          <span>{home.beds} beds</span>
-          <span>{home.baths} bathrooms</span>
-          <span>{formatArea(home.sqft)}</span>
-        </div>
-        <div className="mt-1 flex items-center justify-between text-[10px] text-slate-400">
-          <span className="inline-flex items-center gap-1">
-            <Eye className="h-3 w-3" />
-            {home.views ?? 0} views
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const Testimonials = () => (
-  <section className="bg-white py-12">
-    <div className="max-w-6xl mx-auto px-4">
-      <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-blue-500 uppercase">
-            Stories
-          </p>
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
-            What members say
-          </h2>
-        </div>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        {TESTIMONIALS.map((item) => (
-          <div
-            key={item.id}
-            className="rounded-2xl border border-blue-50 bg-slate-50/60 p-4 shadow-sm"
-          >
-            <div className="flex items-center gap-1 mb-2">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <Star
-                  key={i}
-                  className="h-3.5 w-3.5 text-yellow-400 fill-yellow-400"
-                />
-              ))}
-            </div>
-            <p className="text-sm text-slate-700 mb-4">“{item.quote}”</p>
-            <p className="text-xs font-semibold text-slate-900">
-              {item.name}
-            </p>
-            <p className="text-[11px] text-slate-500">{item.role}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  </section>
-);
-
-const CallToAction = ({ onGoRegister, onGoMembership }) => (
-  <section className="bg-gradient-to-r from-blue-600 to-sky-500 text-white py-12">
-    <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
-      <div>
-        <p className="text-xs uppercase tracking-[0.2em] text-blue-100 mb-1">
-          Membership
-        </p>
-        <h2 className="text-2xl sm:text-3xl font-bold">
-          Unlock member-only homes &amp; support
-        </h2>
-        <p className="mt-2 text-sm text-blue-100 max-w-md">
-          Get saved searches, instant alerts, and priority help from our team —
-          all in one clean, simple dashboard.
-        </p>
-      </div>
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-        <button
-          type="button"
-          onClick={onGoRegister}
-          className="inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-blue-700 shadow-md hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-        >
-          Get started free
-        </button>
-        <button
-          type="button"
-          onClick={onGoMembership}
-          className="inline-flex items-center justify-center rounded-full border border-blue-100 bg-blue-500/20 px-4 py-2.5 text-xs font-semibold text-white hover:bg-blue-500/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
-        >
-          View member dashboard
-          <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-        </button>
-      </div>
-    </div>
-  </section>
-);
+--------------------------------------------------------------------------- */

@@ -2,16 +2,20 @@
 import express from "express";
 import Listing from "../models/Listing.js";
 import { uploadListingMedia } from "../config/multer.js";
-import cloudinary from "../config/cloudinary.js"; // still imported in case you use it later
+import cloudinary from "../config/cloudinary.js";
 import { requireAuth } from "../middleware/auth.js";
 import User from "../models/User.js";
-import {
-  HOSTEL_TYPE_OPTIONS,
-  isValidNepalLocation,
-  normalizeLocationValue,
-} from "../../src/data/nepalLocations.js";
+import sanitizeHtml from "sanitize-html";
+import { validateLocationHierarchy } from "../../src/utils/nepalLocations.js";
+// import redis from "../config/redis.js";
 
 const router = express.Router();
+
+// Strip all HTML — plain text only
+const sanitize = (str) =>
+  typeof str === "string"
+    ? sanitizeHtml(str, { allowedTags: [], allowedAttributes: {} }).trim()
+    : str;
 
 /* =========================================
    Helpers
@@ -22,40 +26,6 @@ function toNumber(value, fallback = undefined) {
   if (value === undefined || value === null || value === "") return fallback;
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
-}
-
-function toBoolean(value, fallback = false) {
-  if (value === undefined || value === null || value === "") return fallback;
-  if (typeof value === "boolean") return value;
-  if (typeof value === "string") {
-    if (value === "true") return true;
-    if (value === "false") return false;
-  }
-  return Boolean(value);
-}
-
-function toTrimmedText(value) {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function normalizeListingType(value) {
-  return value === "wanted" ? "wanted" : "offer";
-}
-
-function normalizeListingCategory(value) {
-  return value === "hostel" ? "hostel" : "home";
-}
-
-function normalizeHostelType(value) {
-  const lookupValue = String(value || "").trim().toLowerCase();
-  return HOSTEL_TYPE_OPTIONS.includes(lookupValue) ? lookupValue : "";
-}
-
-function buildGeocodeQuery({ address, municipality, district, province }) {
-  return [address, municipality, district, province, "Nepal"]
-    .map((part) => toTrimmedText(part))
-    .filter(Boolean)
-    .join(", ");
 }
 
 // Get user id from request (supports multiple auth styles)
@@ -71,80 +41,45 @@ function getUserId(req) {
 ========================================= */
 
 const GEOCODE_ENDPOINT =
-  "https://nominatim.openstreetmap.org/search?format=json";
+  "https://nominatim.openstreetmap.org/search?format=json&countrycodes=np&accept-language=en";
 
-// Server-side geocoding used when creating/updating a listing (limit = 1)
-async function forwardGeocode({ address, municipality, district, province }) {
-  const q = buildGeocodeQuery({
-    address,
-    municipality,
-    district,
-    province,
-  });
+// Server-side geocoding with Nepal bias and city fallback
+async function forwardGeocode(address, city) {
+  const q = [address, city].filter(Boolean).join(", ");
   if (!q) return null;
 
-  const url = `${GEOCODE_ENDPOINT}&limit=1&q=${encodeURIComponent(q)}`;
+  // Try: full address first, then city-only as fallback
+  const queries = [];
 
-  try {
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": "HamroGhar/1.0 (educational project)",
-      },
-    });
+  // Strategy 1: Ultra specific with Nepal suffix
+  if (q && city) queries.push(`${q}, ${city}, Nepal`);
+  // Strategy 2: Just the specific locality in Nepal
+  if (q) queries.push(`${q}, Nepal`);
+  // Strategy 3: Just the city in Nepal
+  if (city) queries.push(`${city}, Nepal`);
 
-    if (!res.ok) {
-      console.error("Geocode HTTP error:", res.status);
-      return null;
+  for (const query of queries) {
+    const url = `${GEOCODE_ENDPOINT}&limit=1&countrycodes=np&addressdetails=1&q=${encodeURIComponent(query)}`;
+    try {
+      const res = await fetch(url, {
+        headers: { "User-Agent": "HamroGhar/1.0 (educational project; nepal)" },
+      });
+      if (!res.ok) { console.error("Geocode HTTP error:", res.status); continue; }
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length === 0) continue;
+      const first = data[0];
+      const lat = Number(first.lat);
+      const lon = Number(first.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+      console.log(`Geocoded "${query}" → ${lat},${lon}`);
+      return { lat, lng: lon };
+    } catch (err) {
+      console.error("Geocode error:", err);
     }
-
-    const data = await res.json();
-    if (!Array.isArray(data) || data.length === 0) return null;
-
-    const first = data[0];
-    const lat = Number(first.lat);
-    const lon = Number(first.lon);
-
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
-
-    return { lat, lng: lon };
-  } catch (err) {
-    console.error("Geocode error:", err);
-    return null;
   }
+  return null;
 }
 
-function validateListingLocation({ province, district, municipality }) {
-  const normalizedLocation = {
-    province: normalizeLocationValue(province),
-    district: normalizeLocationValue(district),
-    municipality: normalizeLocationValue(municipality),
-  };
-
-  if (
-    !normalizedLocation.province ||
-    !normalizedLocation.district ||
-    !normalizedLocation.municipality
-  ) {
-    return {
-      valid: false,
-      error: "province, district, and municipality are required",
-      location: normalizedLocation,
-    };
-  }
-
-  if (!isValidNepalLocation(normalizedLocation)) {
-    return {
-      valid: false,
-      error: "province, district, and municipality do not match",
-      location: normalizedLocation,
-    };
-  }
-
-  return {
-    valid: true,
-    location: normalizedLocation,
-  };
-}
 
 /* =========================================
    1. GET /geo/search
@@ -161,15 +96,13 @@ router.get("/geo/search", async (req, res) => {
 
     const fullQuery = [q, city].filter(Boolean).join(", ");
 
-    const url = `${GEOCODE_ENDPOINT}&limit=5&q=${encodeURIComponent(
-      fullQuery
-    )}`;
-
-    const fetchRes = await fetch(url, {
-      headers: {
-        "User-Agent": "HamroGhar/1.0 (educational project)",
-      },
-    });
+    const fetchRes = await fetch(
+      `${GEOCODE_ENDPOINT}&limit=5&countrycodes=np&addressdetails=1&q=${encodeURIComponent(fullQuery)}, Nepal`,
+      {
+        headers: {
+          "User-Agent": "HamroGhar/1.0 (educational project)",
+        },
+      });
 
     if (!fetchRes.ok) {
       return res.status(fetchRes.status).json({
@@ -201,15 +134,80 @@ router.get("/geo/search", async (req, res) => {
 });
 
 /* =========================================
+   SIMILAR LISTINGS
+   GET /api/listings/:id/similar
+========================================= */
+router.get("/:id/similar", async (req, res) => {
+  try {
+    const listingId = req.params.id;
+    const targetListing = await Listing.findById(listingId);
+
+    if (!targetListing) {
+      return res.status(404).json({ error: "Source listing not found" });
+    }
+
+    const { type, propertyType, price, location } = targetListing;
+
+    // Build similar match criteria
+    const query = {
+      _id: { $ne: listingId }, // Exclude self
+      status: "active",
+      type: type, // Must be same transaction type (rent/sale)
+    };
+
+    // Strongly prefer same property type (House with House)
+    if (propertyType) {
+      query.propertyType = propertyType;
+    }
+
+    // Must be in the same district or city
+    const districtArea = location?.district || targetListing.city;
+    if (districtArea) {
+      query.$or = [
+        { "location.district": districtArea },
+        { city: districtArea }
+      ];
+    }
+
+    // Fetch up to 10 candidates, then sort by price delta to find the closest matches
+    const candidates = await Listing.find(query)
+      .select("-description -contact") // Exclude heavy text
+      .limit(15);
+
+    // Calculate price proximity score 
+    const scoredCandidates = candidates.map(c => {
+      const priceDiff = Math.abs(c.price - price);
+      const priceScore = priceDiff / price; // Lower is better (percentage difference)
+      return { ...c.toObject(), score: priceScore };
+    });
+
+    // Sort by price proximity and take top 4
+    const sorted = scoredCandidates.sort((a, b) => a.score - b.score).slice(0, 4);
+
+    res.json(sorted);
+  } catch (err) {
+    console.error("Similar properties fetch error:", err);
+    res.status(500).json({ error: "Could not fetch similar properties" });
+  }
+});
+
+// Helper to convert FormData string booleans to real booleans
+const parseBool = (v) => v === true || v === "true" || v === "1";
+
+/* =========================================
    2. POST /create
    Create a new listing (with images)
 ========================================= */
+router.post("/create", requireAuth, (req, res) => {
+  // Wrap multer in a callback so upload errors are caught gracefully
+  uploadListingMedia.array("images", 10)(req, res, async (multerErr) => {
+    if (multerErr) {
+      console.error("Multer/Cloudinary upload error:", multerErr);
+      return res.status(400).json({
+        error: multerErr.message || "Image upload failed",
+      });
+    }
 
-router.post(
-  "/create",
-  requireAuth,
-  uploadListingMedia.array("images", 10),
-  async (req, res) => {
     try {
       const userId = getUserId(req);
       if (!userId) {
@@ -218,155 +216,173 @@ router.post(
 
       const {
         type,
+        propertyType,
         category,
         hostelType,
         title,
         description,
         price,
-        beds,
-        baths,
-        sqft,
-        address,
-        province,
-        district,
-        municipality,
-        furnished,
-        internet,
-        parking,
-        petsAllowed,
+        location: locationRaw,
+        specs: specsRaw,
+        facilities: facilitiesRaw,
+        amenities: amenitiesRaw,
+        nearby: nearbyRaw,
+        highlights: highlightsRaw,
         video,
+        videoUrl,
+        mapsUrl,
+        contact: contactRaw,
+
+        // Legacy fallback
+        beds, baths, sqft, address, city, furnished, internet, parking, petsAllowed
       } = req.body;
 
-      const listingType = normalizeListingType(type);
-      const listingCategory = normalizeListingCategory(category);
-      const normalizedHostelType = normalizeHostelType(hostelType);
-      const trimmedTitle = toTrimmedText(title) || "Untitled listing";
-      const trimmedDescription = toTrimmedText(description);
-      const trimmedAddress = toTrimmedText(address);
-      const locationValidation = validateListingLocation({
-        province,
-        district,
-        municipality,
-      });
-
-      if (!trimmedDescription || !price || !trimmedTitle) {
-        return res.status(400).json({
-          error: "title, description, and price are required",
-        });
+      if (!description || !price) {
+        return res.status(400).json({ error: "description and price are required" });
       }
 
-      if (!locationValidation.valid) {
-        return res.status(400).json({ error: locationValidation.error });
-      }
-
-      if (listingCategory !== "hostel" && !trimmedAddress) {
-        return res.status(400).json({
-          error: "A full address is required for home listings and requests",
-        });
-      }
-
-      if (listingCategory === "hostel" && listingType !== "offer") {
-        return res.status(400).json({
-          error: "Hostel listings must be posted as offer listings",
-        });
-      }
-
-      if (listingCategory === "hostel" && !normalizedHostelType) {
-        return res.status(400).json({
-          error: "Hostel type must be boys, girls, or mix",
-        });
-      }
-
-      // Convert to numbers safely
       const numericPrice = toNumber(price);
-      const numericBeds = toNumber(beds, 1);
-      const numericBaths = toNumber(baths, 1);
-      const numericSqft = toNumber(sqft);
-
       if (!numericPrice || numericPrice <= 0) {
-        return res
-          .status(400)
-          .json({ error: "price must be a positive number" });
+        return res.status(400).json({ error: "price must be a positive number" });
       }
 
-      // Images handled by Multer + CloudinaryStorage
-      const uploadedImages = [];
-      if (Array.isArray(req.files) && req.files.length > 0) {
-        for (const file of req.files) {
-          if (file.path) {
-            uploadedImages.push(file.path); // file.path is secure_url from Cloudinary
-          }
+      let location = {};
+      let specs = {};
+      let facilities = {};
+      let amenities = [];
+      let nearby = [];
+      let highlights = [];
+      let contact = {};
+
+      try {
+        if (locationRaw) location = JSON.parse(locationRaw);
+        if (specsRaw) specs = JSON.parse(specsRaw);
+        if (facilitiesRaw) facilities = JSON.parse(facilitiesRaw);
+        if (amenitiesRaw) amenities = JSON.parse(amenitiesRaw);
+        if (nearbyRaw) nearby = JSON.parse(nearbyRaw);
+        if (highlightsRaw) highlights = JSON.parse(highlightsRaw);
+        if (contactRaw) contact = JSON.parse(contactRaw);
+      } catch (err) {
+        return res.status(400).json({ error: "Invalid JSON format for location, specs, facilities, amenities, nearby, highlights, or contact" });
+      }
+
+      // Validate category / hostelType
+      const cleanCategory = (category === "hostel") ? "hostel" : "home";
+      if (cleanCategory === "hostel" && !["boys", "girls", "mix"].includes(hostelType)) {
+        return res.status(400).json({ error: "Hostel listings require hostelType: boys, girls, or mix" });
+      }
+
+      // Validate province → district → municipality hierarchy
+      if (location.province || location.district || location.municipality) {
+        const locResult = validateLocationHierarchy(location.province, location.district, location.municipality);
+        if (!locResult.valid) {
+          return res.status(400).json({ error: locResult.error });
         }
       }
 
-      // Geo-code the address (best-effort)
-      const geo = await forwardGeocode({
-        address: trimmedAddress,
-        municipality: locationValidation.location.municipality,
-        district: locationValidation.location.district,
-        province: locationValidation.location.province,
-      });
+      // Legacy fallback mapping
+      if (!location.district && city) location.district = city;
+      if (!location.municipality && city) location.municipality = city;
+      if (!location.locality && address) location.locality = address;
+
+      if (typeof specs.bedrooms !== 'number' && beds) specs.bedrooms = toNumber(beds);
+      if (typeof specs.bathrooms !== 'number' && baths) specs.bathrooms = toNumber(baths);
+      if (typeof specs.builtUpAreaSqFt !== 'number' && sqft) specs.builtUpAreaSqFt = toNumber(sqft);
+      if (!specs.furnishing && parseBool(furnished)) specs.furnishing = "fully";
+
+      const propTypeDisplay = propertyType ? (propertyType.charAt(0).toUpperCase() + propertyType.slice(1)) : 'Property';
+      const typeDisplay = type === 'rent' ? 'Rent' : 'Sale';
+      const bedPrefix = specs.bedrooms ? `${specs.bedrooms}BHK ` : '';
+      const areaDisplay = location.locality || location.municipality || location.district || 'Nepal';
+      const generatedTitle = title || `${bedPrefix}${propTypeDisplay} For ${typeDisplay} in ${areaDisplay}`;
+
+      const uploadedImages = [];
+      if (Array.isArray(req.files) && req.files.length > 0) {
+        for (const file of req.files) {
+          uploadedImages.push(file.path);
+        }
+      }
+
+      const clientLat = location.lat || toNumber(req.body.lat);
+      const clientLng = location.lng || toNumber(req.body.lng);
+
+      // Compute geo
+      const geo = (clientLat && clientLng)
+        ? { lat: clientLat, lng: clientLng }
+        : await forwardGeocode(location.locality || address, location.district || city);
+
+      if (geo) {
+        location.type = "Point";
+        location.coordinates = [geo.lng, geo.lat];
+        location.lat = geo.lat;
+        location.lng = geo.lng;
+        if (!clientLat && !clientLng) location.isApproximate = true;
+      } else if (!location.coordinates) {
+        location.type = "Point";
+        location.coordinates = [0, 0];
+      }
 
       const listingData = {
         ownerId: userId,
-        type: listingType,
-        category: listingCategory,
-        hostelType:
-          listingCategory === "hostel" ? normalizedHostelType : null,
-        title: trimmedTitle,
-        description: trimmedDescription,
+        type: type || "sale",
+        propertyType: propertyType || "house",
+        category: cleanCategory,
+        hostelType: cleanCategory === "hostel" ? hostelType : "",
+        title: sanitize(generatedTitle),
+        description: sanitize(description),
         price: numericPrice,
-        beds: numericBeds,
-        baths: numericBaths,
-        sqft: numericSqft,
-        address: trimmedAddress,
-        city: locationValidation.location.municipality,
-        province: locationValidation.location.province,
-        district: locationValidation.location.district,
-        municipality: locationValidation.location.municipality,
-        furnished: toBoolean(furnished, false),
-        internet: toBoolean(internet, false),
-        parking: toBoolean(parking, false),
-        petsAllowed: toBoolean(petsAllowed, false),
+        location,
+        specs,
+        facilities,
+        amenities: Array.isArray(amenities) ? amenities.map(a => sanitize(a)) : [],
+        nearby: Array.isArray(nearby) ? nearby.map(n => ({
+          facility: sanitize(n.facility),
+          distance: sanitize(n.distance)
+        })) : [],
+        highlights: Array.isArray(highlights) ? highlights.map(h => sanitize(h)) : [],
         images: uploadedImages,
         video: video || "",
+        videoUrl: videoUrl || "",
+        mapsUrl: mapsUrl || "",
+        contact: {
+          phone: sanitize(contact.phone || ""),
+          email: sanitize(contact.email || ""),
+          whatsapp: sanitize(contact.whatsapp || ""),
+          socialMedia: sanitize(contact.socialMedia || "")
+        },
         status: "active",
+
+        // Legacy redundant fields
+        address: sanitize(location.locality || address || ""),
+        city: sanitize(location.district || city || ""),
+        beds: specs.bedrooms,
+        baths: specs.bathrooms,
+        sqft: specs.builtUpAreaSqFt,
+        furnished: parseBool(furnished),
+        internet: parseBool(internet),
+        parkingFeature: parseBool(parking),
+        petsAllowed: parseBool(petsAllowed),
       };
 
-      // Attach GeoJSON location if geocode succeeded
-      if (geo) {
-        listingData.location = {
-          type: "Point",
-          coordinates: [geo.lng, geo.lat],
-          lat: geo.lat,
-          lng: geo.lng,
-        };
-      }
-
       const listing = new Listing(listingData);
-
-      // Initialize price history with the first price entry
-      if (typeof listing.price === "number" && !listing.priceHistory?.length) {
-        listing.priceHistory = [
-          {
-            price: listing.price,
-            changedAt: new Date(),
-          },
-        ];
-      }
+      listing.priceHistory = [{ price: listing.price, changedAt: new Date() }];
 
       await listing.save();
 
-      res.status(201).json({
-        message: "Listing created",
-        listing,
-      });
+      // Clear caches
+      /*
+            await redis.del("listings:stats");
+            const keys = await redis.keys("listings:all:*");
+            if (keys.length > 0) await redis.del(...keys);
+      */
+
+      res.status(201).json({ message: "Listing created", listing });
     } catch (err) {
       console.error("Create listing error:", err);
-      res.status(500).json({ error: "Failed to create listing" });
+      res.status(500).json({ error: "Failed to create listing: " + err.message });
     }
-  }
-);
+  });
+});
 
 /* =========================================
    3. PUT /:id
@@ -391,128 +407,109 @@ router.put(
 
       const {
         type,
-        category,
-        hostelType,
+        propertyType,
         title,
         description,
         price,
-        beds,
-        baths,
-        sqft,
-        address,
-        province,
-        district,
-        municipality,
-        furnished,
-        internet,
-        parking,
-        petsAllowed,
+        location: locationRaw,
+        specs: specsRaw,
+        facilities: facilitiesRaw,
+        amenities: amenitiesRaw,
+        nearby: nearbyRaw,
+        highlights: highlightsRaw,
         video,
+        videoUrl,
+        mapsUrl,
+        contact: contactRaw,
+
+        // Legacy fallback
+        beds, baths, sqft, address, city, furnished, internet, parking, petsAllowed
       } = req.body;
 
-      const nextType =
-        type !== undefined ? normalizeListingType(type) : listing.type;
-      const nextCategory =
-        category !== undefined
-          ? normalizeListingCategory(category)
-          : listing.category || "home";
-      const nextHostelType =
-        nextCategory === "hostel"
-          ? normalizeHostelType(
-              hostelType !== undefined ? hostelType : listing.hostelType
-            )
-          : "";
-      const nextTitle =
-        title !== undefined
-          ? toTrimmedText(title) || listing.title
-          : listing.title;
-      const nextDescription =
-        description !== undefined
-          ? toTrimmedText(description)
-          : listing.description;
-      const nextAddress =
-        address !== undefined ? toTrimmedText(address) : listing.address || "";
-      const locationValidation = validateListingLocation({
-        province:
-          province !== undefined ? province : listing.province || listing.city,
-        district: district !== undefined ? district : listing.district,
-        municipality:
-          municipality !== undefined
-            ? municipality
-            : listing.municipality || listing.city,
-      });
-
-      if (!nextTitle || !nextDescription) {
-        return res.status(400).json({
-          error: "title and description are required",
-        });
-      }
-
-      if (!locationValidation.valid) {
-        return res.status(400).json({ error: locationValidation.error });
-      }
-
-      if (nextCategory !== "hostel" && !nextAddress) {
-        return res.status(400).json({
-          error: "A full address is required for home listings and requests",
-        });
-      }
-
-      if (nextCategory === "hostel" && nextType !== "offer") {
-        return res.status(400).json({
-          error: "Hostel listings must stay in the offer category",
-        });
-      }
-
-      if (nextCategory === "hostel" && !nextHostelType) {
-        return res.status(400).json({
-          error: "Hostel type must be boys, girls, or mix",
-        });
-      }
-
-      if (price !== undefined) {
+      if (price) {
         const numericPrice = toNumber(price);
         if (!numericPrice || numericPrice <= 0) {
-          return res
-            .status(400)
-            .json({ error: "price must be a positive number" });
+          return res.status(400).json({ error: "price must be a positive number" });
         }
-        listing.price = numericPrice;
-
-        // record price change
-        if (!Array.isArray(listing.priceHistory)) {
-          listing.priceHistory = [];
+        if (listing.price !== numericPrice) {
+          listing.price = numericPrice;
+          if (!Array.isArray(listing.priceHistory)) listing.priceHistory = [];
+          listing.priceHistory.push({ price: numericPrice, changedAt: new Date() });
         }
-        listing.priceHistory.push({
-          price: numericPrice,
-          changedAt: new Date(),
-        });
       }
-      if (beds !== undefined) listing.beds = Number(beds);
-      if (baths !== undefined) listing.baths = Number(baths);
-      if (sqft !== undefined && sqft !== "") listing.sqft = Number(sqft);
-      if (sqft === "") listing.sqft = undefined;
 
-      listing.type = nextType;
-      listing.category = nextCategory;
-      listing.hostelType = nextCategory === "hostel" ? nextHostelType : null;
-      listing.title = nextTitle;
-      listing.description = nextDescription;
-      listing.address = nextAddress;
-      listing.city = locationValidation.location.municipality;
-      listing.province = locationValidation.location.province;
-      listing.district = locationValidation.location.district;
-      listing.municipality = locationValidation.location.municipality;
+      let newLocation = listing.location || {};
+      let newSpecs = listing.specs || {};
+      let newFacilities = listing.facilities || {};
+      let newAmenities = listing.amenities || [];
+      let newNearby = listing.nearby || [];
+      let locationChanged = false;
+      let newContact = listing.contact || {};
 
-      if (furnished !== undefined) listing.furnished = toBoolean(furnished);
-      if (internet !== undefined) listing.internet = toBoolean(internet);
-      if (parking !== undefined) listing.parking = toBoolean(parking);
-      if (petsAllowed !== undefined)
-        listing.petsAllowed = toBoolean(petsAllowed);
+      try {
+        if (locationRaw) {
+          newLocation = { ...newLocation, ...JSON.parse(locationRaw) };
+          locationChanged = true;
+        }
+        if (specsRaw) newSpecs = { ...newSpecs, ...JSON.parse(specsRaw) };
+        if (facilitiesRaw) newFacilities = { ...newFacilities, ...JSON.parse(facilitiesRaw) };
+        if (amenitiesRaw) newAmenities = JSON.parse(amenitiesRaw).map(a => sanitize(a));
+        if (nearbyRaw) newNearby = JSON.parse(nearbyRaw).map(n => ({
+          facility: sanitize(n.facility),
+          distance: sanitize(n.distance)
+        }));
+        if (highlightsRaw) listing.highlights = JSON.parse(highlightsRaw).map(h => sanitize(h));
+        if (contactRaw) newContact = { ...newContact, ...JSON.parse(contactRaw) };
+      } catch (err) { }
 
-      if (video !== undefined) {
-        listing.video = video || "";
+      // Legacy updates
+      if (address) {
+        const trimmed = address.trim();
+        if (trimmed !== listing.address) {
+          listing.address = trimmed;
+          newLocation.locality = trimmed;
+          locationChanged = true;
+        }
       }
+      if (city) {
+        const trimmed = city.trim();
+        if (trimmed !== listing.city) {
+          listing.city = trimmed;
+          newLocation.district = trimmed;
+          locationChanged = true;
+        }
+      }
+
+      if (beds) { listing.beds = Number(beds); newSpecs.bedrooms = Number(beds); }
+      if (baths) { listing.baths = Number(baths); newSpecs.bathrooms = Number(baths); }
+      if (sqft) { listing.sqft = Number(sqft); newSpecs.builtUpAreaSqFt = Number(sqft); }
+
+      if (type) listing.type = type;
+      if (propertyType) listing.propertyType = propertyType;
+      if (description) listing.description = sanitize(description);
+      if (video !== undefined) listing.video = video || "";
+      if (videoUrl !== undefined) listing.videoUrl = videoUrl || "";
+      if (mapsUrl !== undefined) listing.mapsUrl = mapsUrl || "";
+
+      if (furnished !== undefined) listing.furnished = parseBool(furnished);
+      if (internet !== undefined) listing.internet = parseBool(internet);
+      if (parking !== undefined) listing.parkingFeature = parseBool(parking);
+      if (petsAllowed !== undefined) listing.petsAllowed = parseBool(petsAllowed);
+
+      // Regenerate Title if it wasn't manually overridden
+      if (title) {
+        listing.title = sanitize(title);
+      } else if (listing.propertyType && newSpecs.bedrooms) {
+        const propTypeDisplay = listing.propertyType.charAt(0).toUpperCase() + listing.propertyType.slice(1);
+        const typeDisplay = listing.type === 'rent' ? 'Rent' : 'Sale';
+        const areaDisplay = newLocation.locality || newLocation.municipality || newLocation.district || 'Nepal';
+        listing.title = `${newSpecs.bedrooms}BHK ${propTypeDisplay} For ${typeDisplay} in ${areaDisplay}`;
+      }
+
+      listing.specs = newSpecs;
+      listing.facilities = newFacilities;
+      listing.amenities = newAmenities;
+      listing.nearby = newNearby;
 
       // Append new images
       if (req.files && req.files.length > 0) {
@@ -520,22 +517,40 @@ router.put(
         listing.images = [...(listing.images || []), ...newImages];
       }
 
-      const geo = await forwardGeocode({
-        address: listing.address,
-        municipality: listing.municipality,
-        district: listing.district,
-        province: listing.province,
-      });
-      if (geo) {
-        listing.location = {
-          type: "Point",
-          coordinates: [geo.lng, geo.lat],
-          lat: geo.lat,
-          lng: geo.lng,
-        };
+      // Re-geocode if location was updated
+      if (locationChanged) {
+        const clientLat = newLocation.lat || toNumber(req.body.lat);
+        const clientLng = newLocation.lng || toNumber(req.body.lng);
+
+        const geo = (clientLat && clientLng)
+          ? { lat: clientLat, lng: clientLng }
+          : await forwardGeocode(newLocation.locality || listing.address, newLocation.district || listing.city);
+
+        if (geo) {
+          newLocation.type = "Point";
+          newLocation.coordinates = [geo.lng, geo.lat];
+          newLocation.lat = geo.lat;
+          newLocation.lng = geo.lng;
+        }
       }
 
+      listing.location = newLocation;
+      listing.contact = {
+        phone: sanitize(newContact.phone || ""),
+        email: sanitize(newContact.email || ""),
+        whatsapp: sanitize(newContact.whatsapp || ""),
+        socialMedia: sanitize(newContact.socialMedia || "")
+      };
+
       await listing.save();
+
+      // Clear caches
+      /*
+            await redis.del("listings:stats");
+            const keys = await redis.keys("listings:all:*");
+            if (keys.length > 0) await redis.del(...keys);
+      */
+
       res.json({ message: "Listing updated", listing });
     } catch (err) {
       console.error("Update error:", err);
@@ -551,6 +566,14 @@ router.put(
 
 router.get("/stats", async (req, res) => {
   try {
+    // 1. Check Redis Cache
+    /*
+        const cachedStats = await redis.get("listings:stats");
+        if (cachedStats) {
+          return res.json(JSON.parse(cachedStats));
+        }
+    */
+
     const activeFilter = { status: "active" };
 
     const totalActive = await Listing.countDocuments(activeFilter);
@@ -562,22 +585,28 @@ router.get("/stats", async (req, res) => {
     const avgPrice =
       recent.length > 0
         ? Math.round(
-            recent.reduce((sum, l) => sum + (l.price || 0), 0) / recent.length
-          )
+          recent.reduce((sum, l) => sum + (l.price || 0), 0) / recent.length
+        )
         : 0;
 
     const avgViews =
       recent.length > 0
         ? Math.round(
-            recent.reduce((sum, l) => sum + (l.views || 0), 0) / recent.length
-          )
+          recent.reduce((sum, l) => sum + (l.views || 0), 0) / recent.length
+        )
         : 0;
 
-    res.json({
+    const statsData = {
       totalActive,
+      totalListings: totalActive, // alias — frontend reads this key
       avgPrice,
       avgViews,
-    });
+    };
+
+    // 2. Save to Cache (TTL 1 minute)
+    // await redis.setex("listings:stats", 60, JSON.stringify(statsData));
+
+    res.json(statsData);
   } catch (err) {
     console.error("Stats error:", err);
     res.status(500).json({ error: "Failed to load listing stats" });
@@ -591,13 +620,30 @@ router.get("/stats", async (req, res) => {
 
 router.get("/all", async (req, res) => {
   try {
+    // 1. Check Redis Cache using uniquely hashed query string
+    /*
+        const cacheKey = `listings:all:${Buffer.from(JSON.stringify(req.query)).toString("base64")}`;
+        const cachedData = await redis.get(cacheKey);
+        if (cachedData) {
+          return res.json(JSON.parse(cachedData));
+        }
+    */
+
     const {
-      type,
-      category,
-      hostelType,
-      city,
+      type,        // offer/wanted/sale/rent
+      propertyType,
+      category,    // home/hostel
+      hostelType,  // boys/girls/mix
+      city,        // generic search mapped to district/municipality/locality
+      province,
+      district,
+      municipality,
       minPrice,
       maxPrice,
+      minLandArea, // new
+      maxLandArea, // new
+      roadAccess,  // new
+      facing,      // new
       beds,
       baths,
       furnished,
@@ -605,62 +651,159 @@ router.get("/all", async (req, res) => {
       parking,
       petsAllowed,
       status,
+      amenities,
       limit,
+      page,
     } = req.query;
 
     const query = {};
 
-    // ✅ Filter by type
-    if (type === "wanted") query.type = "wanted";
-    if (type === "offer") query.type = "offer";
-    if (category === "hostel") query.category = "hostel";
-    if (category === "home") query.category = "home";
-    if (hostelType && HOSTEL_TYPE_OPTIONS.includes(hostelType)) {
+    // Filter by type
+    if (type) {
+      // e.g. "sale", "rent", or fallback to old "offer"/"wanted"
+      query.type = type;
+    }
+
+    if (propertyType) {
+      query.propertyType = propertyType;
+    }
+
+    // Filter by category (home vs hostel)
+    if (category) {
+      query.category = category;
+    }
+    if (hostelType && ["boys", "girls", "mix"].includes(hostelType)) {
       query.hostelType = hostelType;
     }
 
-    // 🔍 Address + city search using same input (supports full address text too)
+    // Location search
+    if (province && province.trim()) {
+      query["location.province"] = new RegExp(`^${province.trim()}$`, "i");
+    }
+
+    if (district && district.trim()) {
+      query["location.district"] = new RegExp(`^${district.trim()}$`, "i");
+    }
+
+    if (municipality && municipality.trim()) {
+      query["location.municipality"] = new RegExp(`^${municipality.trim()}$`, "i");
+    }
+
+    // Generic text search (backward compatibility or general search bar)
     if (city && city.trim()) {
       const pattern = new RegExp(city.trim(), "i");
       query.$or = [
         { city: pattern },
-        { municipality: pattern },
-        { district: pattern },
-        { province: pattern },
         { address: pattern },
+        { "location.district": pattern },
+        { "location.municipality": pattern },
+        { "location.tole": pattern },
       ];
     }
 
+    // Price Range
     const priceQuery = {};
     const minP = toNumber(minPrice);
     const maxP = toNumber(maxPrice);
-
     if (minP !== undefined) priceQuery.$gte = minP;
     if (maxP !== undefined) priceQuery.$lte = maxP;
-    if (Object.keys(priceQuery).length > 0) {
-      query.price = priceQuery;
+    if (Object.keys(priceQuery).length > 0) query.price = priceQuery;
+
+    // Land Area Range
+    const landQuery = {};
+    const minLa = toNumber(minLandArea);
+    const maxLa = toNumber(maxLandArea);
+    if (minLa !== undefined) landQuery.$gte = minLa;
+    if (maxLa !== undefined) landQuery.$lte = maxLa;
+    if (Object.keys(landQuery).length > 0) {
+      query["specs.landArea.aana"] = landQuery;
     }
 
+    // Road Access
+    const roadR = toNumber(roadAccess);
+    if (roadR !== undefined) {
+      query["specs.roadAccess.widthFeet"] = { $gte: roadR };
+    }
+
+    // Facing
+    if (facing && facing.trim()) {
+      query["specs.facing"] = new RegExp(`^${facing.trim()}$`, "i");
+    }
+
+    // Beds / Baths
     const bedsN = toNumber(beds);
     const bathsN = toNumber(baths);
+    if (bedsN !== undefined) {
+      query.$or = [{ beds: { $gte: bedsN } }, { "specs.bedrooms": { $gte: bedsN } }];
+    }
+    if (bathsN !== undefined) {
+      query.$or = [{ baths: { $gte: bathsN } }, { "specs.bathrooms": { $gte: bathsN } }];
+    }
 
-    if (bedsN !== undefined) query.beds = { $gte: bedsN };
-    if (bathsN !== undefined) query.baths = { $gte: bathsN };
-
-    if (furnished === "true") query.furnished = true;
+    // Booleans
+    if (furnished === "true") {
+      query.$or = [{ furnished: true }, { "specs.furnishing": "fully" }];
+    }
     if (internet === "true") query.internet = true;
-    if (parking === "true") query.parking = true;
+    if (parking === "true") {
+      query.$or = [{ parking: true }, { "specs.parkingFeature": true }, { "specs.parking": { $gte: 1 } }];
+    }
     if (petsAllowed === "true") query.petsAllowed = true;
+
+    // Amenities
+    if (amenities) {
+      const arr = amenities.split(",").map(a => new RegExp(`^${a.trim()}$`, "i"));
+      query.amenities = { $all: arr };
+    }
 
     query.status = status || "active";
 
-    const limitN = toNumber(limit, 30);
+    // Pagination
+    const limitN = Math.min(toNumber(limit, 12), 50);
+    const pageN = Math.max(toNumber(page, 1), 1);
+    const skip = (pageN - 1) * limitN;
+
+    const totalCount = await Listing.countDocuments(query);
+    const totalPages = Math.max(Math.ceil(totalCount / limitN), 1);
 
     const listings = await Listing.find(query)
       .sort({ createdAt: -1 })
+      .skip(skip)
       .limit(limitN);
 
-    res.json({ listings });
+    // Normalize listings: some documents (from hamro-ghar sub-app) store data in
+    // a nested `specs` object. Flatten these into top-level scalar fields so the
+    // root frontend never receives an object where it expects a number.
+    function normalizeListing(obj) {
+      const specs = obj.specs || {};
+      // Flatten beds/baths/sqft from specs if the top-level value is an object or missing
+      if (typeof obj.beds !== 'number') obj.beds = typeof specs.bedrooms === 'number' ? specs.bedrooms : null;
+      if (typeof obj.baths !== 'number') obj.baths = typeof specs.bathrooms === 'number' ? specs.bathrooms : null;
+      if (typeof obj.sqft !== 'number') obj.sqft = typeof specs.builtUpAreaSqFt === 'number' ? specs.builtUpAreaSqFt : null;
+      // Remove the specs field entirely – it contains nested objects that crash React
+      delete obj.specs;
+      return obj;
+    }
+
+    // Attach owner socials
+    const ownerIds = [...new Set(listings.map((l) => l.ownerId?.toString()).filter(Boolean))];
+    const owners = await User.find({ _id: { $in: ownerIds } }).select('name socials');
+    const ownerMap = {};
+    for (const o of owners) ownerMap[o._id.toString()] = o;
+
+    const listingsWithOwner = listings.map((l) => {
+      const obj = l.toObject();
+      const ow = ownerMap[l.ownerId?.toString()];
+      obj.owner = ow ? { name: ow.name, socials: ow.socials || {} } : {};
+      return normalizeListing(obj);
+    });
+
+    const responseData = { listings: listingsWithOwner, totalPages, page: pageN, totalCount };
+
+    // 2. Save result to Cache (TTL 1 minute)
+    // await redis.setex(cacheKey, 60, JSON.stringify(responseData));
+
+    res.json(responseData);
   } catch (err) {
     console.error("Get all listings error:", err);
     res.status(500).json({ error: "Failed to load listings" });
@@ -697,7 +840,14 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ error: "Listing not found" });
     }
 
-    res.json({ listing });
+    // Attach owner socials
+    const obj = listing.toObject();
+    if (listing.ownerId) {
+      const owner = await User.findById(listing.ownerId).select('name socials');
+      obj.owner = owner ? { name: owner.name, socials: owner.socials || {} } : {};
+    }
+
+    res.json({ listing: obj });
   } catch (err) {
     console.error("Get listing error:", err);
     res.status(500).json({ error: "Failed to load listing" });
@@ -875,6 +1025,13 @@ router.patch("/:id/status", requireAuth, async (req, res) => {
     listing.status = status;
     await listing.save();
 
+    // Clear caches
+    /*
+        await redis.del("listings:stats");
+        const keys = await redis.keys("listings:all:*");
+        if (keys.length > 0) await redis.del(...keys);
+    */
+
     res.json({
       message: "Status updated",
       listing,
@@ -930,6 +1087,13 @@ router.patch("/:id/price", requireAuth, async (req, res) => {
 
     await listing.save();
 
+    // Clear caches
+    /*
+        await redis.del("listings:stats");
+        const keys = await redis.keys("listings:all:*");
+        if (keys.length > 0) await redis.del(...keys);
+    */
+
     res.json({
       message: "Price updated",
       listing,
@@ -965,10 +1129,271 @@ router.delete("/:id", requireAuth, async (req, res) => {
 
     await listing.deleteOne();
 
+    // Clear caches
+    /*
+        await redis.del("listings:stats");
+        const keys = await redis.keys("listings:all:*");
+        if (keys.length > 0) await redis.del(...keys);
+    */
+
     res.json({ message: "Listing deleted" });
   } catch (err) {
     console.error("Delete listing error:", err);
     res.status(500).json({ error: "Failed to delete listing" });
+  }
+});
+
+// (Removed duplicate dummy POST /:id/report route)
+
+/* =========================================
+   17. GET /admin/overview
+   Admin dashboard data — requires admin role
+========================================= */
+router.get("/admin/overview", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const user = await User.findById(userId);
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const [totalListings, activeListings, totalUsers, totalReports, recentListings] = await Promise.all([
+      Listing.countDocuments({}),
+      Listing.countDocuments({ status: "active" }),
+      User.countDocuments({}),
+      Report.countDocuments({ status: "pending" }), // Count unresolved reports
+      Listing.find({}).sort({ createdAt: -1 }).limit(20).select("title city price status createdAt ownerId type isVerified"),
+    ]);
+
+    const recentUsers = await User.find({}).sort({ createdAt: -1 }).limit(10).select("name email role isVerified createdAt");
+
+    res.json({ totalListings, activeListings, totalUsers, totalReports, recentListings, recentUsers });
+  } catch (err) {
+    console.error("Admin overview error:", err);
+    res.status(500).json({ error: "Failed to load admin data" });
+  }
+});
+
+/* =========================================
+   18. DELETE /admin/listings/:id
+   Admin delete any listing
+========================================= */
+router.delete("/admin/listings/:id", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const user = await User.findById(userId);
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    await Listing.findByIdAndDelete(req.params.id);
+
+    // Clear caches
+    /*
+        await redis.del("listings:stats");
+        const keys = await redis.keys("listings:all:*");
+        if (keys.length > 0) await redis.del(...keys);
+    */
+
+    res.json({ message: "Listing deleted by admin" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete" });
+  }
+});
+
+/* =========================================
+   19. GET /admin/reports
+   Admin view moderation queue
+========================================= */
+router.get("/admin/reports", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const user = await User.findById(userId);
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const reports = await Report.find({})
+      .populate("listingId", "title ownerId")
+      .populate("reporterId", "name email")
+      .sort({ createdAt: -1 });
+
+    res.json({ reports });
+  } catch (err) {
+    console.error("Admin reports fetch error:", err);
+    res.status(500).json({ error: "Failed to load reports" });
+  }
+});
+
+/* =========================================
+   20. PUT /admin/reports/:id/resolve
+   Admin marks report as resolved
+========================================= */
+router.put("/admin/reports/:id/resolve", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const user = await User.findById(userId);
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const report = await Report.findByIdAndUpdate(
+      req.params.id,
+      { status: "resolved" },
+      { new: true }
+    );
+    if (!report) return res.status(404).json({ error: "Report not found" });
+
+    res.json({ message: "Report resolved", report });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to resolve report" });
+  }
+});
+
+/* =========================================
+   21. PUT /admin/users/:id/verify
+   Admin verifies a user directly
+========================================= */
+router.put("/admin/users/:id/verify", requireAuth, async (req, res) => {
+  try {
+    const adminId = getUserId(req);
+    const adminUser = await User.findById(adminId);
+    if (!adminUser || adminUser.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const targetUser = await User.findById(req.params.id);
+    if (!targetUser) return res.status(404).json({ error: "User not found" });
+
+    // Toggle verified status
+    targetUser.isVerified = !targetUser.isVerified;
+    await targetUser.save();
+
+    res.json({ message: "User verification status updated", isVerified: targetUser.isVerified });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update user verification" });
+  }
+});
+
+/* =========================================
+   REPORT LISTING
+   POST /api/listings/:id/report
+========================================= */
+import Report from "../models/Report.js";
+import nodemailer from "nodemailer";
+
+const transporter = nodemailer.createTransport({
+  host: 'smtp-relay.brevo.com',
+  port: 587,
+  secure: false, // true for 465, false for 587
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+router.post("/:id/report", requireAuth, async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const listingId = req.params.id;
+
+    const listing = await Listing.findById(listingId);
+    if (!listing) return res.status(404).json({ error: "Listing not found" });
+
+    // Check if already reported by this user
+    const existing = await Report.findOne({ listingId, reporterId: userId });
+    if (existing) {
+      return res.status(400).json({ error: "You have already reported this listing" });
+    }
+
+    const report = new Report({
+      listingId,
+      reporterId: userId,
+    });
+    await report.save();
+
+    // Send email to admin
+    try {
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: process.env.EMAIL_USER, // Send to site admin
+        subject: `[HamroGhar] Listing Reported: ${listing.title}`,
+        text: `A user has reported a listing.\n\nListing ID: ${listingId}\nListing Title: ${listing.title}\nReporter ID: ${userId}\nUrl: ${process.env.CLIENT_ORIGIN || 'http://localhost:3000'}/?listing=${listingId}\n\nPlease review this listing.`,
+      });
+    } catch (err) {
+      console.error("[REPORT] Failed to send email alert:", err);
+    }
+
+    res.json({ success: true, message: "Report submitted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+/* =========================================
+   MIGRATE SCHEMA V2 (Admin Only / One-time)
+   POST /api/listings/migrate-schema-v2
+========================================= */
+router.post("/migrate-schema-v2", async (req, res) => {
+  try {
+    const listings = await Listing.find({});
+    let migratedCount = 0;
+
+    for (let home of listings) {
+      let changed = false;
+
+      // 1. Initialize location if missing
+      if (!home.location) {
+        home.location = {};
+        changed = true;
+      }
+
+      // Convert number province to string province enum
+      if (typeof home.location.province === "number") {
+        const provinceMap = { 1: "Koshi", 2: "Madhesh", 3: "Bagmati", 4: "Gandaki", 5: "Lumbini", 6: "Karnali", 7: "Sudurpashchim" };
+        if (provinceMap[home.location.province]) {
+          home.location.province = provinceMap[home.location.province];
+          changed = true;
+        }
+      }
+
+      // Merge generic city/address into location object
+      if (!home.location.district && home.city) {
+        home.location.district = home.city;
+        home.location.municipality = home.city;
+        changed = true;
+      }
+      if (!home.location.tole && home.address) {
+        home.location.tole = home.address;
+        changed = true;
+      }
+
+      // 2. Initialize specs if missing
+      if (!home.specs) {
+        home.specs = {};
+        changed = true;
+      }
+
+      // Migrate beds/baths/sqft into specs
+      if (home.beds && !home.specs.bedrooms) { home.specs.bedrooms = home.beds; changed = true; }
+      if (home.baths && !home.specs.bathrooms) { home.specs.bathrooms = home.baths; changed = true; }
+      if (home.sqft && !home.specs.landArea?.totalSqFt) {
+        if (!home.specs.landArea) home.specs.landArea = {};
+        home.specs.landArea.totalSqFt = home.sqft;
+        changed = true;
+      }
+      if (home.furnished && !home.specs.furnishing) { home.specs.furnishing = "Fully Furnished"; changed = true; }
+
+      if (changed) {
+        await home.save();
+        migratedCount++;
+      }
+    }
+
+    res.json({ success: true, message: `Migrated ${migratedCount} listings to V2 Schema.` });
+  } catch (err) {
+    console.error("[Migration Error]", err);
+    res.status(500).json({ error: "Failed to migrate schema" });
   }
 });
 
