@@ -1,0 +1,239 @@
+// src/Header.js
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Menu,
+  X,
+  User,
+  LogIn,
+  // Home as HomeIcon, // No longer needed if we just have one home link
+  Crown,
+  PlusCircle,
+} from "lucide-react";
+
+export default function Header({ isLoggedIn, onLogout }) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    document.body.style.overflow = isMobileMenuOpen ? "hidden" : "";
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileMenuOpen]);
+
+  const toggleMobile = () => setIsMobileMenuOpen((prev) => !prev);
+
+  const handleMobileNav = (path) => {
+    navigate(path);
+    setIsMobileMenuOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleLogoutClick = () => {
+    if (typeof onLogout === "function") {
+      onLogout();
+    }
+    setIsMobileMenuOpen(false);
+  };
+
+  return (
+    <header className="fixed top-0 inset-x-0 z-[10020] bg-white/90 backdrop-blur-md border-b border-blue-100">
+      {/* TOP BAR */}
+      <div className="max-w-6xl mx-auto h-16 lg:h-20 flex items-center justify-between px-4 lg:px-6 max-[425px]:px-3">
+        {/* LOGO */}
+        <Link
+          to="/"
+          className="flex items-center gap-2 max-[425px]:gap-1 cursor-pointer"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        >
+          <div className="h-9 w-9 max-[425px]:h-8 max-[425px]:w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
+            HG
+          </div>
+          <div className="text-left leading-tight">
+            <p className="text-sm max-[425px]:text-xs font-semibold text-slate-900">
+              HamroGhar
+            </p>
+            <p className="text-[11px] max-[425px]:text-[10px] text-blue-500">
+              Blue &amp; White Homes
+            </p>
+          </div>
+        </Link>
+
+        {/* -----------------------------------------------------------
+            ✅ UPDATED: Removed "Home" & "Buy" & "Rent" links.
+           ----------------------------------------------------------- */}
+        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+          {/* You can add future top-level links here if needed */}
+        </nav>
+
+        {/* DESKTOP RIGHT ACTIONS */}
+        <div className="hidden md:flex items-center gap-3">
+          {!isLoggedIn ? (
+            <>
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-1 text-sm font-medium text-slate-700 hover:text-blue-700"
+                onClick={() =>
+                  window.scrollTo({ top: 0, behavior: "smooth" })
+                }
+              >
+                <LogIn className="h-4 w-4" />
+                <span>Sign in</span>
+              </Link>
+              <Link
+                to="/register"
+                className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                onClick={() =>
+                  window.scrollTo({ top: 0, behavior: "smooth" })
+                }
+              >
+                Join free
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/listings/new"
+                className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                onClick={() =>
+                  window.scrollTo({ top: 0, behavior: "smooth" })
+                }
+              >
+                <PlusCircle className="h-3.5 w-3.5 mr-1" />
+                Post / Request
+              </Link>
+
+              <Link
+                to="/membership"
+                className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                onClick={() =>
+                  window.scrollTo({ top: 0, behavior: "smooth" })
+                }
+              >
+                <Crown className="h-3.5 w-3.5 mr-1" />
+                Membership
+              </Link>
+
+              <Link
+                to="/profile"
+                className="inline-flex items-center justify-center rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                onClick={() =>
+                  window.scrollTo({ top: 0, behavior: "smooth" })
+                }
+              >
+                <User className="h-3.5 w-3.5 mr-1" />
+                Profile
+              </Link>
+
+              <button
+                type="button"
+                onClick={handleLogoutClick}
+                className="text-sm text-slate-500 hover:text-red-500"
+              >
+                Logout
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* MOBILE RIGHT SIDE */}
+        <div className="flex md:hidden items-center gap-2 max-[425px]:gap-1">
+          {isLoggedIn && (
+            <button
+              type="button"
+              onClick={() => handleMobileNav("/listings/new")}
+              className="inline-flex items-center justify-center rounded-full bg-blue-50 border border-blue-100 h-8 w-8 max-[425px]:h-7 max-[425px]:w-7"
+              title="Post a home"
+            >
+              <PlusCircle className="h-4 w-4 text-blue-600" />
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={toggleMobile}
+            className="inline-flex items-center justify-center rounded-full border border-blue-100 p-2 max-[425px]:p-1.5 text-slate-700 bg-white shadow-sm"
+          >
+            {isMobileMenuOpen ? (
+              <X className="h-5 w-5 max-[425px]:h-4 max-[425px]:w-4" />
+            ) : (
+              <Menu className="h-5 w-5 max-[425px]:h-4 max-[425px]:w-4" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* MOBILE MENU */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 top-16 z-[10030]">
+          <button
+            type="button"
+            aria-label="Close mobile menu"
+            className="absolute inset-0 bg-slate-900/20 backdrop-blur-[1px]"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          <div className="relative max-h-[calc(100vh-4rem)] overflow-y-auto border-t border-blue-100 bg-white shadow-2xl">
+            <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col gap-3 text-sm max-[425px]:px-3">
+              {isLoggedIn ? (
+                <>
+                  <MobileItem
+                    icon={PlusCircle}
+                    label="Post or Request a Home"
+                    onClick={() => handleMobileNav("/listings/new")}
+                  />
+                  <MobileItem
+                    icon={Crown}
+                    label="Membership"
+                    onClick={() => handleMobileNav("/membership")}
+                  />
+                  <MobileItem
+                    icon={User}
+                    label="Profile"
+                    onClick={() => handleMobileNav("/profile")}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleLogoutClick}
+                    className="w-full rounded-full border border-slate-200 py-2 text-sm text-slate-700 mt-2 hover:bg-slate-50"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <MobileItem
+                    icon={LogIn}
+                    label="Sign in"
+                    onClick={() => handleMobileNav("/login")}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleMobileNav("/register")}
+                    className="w-full rounded-full bg-blue-600 py-2 text-sm font-semibold text-white mt-2"
+                  >
+                    Join free
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </header>
+  );
+}
+
+function MobileItem({ icon: Icon, label, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-2 text-sm text-slate-700 hover:text-blue-700 py-1"
+    >
+      <Icon className="h-4 w-4 text-blue-500" />
+      <span>{label}</span>
+    </button>
+  );
+}
