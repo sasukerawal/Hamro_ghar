@@ -54,7 +54,7 @@ const FacilitiesStep = ({ formData, setFormData }) => {
                         type="number"
                         value={formData.facilities?.bikeParking || 0}
                         onChange={(e) => handleCountChange('bikeParking', e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 font-bold"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-gold-400 font-bold"
                     />
                 </div>
                 <div className="space-y-2">
@@ -63,7 +63,7 @@ const FacilitiesStep = ({ formData, setFormData }) => {
                         type="number"
                         value={formData.facilities?.carParking || 0}
                         onChange={(e) => handleCountChange('carParking', e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 font-bold"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-gold-400 font-bold"
                     />
                 </div>
             </div>
@@ -82,12 +82,12 @@ const FacilitiesStep = ({ formData, setFormData }) => {
                             type="button"
                             onClick={() => toggleFacility(fac.id)}
                             className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${formData.facilities?.[fac.id]
-                                    ? 'border-blue-500 bg-blue-50 text-blue-700 font-bold'
+                                    ? 'border-gold-400 bg-blue-50 text-gold-700 font-bold'
                                     : 'border-slate-200 bg-white text-slate-400 font-medium'
                                 }`}
                         >
                             <span className="text-sm">{fac.label}</span>
-                            <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center transition-all ${formData.facilities?.[fac.id] ? 'border-blue-500 bg-blue-500' : 'border-slate-200'
+                            <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center transition-all ${formData.facilities?.[fac.id] ? 'border-gold-400 bg-gold-400' : 'border-slate-200'
                                 }`}>
                                 {formData.facilities?.[fac.id] && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
                             </div>
@@ -107,7 +107,7 @@ const FacilitiesStep = ({ formData, setFormData }) => {
                                 type="button"
                                 onClick={() => handleAmenityToggle(item.label)}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-full border text-xs transition-all ${isSelected
-                                        ? 'border-blue-600 bg-blue-600 text-white font-bold'
+                                        ? 'border-gold-500 bg-gold-500 text-white font-bold'
                                         : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400 font-medium'
                                     }`}
                             >

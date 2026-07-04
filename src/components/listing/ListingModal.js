@@ -104,7 +104,7 @@ const ListingModal = ({
 
                     {/* Price Tag */}
                     <div className="absolute left-6 bottom-6 flex flex-col gap-1">
-                        <span className="bg-blue-600 px-3 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-widest w-max">
+                        <span className="bg-gold-500 px-3 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-widest w-max">
                             For {home.type === "sale" ? "Sale" : "Rent"}
                         </span>
                         <div className="text-white flex items-baseline gap-2">
@@ -151,7 +151,7 @@ const ListingModal = ({
                                 {name}
                             </h2>
                             <div className="flex items-center gap-2 text-slate-500 font-bold">
-                                <MapPin className="h-5 w-5 text-blue-500" />
+                                <MapPin className="h-5 w-5 text-gold-600" />
                                 <span>{home.location?.municipality || home.city}, {home.location?.district}</span>
                             </div>
                         </div>
@@ -169,7 +169,7 @@ const ListingModal = ({
                             <div className="lg:col-span-2 space-y-10">
                                 <section>
                                     <h3 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-3">
-                                        <div className="h-6 w-1 rounded-full bg-blue-600" />
+                                        <div className="h-6 w-1 rounded-full bg-gold-500" />
                                         Overview
                                     </h3>
                                     <p className="text-slate-600 text-sm sm:text-base leading-relaxed whitespace-pre-wrap font-medium">
@@ -179,7 +179,7 @@ const ListingModal = ({
 
                                 <section>
                                     <h3 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-3">
-                                        <div className="h-6 w-1 rounded-full bg-blue-600" />
+                                        <div className="h-6 w-1 rounded-full bg-gold-500" />
                                         Facilities
                                     </h3>
                                     <div className="flex flex-wrap gap-2">
@@ -213,7 +213,7 @@ const ListingModal = ({
                                         <a href={mapsUrl} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 w-full py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-700 font-bold text-sm hover:bg-slate-100 transition-all active:scale-[0.98]">
                                             <MapPin className="h-4 w-4" /> View Map
                                         </a>
-                                        <button onClick={handleToggleHeart} className={`flex items-center justify-center gap-2 w-full py-4 rounded-2xl font-black text-sm transition-all active:scale-[0.98] shadow-lg ${isSaved ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-blue-600 text-white shadow-blue-200'}`}>
+                                        <button onClick={handleToggleHeart} className={`flex items-center justify-center gap-2 w-full py-4 rounded-2xl font-black text-sm transition-all active:scale-[0.98] shadow-lg ${isSaved ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-gold-500 text-white shadow-blue-200'}`}>
                                             <Heart className={`h-5 w-5 ${isSaved ? 'fill-current' : ''}`} />
                                             {isSaved ? "Saved to Profile" : "Save this Home"}
                                         </button>
@@ -222,7 +222,7 @@ const ListingModal = ({
                                     <div className="flex items-center justify-between pt-2">
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Share</span>
                                         <div className="flex gap-2">
-                                            <button onClick={handleCopyLink} className="p-2.5 rounded-xl bg-white border border-slate-100 text-slate-500 hover:text-blue-600 hover:border-blue-100 transition-all"><Copy className="h-4 w-4" /></button>
+                                            <button onClick={handleCopyLink} className="p-2.5 rounded-xl bg-white border border-slate-100 text-slate-500 hover:text-gold-700 hover:border-blue-100 transition-all"><Copy className="h-4 w-4" /></button>
                                             <button className="p-2.5 rounded-xl bg-white border border-slate-100 text-slate-500 hover:text-green-600 hover:border-green-100 transition-all"><Share2 className="h-4 w-4" /></button>
                                         </div>
                                     </div>

@@ -45,11 +45,27 @@ const apiLimiter = rateLimit({
 // --- Middleware
 app.use(express.json());
 app.use(cookieParser());
+
+// Explicit origin allowlist. `origin: true` (reflect-any-origin) combined
+// with credentials:true would let ANY website read authenticated API
+// responses using a victim's cookies — this restricts credentialed
+// cross-origin requests to known frontends only.
+const ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://hamro-ghar.vercel.app',
+  ...(process.env.CLIENT_ORIGIN ? [process.env.CLIENT_ORIGIN] : []),
+];
 app.use(
   cors({
-    // Dynamically reflects the exact incoming origin perfectly, 
-    // guaranteeing credentials (cookies) are accepted cross-domain
-    origin: true,
+    origin(origin, callback) {
+      // Allow non-browser requests (no Origin header, e.g. curl/health checks)
+      if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   })
 );
@@ -68,9 +84,15 @@ mongoose
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/forgot-password', authLimiter);
+// These three check a brute-forceable 6-digit code — same limiter as
+// login/register, since an unthrottled code-check endpoint is exactly
+// as exploitable as an unthrottled password check.
+app.use('/api/auth/verify', authLimiter);
+app.use('/api/auth/resend-code', authLimiter);
+app.use('/api/auth/reset-password', authLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/membership', membershipRoutes);
-app.use('/api/users', userRoutes);
+app.use('/api/users', apiLimiter, userRoutes);
 app.use('/api/reviews', apiLimiter, reviewsRoutes);
 app.use('/api/site-reviews', apiLimiter, siteReviewsRoutes);
 app.use("/uploads", express.static("uploads"));

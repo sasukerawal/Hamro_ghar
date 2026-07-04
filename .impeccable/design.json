@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-03T00:00:00.000Z",
+  "title": "Design System: HamroGhar",
+  "extensions": {
+    "colorMeta": {
+      "warm-ink": {
+        "role": "primary",
+        "displayName": "Warm Ink",
+        "canonical": "#2B211A",
+        "tonalRamp": ["#1A1410", "#2B211A", "#3D3833", "#57504A", "#6B6259", "#837868", "#A69A8C", "#F3EFEB"]
+      },
+      "terracotta": {
+        "role": "accent",
+        "displayName": "Terracotta",
+        "canonical": "#B4522F",
+        "tonalRamp": ["#2E1409", "#4F2415", "#632C1A", "#7D3720", "#9C4526", "#B4522F", "#C97850", "#FBF1EC"]
+      },
+      "slate-gray": {
+        "role": "neutral",
+        "displayName": "Slate Gray",
+        "canonical": "#64748B",
+        "tonalRamp": ["#020617", "#0F172A", "#1E293B", "#334155", "#64748B", "#94A3B8", "#CBD5E1", "#F1F5F9"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Outfit Display", "purpose": "Hero H1 only. 800 weight, tight -0.02em tracking." },
+      "headline": { "displayName": "Outfit Headline", "purpose": "Section headers." },
+      "body": { "displayName": "Outfit Body", "purpose": "Prose, descriptions, helper text." },
+      "label": { "displayName": "JetBrains Mono Label", "purpose": "Prices, specs, addresses, the verification stamp — any number that proves something." }
+    },
+    "shadows": [
+      { "name": "ambient-rest", "value": "0 1px 2px rgba(15, 23, 42, 0.05)", "purpose": "Default resting shadow for cards and highlight tiles." },
+      { "name": "ambient-hover", "value": "0 4px 12px rgba(180, 82, 47, 0.08)", "purpose": "Highlight tile hover — terracotta-tinted, deepens gently." },
+      { "name": "card-lift", "value": "0 20px 40px -8px rgba(180, 82, 47, 0.2)", "purpose": "Listing card hover — terracotta-tinted glow, the strongest elevation response, paired with translateY(-4px) scale(1.005)." },
+      { "name": "floating-chrome", "value": "0 25px 50px -12px rgba(0, 0, 0, 0.25)", "purpose": "Search box, hero showcase, modals, mobile drawer." }
+    ],
+    "motion": [
+      { "name": "ease-card-lift", "value": "cubic-bezier(0.34, 1.56, 0.64, 1)", "purpose": "Card hover lift — slight overshoot for a tactile feel." },
+      { "name": "duration-standard", "value": "250ms", "purpose": "Default transition duration for hover/interaction states." },
+      { "name": "duration-fade", "value": "500ms", "purpose": "Fade-in-up entrance for listing cards, staggered 50ms per item." },
+      { "name": "scroll-reveal", "value": "700ms ease-out", "purpose": "Intersection-Observer-triggered section reveals (Featured Listings, Reviews, CTA) — progressive enhancement, content visible by default." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single primary action per view — Search, Join free, Get started free. Terracotta background with white text (terracotta-500 is dark enough to pair with white directly, 5.01:1).",
+      "html": "<button class=\"ds-btn-primary\">Search homes</button>",
+      "css": ".ds-btn-primary { background: #B4522F; color: #FFFFFF; font-family: Outfit, system-ui, sans-serif; font-weight: 600; font-size: 14px; padding: 10px 20px; border: none; border-radius: 9999px; cursor: pointer; transition: background 0.25s, transform 0.25s; } .ds-btn-primary:hover { background: #9C4526; } .ds-btn-primary:focus-visible { outline: 2px solid #C97850; outline-offset: 2px; } .ds-btn-primary:active { transform: scale(0.95); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Terracotta-tinted secondary actions — Post/Request, Membership nav pill, Advanced filters.",
+      "html": "<button class=\"ds-btn-secondary\">Membership</button>",
+      "css": ".ds-btn-secondary { background: #FBF1EC; color: #7D3720; font-family: Outfit, system-ui, sans-serif; font-weight: 600; font-size: 12px; padding: 6px 14px; border: 1px solid #EBBFA3; border-radius: 9999px; cursor: pointer; transition: background 0.2s; } .ds-btn-secondary:hover { background: #F6DFD2; } .ds-btn-secondary:focus-visible { outline: 2px solid #C97850; outline-offset: 2px; }"
+    },
+    {
+      "name": "Verification Stamp",
+      "kind": "custom",
+      "refersTo": "verification-stamp",
+      "description": "The signature component, unchanged in shape — terracotta instead of gold, since it's exactly the kind of rare accent the color exists for.",
+      "html": "<span class=\"ds-stamp\">Verified</span>",
+      "css": ".ds-stamp { display: inline-flex; align-items: center; gap: 0.3em; border: 1.5px solid currentColor; border-radius: 9999px; padding: 0.2em 0.65em 0.2em 0.5em; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #7D3720; background: rgba(255,255,255,0.95); transform: rotate(-3deg); white-space: nowrap; } .ds-stamp::before { content: ''; width: 0.4em; height: 0.4em; border-radius: 9999px; background: currentColor; flex-shrink: 0; }"
+    },
+    {
+      "name": "Masonry Listing Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The primary content unit — masonry layout with varied photo heights (five-step rotation) instead of a uniform grid.",
+      "html": "<div class=\"ds-listing-card\"><div class=\"ds-listing-card__media\"><span class=\"ds-stamp ds-listing-card__stamp\">Verified</span><span class=\"ds-listing-card__price\">Rs 18,000</span></div><div class=\"ds-listing-card__body\"><p class=\"ds-listing-card__title\">2BHK Flat, Baneshwor</p><p class=\"ds-listing-card__location\">Baneshwor, Kathmandu</p><div class=\"ds-listing-card__specs\"><span>2 bed</span><span>1 bath</span><span>650 sqft</span></div></div></div>",
+      "css": ".ds-listing-card { font-family: Outfit, system-ui, sans-serif; border-radius: 16px; border: 1px solid #E2E8F0; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,23,42,0.05); overflow: hidden; cursor: pointer; break-inside: avoid; margin-bottom: 24px; transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease, border-color 0.25s ease; } .ds-listing-card:hover { transform: translateY(-4px) scale(1.005); box-shadow: 0 20px 40px -8px rgba(180,82,47,0.2); border-color: #EBBFA3; } .ds-listing-card__media { position: relative; height: 224px; background: linear-gradient(135deg, #1A1410 0%, #4F2415 55%, #B4522F 100%); } .ds-listing-card__stamp { position: absolute; top: 12px; left: 12px; } .ds-listing-card__price { position: absolute; left: 12px; bottom: 12px; background: rgba(180,82,47,0.95); color: #FFFFFF; font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 11px; padding: 4px 10px; border-radius: 9999px; } .ds-listing-card__body { padding: 16px; } .ds-listing-card__title { font-weight: 700; font-size: 14px; color: #2B211A; margin: 0 0 4px; } .ds-listing-card__location { font-size: 12px; color: #64748B; margin: 0 0 12px; } .ds-listing-card__specs { display: flex; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #64748B; background: #F8FAFC; border: 1px solid #F1F5F9; border-radius: 8px; padding: 8px; }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Deal-type / category toggle pill. Active state is solid terracotta with white text; inactive is a quiet outline.",
+      "html": "<button class=\"ds-chip ds-chip--active\">For Rent</button> <button class=\"ds-chip\">For Sale</button>",
+      "css": ".ds-chip { font-family: Outfit, system-ui, sans-serif; font-weight: 600; font-size: 11px; padding: 4px 12px; border-radius: 9999px; border: 1px solid #E2E8F0; background: #FFFFFF; color: #475569; cursor: pointer; transition: all 0.2s; } .ds-chip:hover { background: #F8FAFC; } .ds-chip--active { background: #B4522F; border-color: #B4522F; color: #FFFFFF; box-shadow: 0 1px 2px rgba(15,23,42,0.05); }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "The primary search field — hero and filter bar. Focus ring is terracotta.",
+      "html": "<div class=\"ds-input\"><svg class=\"ds-input__icon\" viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"M21 21l-4.35-4.35\"/></svg><input class=\"ds-input__field\" placeholder=\"Enter area or city, e.g. Baneshwor, Kathmandu\" /></div>",
+      "css": ".ds-input { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; background: #F8FAFC; border: 1px solid transparent; transition: border-color 0.2s; } .ds-input:focus-within { border-color: #DB9A74; } .ds-input__icon { color: #9C4526; flex-shrink: 0; } .ds-input__field { border: none; background: transparent; outline: none; font-family: Outfit, system-ui, sans-serif; font-size: 14px; font-weight: 500; color: #2B211A; width: 100%; } .ds-input__field::placeholder { color: #94A3B8; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Verified Stamp (warm revision)",
+    "overview": "A re-tint of the premium navy-and-gold system toward warmth: warm espresso ink replaces cold navy, terracotta replaces gold. The signature ink-seal stamp badge, masonry showcase, and scroll reveals are unchanged — this is a color re-tune, not a redesign. Cream/sand PAGE-CANVAS backgrounds, gradient text, and decorative glassmorphism remain banned — warmth here comes from the ink and accent hues plus imagery, deliberately avoiding the more common 'pale cream + terracotta + serif' AI-default that a literal cream background would have produced.",
+    "keyCharacteristics": [
+      "Warm Ink grounds the surface — dark section backgrounds, primary text/ink, structural weight. Same role navy had, warmer hue.",
+      "Terracotta is the one rare accent — primary CTAs, the verification stamp, featured/premium markers. Restraint keeps it warm instead of loud.",
+      "Masonry-grid property showcases (CSS columns, break-inside-avoid) — unchanged.",
+      "Scroll-triggered reveals (Intersection Observer, progressive enhancement) — unchanged.",
+      "Outfit + JetBrains Mono type pairing persists unchanged — warmth is expressed through color, not typography."
+    ],
+    "rules": [
+      { "name": "The One Accent Rule", "body": "Terracotta is the only accent used for primary actions and trust signals, and it stays rare by design. The moment it decorates something merely for color's sake, it has crossed from warm into loud.", "section": "colors" },
+      { "name": "The Proof-Is-Mono Rule", "body": "Any number a user might use to decide whether to trust or act on a listing — price, bed/bath count, square footage — renders in JetBrains Mono.", "section": "typography" },
+      { "name": "The Earned Depth Rule", "body": "No shadow appears without either genuine ambient rest applied consistently, or a direct interaction response.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use Terracotta for every primary action and trust signal — but only those.",
+      "Do pair terracotta backgrounds with white text (passes at 5.01:1 — the opposite pairing from the old gold system).",
+      "Do render prices, specs, and addresses in JetBrains Mono.",
+      "Do vary masonry card photo heights so the showcase reads as curated, not templated.",
+      "Do keep scroll reveals progressive-enhancement — content must never depend on JavaScript to become visible."
+    ],
+    "donts": [
+      "Don't use cream/sand/warm near-white backgrounds for the page canvas — warmth comes from ink+terracotta+imagery, not the canvas.",
+      "Don't use gradient text or decorative glassmorphism.",
+      "Don't let terracotta sprawl past its rare-accent role.",
+      "Don't build a hero around an abstract metric widget.",
+      "Don't gate content visibility behind a scroll-triggered class.",
+      "Don't introduce a serif display face by reflex just because the palette is warm now — that's the generic luxury-real-estate default this system already rejected once."
+    ]
+  }
+}

@@ -72,7 +72,7 @@ export default function VideoEmbed({ url }) {
          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 text-slate-500">
            <AlertCircle className="w-8 h-8 mb-2 text-rose-400" />
            <p className="text-sm font-semibold text-center px-4">Video couldn't be loaded.</p>
-           <a href={url} target="_blank" rel="noreferrer" className="text-xs text-blue-600 mt-2 hover:underline">Open externally instead</a>
+           <a href={url} target="_blank" rel="noreferrer" className="text-xs text-gold-700 mt-2 hover:underline">Open externally instead</a>
          </div>
        ) : (
          <iframe

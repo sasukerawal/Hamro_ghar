@@ -2,51 +2,10 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import nodemailer from 'nodemailer';
 import User from '../models/User.js';
+import { sendEmail } from '../utils/mailer.js';
 
 const router = express.Router();
-
-// We use Gmail directly with the verified App Password.
-const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false, // true for 465, false for 587
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-
-// Verify transporter on boot
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('[NODEMAILER] Verification FAILED:', error.message);
-  } else {
-    console.log('[NODEMAILER] Server is ready to take our messages');
-  }
-});
-
-// DEV TEMP: Direct test route to debug email issues
-router.get('/test-email', async (req, res) => {
-  try {
-    const info = await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER, // send to self
-      subject: 'HamroGhar - Test Email System',
-      text: 'If you receive this, your email configuration on Render is working perfectly!',
-    });
-    res.json({ success: true, messageId: info.messageId, authMethod: 'Gmail App Password' });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      errorName: error.name,
-      errorMessage: error.message,
-      errorCode: error.code,
-      command: error.command
-    });
-  }
-});
 
 // Helper: Generate 6-digit code
 const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -89,58 +48,34 @@ router.post('/register', async (req, res) => {
       email: emailLower,
       passwordHash,
       verificationCode,
-      isVerified: true, // DEV TEMP: Auto-verify to bypass Render email blocks
+      isVerified: false,
     });
 
     console.log(`[REGISTER] Saving new user to DB: ${emailLower}`);
     await newUser.save();
 
-    // Send Verification Email in BACKGROUND (Try best-effort)
-    console.log(`[REGISTER] Queuing welcome email for: ${emailLower}`);
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: emailLower,
-      subject: 'HamroGhar - Verify your account',
-      text: `Your verification code is: ${verificationCode}`,
-      html: `<div style="font-family: sans-serif; padding: 20px;">
-               <h2>Welcome to HamroGhar!</h2>
-               <p>Please verify your account using the code below:</p>
-               <h1 style="color: #2563EB; letter-spacing: 5px;">${verificationCode}</h1>
-               <p>This code will expire in 24 hours.</p>
-             </div>`,
-    };
-
-    // Use a promise with timeout but DON'T await it to respond early
-    const sendMailWithTimeout = (options) => {
-      return Promise.race([
-        transporter.sendMail(options),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Email send timed out')), 15000)
-        )
-      ]);
-    };
-
-    // Fire and forget (it will still log to console if it fails eventually)
-    sendMailWithTimeout(mailOptions)
-      .then(() => console.log(`[REGISTER] Background email successfully sent to: ${emailLower}`))
-      .catch((e) => console.error(`[REGISTER] Background email FAILED for ${emailLower}:`, e.message));
-
-    console.log(`[REGISTER] Responding to ${emailLower} immediately...`);
-
-    // Auto-login the user since we bypassed verification
-    const token = generateToken(newUser);
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    console.log(`[REGISTER] Sending verification email to: ${emailLower}`);
+    try {
+      await sendEmail({
+        to: emailLower,
+        subject: 'HamroGhar - Verify your account',
+        text: `Your verification code is: ${verificationCode}`,
+        html: `<div style="font-family: sans-serif; padding: 20px;">
+                 <h2>Welcome to HamroGhar!</h2>
+                 <p>Please verify your account using the code below:</p>
+                 <h1 style="color: #2563EB; letter-spacing: 5px;">${verificationCode}</h1>
+                 <p>This code will expire in 24 hours.</p>
+               </div>`,
+      });
+      console.log(`[REGISTER] Verification email sent to: ${emailLower}`);
+    } catch (e) {
+      console.error(`[REGISTER] Verification email FAILED for ${emailLower}:`, e.message);
+    }
 
     return res.status(201).json({
-      message: 'Account created and verified automatically.',
+      message: 'Account created. Please check your email for a verification code.',
       email: emailLower,
-      requiresVerification: false, // Tell frontend to skip verify screen
-      token,
+      requiresVerification: true,
     });
 
   } catch (err) {
@@ -213,8 +148,7 @@ router.post('/resend-code', async (req, res) => {
     user.verificationCode = newCode;
     await user.save();
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
+    sendEmail({
       to: user.email,
       subject: 'HamroGhar - Resend verification code',
       text: `Your new verification code is: ${newCode}`,
@@ -224,10 +158,7 @@ router.post('/resend-code', async (req, res) => {
                <h1 style="color: #2563EB; letter-spacing: 5px;">${newCode}</h1>
                <p>This code will expire in 24 hours.</p>
              </div>`,
-    };
-
-    // Async send
-    transporter.sendMail(mailOptions).catch(e => console.error("[RESEND] Error:", e.message));
+    }).catch(e => console.error("[RESEND] Error:", e.message));
 
     return res.json({ message: 'A new code has been sent to your email.' });
   } catch (err) {
@@ -324,8 +255,7 @@ router.post('/forgot-password', async (req, res) => {
     user.resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     await user.save();
 
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+    await sendEmail({
       to: user.email,
       subject: 'HamroGhar – Password Reset Code',
       html: `<div style="font-family:sans-serif;padding:24px;max-width:420px">

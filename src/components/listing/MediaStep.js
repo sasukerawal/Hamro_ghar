@@ -11,7 +11,7 @@ const MediaStep = ({ images, setImages, onFileSelect, uploadLoading }) => {
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="p-10 rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center text-center group hover:border-blue-400 hover:bg-blue-50/20 transition-all relative">
+            <div className="p-10 rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center text-center group hover:border-gold-300 hover:bg-blue-50/20 transition-all relative">
                 <input
                     type="file"
                     multiple
@@ -23,9 +23,9 @@ const MediaStep = ({ images, setImages, onFileSelect, uploadLoading }) => {
                 <div className={`h-16 w-16 rounded-2xl flex items-center justify-center mb-4 transition-all ${uploadLoading ? 'bg-slate-100' : 'bg-white shadow-xl shadow-slate-200 group-hover:scale-110'
                     }`}>
                     {uploadLoading ? (
-                        <Loader className="h-8 w-8 text-blue-500 animate-spin" />
+                        <Loader className="h-8 w-8 text-gold-600 animate-spin" />
                     ) : (
-                        <ImageIcon className="h-8 w-8 text-blue-500" />
+                        <ImageIcon className="h-8 w-8 text-gold-600" />
                     )}
                 </div>
                 <p className="text-base font-black text-slate-900 mb-1">
@@ -53,14 +53,14 @@ const MediaStep = ({ images, setImages, onFileSelect, uploadLoading }) => {
                                 <X className="h-4 w-4" />
                             </button>
                             {idx === 0 && (
-                                <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-lg bg-blue-600 text-white text-[9px] font-black uppercase tracking-wider">
+                                <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-lg bg-gold-500 text-white text-[9px] font-black uppercase tracking-wider">
                                     Main Photo
                                 </div>
                             )}
                         </div>
                     ))}
                     {images.length < 10 && (
-                        <div className="aspect-square rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300 hover:text-blue-400 hover:border-blue-200 transition-all cursor-pointer relative">
+                        <div className="aspect-square rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300 hover:text-gold-400 hover:border-blue-200 transition-all cursor-pointer relative">
                             <input type="file" multiple accept="image/*" onChange={onFileSelect} className="absolute inset-0 opacity-0 cursor-pointer" />
                             <Plus className="h-8 w-8" />
                         </div>

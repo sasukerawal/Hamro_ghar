@@ -28,7 +28,7 @@ function MobileHeader({ onGoHome }) {
     <div className="flex justify-between items-center py-3 px-4 bg-white/80 backdrop-blur-sm border-b border-blue-100 sticky top-0 z-10 sm:hidden shadow-md">
       <button
         onClick={onGoHome}
-        className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-blue-700"
+        className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-gold-700"
       >
         <ArrowLeft className="h-4 w-4" />
         Back
@@ -181,17 +181,17 @@ export default function UserProfile({ onGoHome, onLogout }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-sky-50 to-blue-100">
-        <Loader className="h-7 w-7 animate-spin text-blue-500" />
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader className="h-7 w-7 animate-spin text-gold-600" />
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-sky-50 to-blue-100 gap-3">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-3">
         <p className="text-sm text-red-500">Profile not available.</p>
-        <button onClick={onGoHome} className="text-xs text-blue-600 underline">
+        <button onClick={onGoHome} className="text-xs text-gold-700 underline">
           Go back home
         </button>
       </div>
@@ -206,14 +206,14 @@ export default function UserProfile({ onGoHome, onLogout }) {
     .toUpperCase();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-blue-100 pb-10">
+    <div className="min-h-screen bg-slate-50 pb-10">
       <MobileHeader onGoHome={onGoHome} />
 
       {/* Desktop back */}
       <div className="hidden sm:block max-w-xl mx-auto pt-6 px-4">
         <button
           onClick={onGoHome}
-          className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-blue-700 mb-4"
+          className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-gold-700 mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Home
@@ -226,9 +226,9 @@ export default function UserProfile({ onGoHome, onLogout }) {
         }`}
       >
         {/* ── Avatar banner ── */}
-        <div className="bg-white/80 backdrop-blur-xl border-x border-b sm:border sm:rounded-3xl border-blue-100 shadow-lg px-4 py-6 sm:px-6">
+        <div className="bg-white border-x border-b sm:border sm:rounded-3xl border-slate-100 shadow-sm px-4 py-6 sm:px-6">
           <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-extrabold text-xl shadow-md shrink-0">
+            <div className="h-16 w-16 rounded-2xl bg-gold-500 flex items-center justify-center text-white font-extrabold text-xl shadow-md shrink-0">
               {user.profilePic ? (
                 <img
                   src={user.profilePic}
@@ -242,7 +242,7 @@ export default function UserProfile({ onGoHome, onLogout }) {
             <div>
               <h1 className="text-xl font-extrabold text-slate-900">{user.name}</h1>
               <p className="text-sm text-slate-500">{user.email}</p>
-              <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-semibold capitalize">
+              <span className="stamp mt-1 text-gold-700 text-[9px]">
                 {user.role || "member"}
               </span>
             </div>
@@ -252,7 +252,7 @@ export default function UserProfile({ onGoHome, onLogout }) {
         {/* ── Section 1: Basic Info ── */}
         <ProfileSection
           title="Basic Info"
-          icon={<User className="h-4 w-4 text-blue-600" />}
+          icon={<User className="h-4 w-4 text-gold-700" />}
           isEditing={editingBasic}
           saving={savingBasic}
           onEdit={() => setEditingBasic(true)}
@@ -297,7 +297,7 @@ export default function UserProfile({ onGoHome, onLogout }) {
         {/* ── Section 2: Social Links ── */}
         <ProfileSection
           title="Social Links"
-          icon={<Share2 className="h-4 w-4 text-blue-600" />}
+          icon={<Share2 className="h-4 w-4 text-gold-700" />}
           isEditing={editingSocials}
           saving={savingSocials}
           onEdit={() => setEditingSocials(true)}
@@ -308,7 +308,7 @@ export default function UserProfile({ onGoHome, onLogout }) {
           {editingSocials ? (
             <div className="space-y-2 mt-3">
               <TextInput
-                icon={<Facebook className="h-4 w-4 text-blue-600" />}
+                icon={<Facebook className="h-4 w-4 text-gold-700" />}
                 label="Facebook"
                 value={socialsForm.facebook}
                 onChange={(v) => setSocialsForm((f) => ({ ...f, facebook: v }))}
@@ -339,7 +339,7 @@ export default function UserProfile({ onGoHome, onLogout }) {
             </div>
           ) : (
             <div className="space-y-1.5 mt-3">
-              <SocialViewRow icon={<Facebook className="h-4 w-4 text-blue-600" />} label="Facebook" value={user.socials?.facebook} />
+              <SocialViewRow icon={<Facebook className="h-4 w-4 text-gold-700" />} label="Facebook" value={user.socials?.facebook} />
               <SocialViewRow icon={<Instagram className="h-4 w-4 text-pink-500" />} label="Instagram" value={user.socials?.instagram} />
               <SocialViewRow icon={<Phone className="h-4 w-4 text-green-600" />} label="WhatsApp" value={user.socials?.whatsapp} />
               <SocialViewRow icon={<ExternalLink className="h-4 w-4 text-slate-600" />} label="TikTok" value={user.socials?.tiktok} />
@@ -348,16 +348,16 @@ export default function UserProfile({ onGoHome, onLogout }) {
         </ProfileSection>
 
         {/* ── Section 3: Password ── */}
-        <div className="bg-white/80 backdrop-blur-xl border-x border-b sm:border sm:rounded-3xl border-blue-100 shadow-sm px-4 py-4 sm:px-6">
+        <div className="bg-white border-x border-b sm:border sm:rounded-3xl border-slate-100 shadow-sm px-4 py-4 sm:px-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <KeyRound className="h-4 w-4 text-blue-600" />
+              <KeyRound className="h-4 w-4 text-gold-700" />
               <p className="text-sm font-semibold text-slate-900">Password</p>
             </div>
             {!showPasswordSection ? (
               <button
                 onClick={() => setShowPasswordSection(true)}
-                className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 border border-blue-200 rounded-full px-3 py-1.5 hover:bg-blue-50 transition"
+                className="flex items-center gap-1.5 text-xs font-semibold text-gold-700 hover:text-gold-700 border border-blue-200 rounded-full px-3 py-1.5 hover:bg-blue-50 transition"
               >
                 <Lock className="h-3.5 w-3.5" />
                 Change password
@@ -405,7 +405,7 @@ export default function UserProfile({ onGoHome, onLogout }) {
               <button
                 onClick={savePassword}
                 disabled={savingPassword}
-                className="w-full mt-1 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-60 flex items-center justify-center gap-2"
+                className="w-full mt-1 py-2.5 bg-gold-500 text-white text-sm font-semibold rounded-xl hover:bg-gold-600 disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 {savingPassword && <Loader className="h-4 w-4 animate-spin" />}
                 Update password
@@ -433,7 +433,7 @@ export default function UserProfile({ onGoHome, onLogout }) {
 ---------------------------------------- */
 function ProfileSection({ title, icon, subtitle, isEditing, saving, onEdit, onCancel, onSave, children }) {
   return (
-    <div className="bg-white/80 backdrop-blur-xl border-x border-b sm:border sm:rounded-3xl border-blue-100 shadow-sm px-4 py-4 sm:px-6">
+    <div className="bg-white border-x border-b sm:border sm:rounded-3xl border-slate-100 shadow-sm px-4 py-4 sm:px-6">
       {/* Section header */}
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -457,7 +457,7 @@ function ProfileSection({ title, icon, subtitle, isEditing, saving, onEdit, onCa
             <button
               onClick={onSave}
               disabled={saving}
-              className="flex items-center gap-1.5 text-xs font-semibold bg-blue-600 text-white border border-blue-600 rounded-full px-3 py-1.5 hover:bg-blue-700 disabled:opacity-60"
+              className="flex items-center gap-1.5 text-xs font-semibold bg-gold-500 text-white border border-gold-500 rounded-full px-3 py-1.5 hover:bg-gold-600 disabled:opacity-60"
             >
               {saving ? (
                 <Loader className="h-3.5 w-3.5 animate-spin" />
@@ -470,7 +470,7 @@ function ProfileSection({ title, icon, subtitle, isEditing, saving, onEdit, onCa
         ) : (
           <button
             onClick={onEdit}
-            className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 border border-blue-200 rounded-full px-3 py-1.5 hover:bg-blue-50 shrink-0"
+            className="flex items-center gap-1.5 text-xs font-semibold text-gold-700 border border-blue-200 rounded-full px-3 py-1.5 hover:bg-blue-50 shrink-0"
           >
             <Edit3 className="h-3.5 w-3.5" />
             Edit
@@ -534,7 +534,7 @@ function SocialViewRow({ icon, label, value }) {
             href={href}
             target="_blank"
             rel="noreferrer noopener"
-            className="mt-0.5 text-sm font-semibold text-blue-600 hover:underline truncate block"
+            className="mt-0.5 text-sm font-semibold text-gold-700 hover:underline truncate block"
           >
             {value}
           </a>

@@ -34,7 +34,7 @@ const SafetyTips = lazy(() => import("./SafetyTips"));
 // Loading fallback for suspended routes
 const FallbackSpinner = () => (
   <div className="flex-1 flex items-center justify-center min-h-[50vh]">
-    <Loader className="h-8 w-8 animate-spin text-blue-500" />
+    <Loader className="h-8 w-8 animate-spin text-gold-600" />
   </div>
 );
 

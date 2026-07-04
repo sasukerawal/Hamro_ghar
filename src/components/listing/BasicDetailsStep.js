@@ -19,7 +19,7 @@ const BasicDetailsStep = ({ formData, setFormData, errors }) => {
                         value={formData.name || ''}
                         onChange={handleChange}
                         placeholder="e.g. Modern Villa with Pool"
-                        className={`w-full px-4 py-3 rounded-xl border ${errors.name ? 'border-red-500 bg-red-50' : 'border-slate-200'} outline-none focus:border-blue-500 transition-all font-medium`}
+                        className={`w-full px-4 py-3 rounded-xl border ${errors.name ? 'border-red-500 bg-red-50' : 'border-slate-200'} outline-none focus:border-gold-400 transition-all font-medium`}
                     />
                     {errors.name && <p className="text-[10px] text-red-500 font-bold uppercase tracking-wide">{errors.name}</p>}
                 </div>
@@ -30,7 +30,7 @@ const BasicDetailsStep = ({ formData, setFormData, errors }) => {
                         name="type"
                         value={formData.type || 'sale'}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 bg-white font-medium"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-gold-400 bg-white font-medium"
                     >
                         <option value="rent">For Rent</option>
                         <option value="sale">For Sale</option>
@@ -46,7 +46,7 @@ const BasicDetailsStep = ({ formData, setFormData, errors }) => {
                     onChange={handleChange}
                     rows={5}
                     placeholder="Tell buyers/renters what makes this place special..."
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 resize-none font-medium leading-relaxed"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-gold-400 resize-none font-medium leading-relaxed"
                 />
             </div>
 
@@ -59,7 +59,7 @@ const BasicDetailsStep = ({ formData, setFormData, errors }) => {
                         value={formData.price || ''}
                         onChange={handleChange}
                         placeholder="e.g. 50000"
-                        className={`w-full px-4 py-3 rounded-xl border ${errors.price ? 'border-red-500 bg-red-50' : 'border-slate-200'} outline-none focus:border-blue-500 transition-all font-black`}
+                        className={`w-full px-4 py-3 rounded-xl border ${errors.price ? 'border-red-500 bg-red-50' : 'border-slate-200'} outline-none focus:border-gold-400 transition-all font-black`}
                     />
                     {errors.price && <p className="text-[10px] text-red-500 font-bold uppercase tracking-wide">{errors.price}</p>}
                 </div>
@@ -73,7 +73,7 @@ const BasicDetailsStep = ({ formData, setFormData, errors }) => {
                             ...prev,
                             specs: { ...prev.specs, propertyType: e.target.value }
                         }))}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 bg-white font-medium"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-gold-400 bg-white font-medium"
                     >
                         <option value="House">House</option>
                         <option value="Apartment">Apartment</option>

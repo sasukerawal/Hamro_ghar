@@ -65,7 +65,7 @@ export default function ForgotPassword({ onGoLogin }) {
           </p>
           <button
             onClick={onGoLogin}
-            className="w-full rounded-full bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+            className="w-full rounded-full bg-gold-500 py-2.5 text-sm font-semibold text-white hover:bg-gold-600"
           >
             Go to Sign In
           </button>
@@ -80,7 +80,7 @@ export default function ForgotPassword({ onGoLogin }) {
         {/* Back button */}
         <button
           onClick={onGoLogin}
-          className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-600 mb-6"
+          className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-gold-700 mb-6"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Back to sign in
@@ -88,7 +88,7 @@ export default function ForgotPassword({ onGoLogin }) {
 
         {/* Icon + Title */}
         <div className="text-center mb-6">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white mb-3 shadow-md">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gold-500 text-white mb-3 shadow-md">
             <KeyRound className="h-5 w-5" />
           </div>
           <h1 className="text-xl font-bold text-slate-900">
@@ -116,14 +116,14 @@ export default function ForgotPassword({ onGoLogin }) {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   required
-                  className="block w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  className="block w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-gold-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                 />
               </div>
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-full bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60 flex items-center justify-center gap-2"
+              className="w-full rounded-full bg-gold-500 py-2.5 text-sm font-semibold text-white hover:bg-gold-600 disabled:opacity-60 flex items-center justify-center gap-2"
             >
               {loading && <Loader className="h-4 w-4 animate-spin" />}
               Send reset code
@@ -147,7 +147,7 @@ export default function ForgotPassword({ onGoLogin }) {
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   placeholder="123456"
-                  className="block w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 tracking-widest font-mono"
+                  className="block w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-gold-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 tracking-widest font-mono"
                 />
               </div>
             </div>
@@ -162,7 +162,7 @@ export default function ForgotPassword({ onGoLogin }) {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="At least 6 characters"
-                  className="block w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  className="block w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-gold-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                 />
               </div>
             </div>
@@ -177,7 +177,7 @@ export default function ForgotPassword({ onGoLogin }) {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Repeat new password"
-                  className="block w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  className="block w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-gold-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                 />
               </div>
             </div>
@@ -187,7 +187,7 @@ export default function ForgotPassword({ onGoLogin }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-full bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60 flex items-center justify-center gap-2"
+              className="w-full rounded-full bg-gold-500 py-2.5 text-sm font-semibold text-white hover:bg-gold-600 disabled:opacity-60 flex items-center justify-center gap-2"
             >
               {loading && <Loader className="h-4 w-4 animate-spin" />}
               Reset password
@@ -195,7 +195,7 @@ export default function ForgotPassword({ onGoLogin }) {
             <button
               type="button"
               onClick={() => setStep(1)}
-              className="w-full text-xs text-slate-500 hover:text-blue-600"
+              className="w-full text-xs text-slate-500 hover:text-gold-700"
             >
               Resend code
             </button>

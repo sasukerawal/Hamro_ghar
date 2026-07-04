@@ -93,7 +93,7 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader className="h-8 w-8 animate-spin text-gold-700" />
       </div>
     );
   }
@@ -115,7 +115,7 @@ export default function AdminDashboard() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-blue-500 uppercase">Admin</p>
+          <p className="text-[11px] font-semibold tracking-[0.2em] text-gold-600 uppercase">Admin</p>
           <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
           <p className="text-sm text-slate-500 mt-1">Manage all HamroGhar listings and users</p>
         </div>
@@ -123,7 +123,7 @@ export default function AdminDashboard() {
         {/* Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
-            { label: "Total Listings", value: data?.totalListings ?? "—", icon: <HomeIcon className="h-5 w-5 text-blue-500" /> },
+            { label: "Total Listings", value: data?.totalListings ?? "—", icon: <HomeIcon className="h-5 w-5 text-gold-600" /> },
             { label: "Active Listings", value: data?.activeListings ?? "—", icon: <Eye className="h-5 w-5 text-green-500" /> },
             { label: "Total Users", value: data?.totalUsers ?? "—", icon: <Users className="h-5 w-5 text-purple-500" /> },
             { label: "Pending Reports", value: data?.totalReports ?? "—", icon: <AlertTriangle className="h-5 w-5 text-amber-500" /> },
@@ -148,7 +148,7 @@ export default function AdminDashboard() {
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all capitalize flex items-center gap-2 ${
                 activeTab === tab
-                  ? "bg-white text-blue-600 shadow-sm"
+                  ? "bg-white text-gold-700 shadow-sm"
                   : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
               }`}
             >
@@ -183,7 +183,7 @@ export default function AdminDashboard() {
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                           l.type === "wanted" || l.type === "rent"
                             ? "bg-purple-50 text-purple-700 border border-purple-200"
-                            : "bg-blue-50 text-blue-700 border border-blue-200"
+                            : "bg-blue-50 text-gold-700 border border-blue-200"
                         }`}>
                           {l.type}
                         </span>
@@ -203,7 +203,7 @@ export default function AdminDashboard() {
                           onClick={() => handleToggleVerify(l._id, l.isVerified)}
                           className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${
                             l.isVerified
-                              ? "bg-blue-600 text-white border-blue-700 shadow-sm"
+                              ? "bg-gold-500 text-white border-gold-600 shadow-sm"
                               : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
                           }`}
                         >
@@ -251,7 +251,7 @@ export default function AdminDashboard() {
                     <tr key={r._id} className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
                       <td className="px-4 py-3 font-medium text-slate-800">
                         {r.listingId ? (
-                          <a href={`/property/${r.listingId._id}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
+                          <a href={`/property/${r.listingId._id}`} target="_blank" rel="noreferrer" className="text-gold-700 hover:underline flex items-center gap-1">
                             {r.listingId.title} <Eye className="w-3 h-3" />
                           </a>
                         ) : (
@@ -346,7 +346,7 @@ export default function AdminDashboard() {
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                           u.isVerified
-                            ? "bg-blue-50 text-blue-700 border border-blue-200"
+                            ? "bg-blue-50 text-gold-700 border border-blue-200"
                             : "bg-slate-100 text-slate-500 border border-slate-200"
                         }`}>
                           {u.isVerified ? "Yes" : "No"}
@@ -361,7 +361,7 @@ export default function AdminDashboard() {
                           className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${
                             u.isVerified
                               ? "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200"
-                              : "bg-blue-600 text-white border-blue-700 shadow-sm hover:bg-blue-700"
+                              : "bg-gold-500 text-white border-gold-600 shadow-sm hover:bg-gold-600"
                           }`}
                         >
                           {u.isVerified ? "Remove Verify" : "Verify User"}

@@ -10,7 +10,7 @@ function FilterSection({ title, icon: Icon, children, defaultOpen = false }) {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full text-left font-bold text-slate-800 transition-colors hover:text-blue-600"
+        className="flex items-center justify-between w-full text-left font-bold text-slate-800 transition-colors hover:text-gold-700"
       >
         <div className="flex items-center gap-3">
           <div className="p-2 bg-slate-50 text-slate-500 rounded-xl">
@@ -113,7 +113,7 @@ export default function FilterModal({
                     <button
                       key={type}
                       onClick={() => setPropertyType(propertyType === type ? "" : type)}
-                      className={`py-3 px-2 rounded-xl text-xs font-bold capitalize transition-colors border-2 ${propertyType === type ? 'bg-blue-50 border-blue-600 text-blue-700' : 'bg-slate-50 border-transparent text-slate-600 hover:bg-slate-100'}`}
+                      className={`py-3 px-2 rounded-xl text-xs font-bold capitalize transition-colors border-2 ${propertyType === type ? 'bg-blue-50 border-gold-500 text-gold-700' : 'bg-slate-50 border-transparent text-slate-600 hover:bg-slate-100'}`}
                     >
                       {type}
                     </button>
@@ -132,21 +132,21 @@ export default function FilterModal({
             <div className="space-y-4">
               <div>
                 <p className="font-bold text-slate-600 mb-2 uppercase tracking-wide text-[10px]">Province</p>
-                <select value={province} onChange={e => { setProvince(e.target.value); setDistrict(''); setMunicipality(''); }} className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3 py-3 outline-none focus:border-blue-400 font-bold text-slate-700">
+                <select value={province} onChange={e => { setProvince(e.target.value); setDistrict(''); setMunicipality(''); }} className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3 py-3 outline-none focus:border-gold-300 font-bold text-slate-700">
                   <option value="">Any Province</option>
                   {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
               <div>
                 <p className="font-bold text-slate-600 mb-2 uppercase tracking-wide text-[10px]">District</p>
-                <select value={district} onChange={e => { setDistrict(e.target.value); setMunicipality(''); }} disabled={!province} className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3 py-3 outline-none focus:border-blue-400 font-bold text-slate-700 disabled:opacity-50">
+                <select value={district} onChange={e => { setDistrict(e.target.value); setMunicipality(''); }} disabled={!province} className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3 py-3 outline-none focus:border-gold-300 font-bold text-slate-700 disabled:opacity-50">
                   <option value="">{province ? 'Any District' : 'Select Province first'}</option>
                   {province && NEPAL_DATA[province] && Object.keys(NEPAL_DATA[province]).sort().map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
               <div>
                 <p className="font-bold text-slate-600 mb-2 uppercase tracking-wide text-[10px]">Municipality</p>
-                <select value={municipality} onChange={e => setMunicipality(e.target.value)} disabled={!district} className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3 py-3 outline-none focus:border-blue-400 font-bold text-slate-700 disabled:opacity-50">
+                <select value={municipality} onChange={e => setMunicipality(e.target.value)} disabled={!district} className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3 py-3 outline-none focus:border-gold-300 font-bold text-slate-700 disabled:opacity-50">
                   <option value="">{district ? 'Any Municipality' : 'Select District first'}</option>
                   {province && district && NEPAL_DATA[province]?.[district]?.map(m => <option key={m} value={m}>{m}</option>)}
                 </select>
@@ -162,7 +162,7 @@ export default function FilterModal({
                 )}
                 <div className="text-sm">
                   <p className="font-bold text-slate-600 mb-2 uppercase tracking-wide text-[10px]">Facing</p>
-                  <select value={facing} onChange={e => setFacing(e.target.value)} className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3 py-3 outline-none focus:border-blue-400 font-bold text-slate-700">
+                  <select value={facing} onChange={e => setFacing(e.target.value)} className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-3 py-3 outline-none focus:border-gold-300 font-bold text-slate-700">
                     <option value="">Any</option>
                     <option value="East">East</option>
                     <option value="West">West</option>
@@ -183,8 +183,8 @@ export default function FilterModal({
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                 {/* Furnished toggle integrated into the grid */}
-                <label className={`flex items-start p-2.5 rounded-xl border-2 cursor-pointer transition-colors ${furnishedOnly ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
-                  <div className={`w-4 h-4 shrink-0 rounded flex items-center justify-center border mt-0.5 mr-2 transition-colors ${furnishedOnly ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-300'}`}>
+                <label className={`flex items-start p-2.5 rounded-xl border-2 cursor-pointer transition-colors ${furnishedOnly ? 'border-gold-400 bg-blue-50' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
+                  <div className={`w-4 h-4 shrink-0 rounded flex items-center justify-center border mt-0.5 mr-2 transition-colors ${furnishedOnly ? 'bg-gold-500 border-gold-500 text-white' : 'bg-white border-slate-300'}`}>
                     {furnishedOnly && <CheckCircle className="w-3 h-3" />}
                   </div>
                   <span className={`text-[11px] font-bold mt-0.5 leading-tight ${furnishedOnly ? 'text-blue-900' : 'text-slate-600'}`}>Furnished</span>
@@ -192,8 +192,8 @@ export default function FilterModal({
                 </label>
 
                 {/* Pets Allowed toggle integrated into the grid */}
-                <label className={`flex items-start p-2.5 rounded-xl border-2 cursor-pointer transition-colors ${petsOnly ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
-                  <div className={`w-4 h-4 shrink-0 rounded flex items-center justify-center border mt-0.5 mr-2 transition-colors ${petsOnly ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-300'}`}>
+                <label className={`flex items-start p-2.5 rounded-xl border-2 cursor-pointer transition-colors ${petsOnly ? 'border-gold-400 bg-blue-50' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
+                  <div className={`w-4 h-4 shrink-0 rounded flex items-center justify-center border mt-0.5 mr-2 transition-colors ${petsOnly ? 'bg-gold-500 border-gold-500 text-white' : 'bg-white border-slate-300'}`}>
                     {petsOnly && <CheckCircle className="w-3 h-3" />}
                   </div>
                   <span className={`text-[11px] font-bold mt-0.5 leading-tight ${petsOnly ? 'text-blue-900' : 'text-slate-600'}`}>Pets Allowed</span>
@@ -201,8 +201,8 @@ export default function FilterModal({
                 </label>
 
                 {AMENITIES_LIST.map(amenity => (
-                  <label key={amenity} className={`flex items-start p-2.5 rounded-xl border-2 cursor-pointer transition-colors ${amenities?.includes(amenity) ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
-                    <div className={`w-4 h-4 shrink-0 rounded flex items-center justify-center border mt-0.5 mr-2 transition-colors ${amenities?.includes(amenity) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-300'}`}>
+                  <label key={amenity} className={`flex items-start p-2.5 rounded-xl border-2 cursor-pointer transition-colors ${amenities?.includes(amenity) ? 'border-gold-400 bg-blue-50' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
+                    <div className={`w-4 h-4 shrink-0 rounded flex items-center justify-center border mt-0.5 mr-2 transition-colors ${amenities?.includes(amenity) ? 'bg-gold-500 border-gold-500 text-white' : 'bg-white border-slate-300'}`}>
                       {amenities?.includes(amenity) && <CheckCircle className="w-3 h-3" />}
                     </div>
                     <span className={`text-[11px] font-bold mt-0.5 leading-tight ${amenities?.includes(amenity) ? 'text-blue-900' : 'text-slate-600'}`}>{amenity}</span>
@@ -225,7 +225,7 @@ export default function FilterModal({
           </button>
           <button
             onClick={handleApply}
-            className="flex-[2] flex items-center justify-center gap-2 rounded-2xl bg-blue-600 py-3.5 text-sm font-bold text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
+            className="flex-[2] flex items-center justify-center gap-2 rounded-2xl bg-gold-500 py-3.5 text-sm font-bold text-white hover:bg-gold-600 shadow-lg shadow-gold-500/20 active:scale-95 transition-all"
           >
             <Search className="h-4 w-4" />
             Show Results
@@ -241,7 +241,7 @@ const FilterInput = ({ label, ...props }) => (
   <div className="text-sm">
     <p className="font-bold text-slate-600 mb-2 uppercase tracking-wide text-[10px]">{label}</p>
     <input
-      className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-blue-400 focus:bg-white font-bold transition-colors"
+      className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-gold-300 focus:bg-white font-bold transition-colors"
       {...props}
     />
   </div>

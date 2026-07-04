@@ -83,12 +83,12 @@ export default function PropertyDetail() {
       .catch((err) => console.error("Could not load similar properties", err));
   }, [id]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader className="w-10 h-10 animate-spin text-blue-600" /></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader className="w-10 h-10 animate-spin text-gold-700" /></div>;
   if (error || !home) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
       <h1 className="text-2xl font-bold text-slate-800 mb-2">Property Not Found</h1>
       <p className="text-slate-500 mb-6">{error}</p>
-      <button onClick={() => navigate("/")} className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700">Go Back Home</button>
+      <button onClick={() => navigate("/")} className="px-6 py-3 bg-gold-500 text-white font-bold rounded-xl shadow-lg hover:bg-gold-600">Go Back Home</button>
     </div>
   );
 
@@ -157,7 +157,7 @@ export default function PropertyDetail() {
       {/* Top Navigation - Sticky Below Header */}
       <div className="bg-white border-b border-slate-200 sticky top-16 lg:top-20 z-30 shadow-sm transition-all duration-300">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <button onClick={() => location.key !== "default" ? navigate(-1) : navigate("/")} className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">
+          <button onClick={() => location.key !== "default" ? navigate(-1) : navigate("/")} className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-gold-700 transition-colors">
             <ChevronLeft className="w-5 h-5" /> Back to Search
           </button>
           <div className="flex gap-3">
@@ -207,7 +207,7 @@ export default function PropertyDetail() {
                   <button
                     key={idx}
                     onClick={() => setLightboxIdx(idx)}
-                    className="shrink-0 h-16 w-20 rounded-xl overflow-hidden border-2 border-transparent hover:border-blue-400 transition-colors bg-slate-100"
+                    className="shrink-0 h-16 w-20 rounded-xl overflow-hidden border-2 border-transparent hover:border-gold-300 transition-colors bg-slate-100"
                   >
                     <img src={img} alt={`Property view ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   </button>
@@ -259,7 +259,7 @@ export default function PropertyDetail() {
             {/* Header Content */}
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <span className={`text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-lg ${home.type === 'sale' ? 'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-800'}`}>
+                <span className={`text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-lg ${home.type === 'sale' ? 'bg-blue-100 text-gold-800' : 'bg-rose-100 text-rose-800'}`}>
                   For {home.type === "sale" ? "Sale" : "Rent"}
                 </span>
                 <span className="bg-slate-200 text-slate-700 text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-lg">
@@ -316,7 +316,7 @@ export default function PropertyDetail() {
 
             {/* Detailed Specifications */}
             <section className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-              <h2 className="text-xl font-extrabold text-slate-900 mb-6 flex items-center gap-2"><Maximize2 className="w-5 h-5 text-blue-600" /> Detailed Specifications</h2>
+              <h2 className="text-xl font-extrabold text-slate-900 mb-6 flex items-center gap-2"><Maximize2 className="w-5 h-5 text-gold-700" /> Detailed Specifications</h2>
               <div className="grid sm:grid-cols-2 gap-x-12 gap-y-1">
                 <DetailRow label="Property Type" value={<span className="capitalize">{home.propertyType}</span>} icon={Home} />
                 <DetailRow label="Listing Purpose" value={<span className="capitalize">{home.type}</span>} icon={Tag} />
@@ -341,7 +341,7 @@ export default function PropertyDetail() {
             {/* Utilities */}
             {!isLand && (
               <section className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-                <h2 className="text-xl font-extrabold text-slate-900 mb-6 flex items-center gap-2"><Droplets className="w-5 h-5 text-blue-600" /> Utilities</h2>
+                <h2 className="text-xl font-extrabold text-slate-900 mb-6 flex items-center gap-2"><Droplets className="w-5 h-5 text-gold-700" /> Utilities</h2>
                 <div className="grid sm:grid-cols-2 gap-x-12 gap-y-1">
                   <DetailRow label="Water Supply" value={specs.water?.available ? "Yes" : "No"} icon={Droplets} />
                   {specs.water?.source && <DetailRow label="Water Source" value={specs.water.source} />}
@@ -446,7 +446,7 @@ export default function PropertyDetail() {
                 <div className="bg-slate-100 p-6 rounded-3xl flex flex-col items-center justify-center text-center">
                   <MapPin className="w-10 h-10 text-rose-500 mb-3" />
                   <p className="font-bold text-slate-700 mb-4">The owner has provided a direct Google Maps link.</p>
-                  <a href={home.mapsUrl} target="_blank" rel="noreferrer" className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-xl shadow-md transition-all">
+                  <a href={home.mapsUrl} target="_blank" rel="noreferrer" className="bg-gold-500 hover:bg-gold-600 text-white font-bold px-6 py-3 rounded-xl shadow-md transition-all">
                     Open in Google Maps
                   </a>
                 </div>
@@ -493,7 +493,7 @@ export default function PropertyDetail() {
 
                 <div className="space-y-3 mb-8">
                   {home.contact?.phone && (
-                    <a href={`tel:${home.contact.phone}`} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 transform active:scale-95 text-lg">
+                    <a href={`tel:${home.contact.phone}`} className="w-full bg-gold-500 hover:bg-gold-600 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-gold-500/20 flex items-center justify-center gap-2 transform active:scale-95 text-lg">
                       <Phone className="w-5 h-5" /> Call: {home.contact.phone}
                     </a>
                   )}
@@ -516,7 +516,7 @@ export default function PropertyDetail() {
                     )}
 
                     {home.contact?.facebook ? (
-                      <a href={home.contact.facebook.startsWith('http') ? home.contact.facebook : `https://${home.contact.facebook}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold py-3 rounded-xl text-sm transition-colors border-2 border-blue-200 overflow-hidden px-2">
+                      <a href={home.contact.facebook.startsWith('http') ? home.contact.facebook : `https://${home.contact.facebook}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 bg-blue-50 text-gold-700 hover:bg-blue-100 font-bold py-3 rounded-xl text-sm transition-colors border-2 border-blue-200 overflow-hidden px-2">
                         <Facebook className="w-4 h-4 shrink-0" /> <span className="truncate">Facebook</span>
                       </a>
                     ) : (
@@ -539,13 +539,13 @@ export default function PropertyDetail() {
 
                 {home.owner && (
                   <div className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl border-2 border-slate-100">
-                    <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center text-blue-700 font-black text-xl border-2 border-white shadow-sm">
+                    <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center text-gold-700 font-black text-xl border-2 border-white shadow-sm">
                       {home.owner.name?.charAt(0) || "U"}
                     </div>
                     <div>
                       <p className="font-extrabold text-slate-900 text-lg">{home.owner.name || "HamroGhar User"}</p>
                       <p className="text-xs font-bold text-slate-500 mb-2">Member • Verified</p>
-                      <button onClick={() => navigate(`/?owner=${home.owner._id || home.owner.id}`)} className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors underline decoration-2 underline-offset-2">
+                      <button onClick={() => navigate(`/?owner=${home.owner._id || home.owner.id}`)} className="text-xs font-bold text-gold-700 hover:text-gold-800 transition-colors underline decoration-2 underline-offset-2">
                         View all listings by {home.owner.name?.split(' ')[0] || "this host"}
                       </button>
                     </div>
@@ -599,7 +599,7 @@ export default function PropertyDetail() {
             </a>
           )}
           {home.contact?.facebook && (
-            <a href={home.contact.facebook.startsWith('http') ? home.contact.facebook : `https://${home.contact.facebook}`} target="_blank" rel="noreferrer" className="bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 active:scale-95 font-black h-12 w-12 rounded-xl flex items-center justify-center transition-transform">
+            <a href={home.contact.facebook.startsWith('http') ? home.contact.facebook : `https://${home.contact.facebook}`} target="_blank" rel="noreferrer" className="bg-blue-50 text-gold-700 border border-blue-200 hover:bg-blue-100 active:scale-95 font-black h-12 w-12 rounded-xl flex items-center justify-center transition-transform">
               <Facebook className="w-5 h-5" />
             </a>
           )}
@@ -610,7 +610,7 @@ export default function PropertyDetail() {
           )}
 
           {home.contact?.phone ? (
-            <a href={`tel:${home.contact.phone}`} className="grow bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-black px-4 h-12 rounded-xl shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 transition-transform">
+            <a href={`tel:${home.contact.phone}`} className="grow bg-gold-500 hover:bg-gold-600 active:scale-95 text-white font-black px-4 h-12 rounded-xl shadow-lg shadow-gold-500/20 flex items-center justify-center gap-2 transition-transform">
               <Phone className="w-5 h-5" /> Call
             </a>
           ) : (

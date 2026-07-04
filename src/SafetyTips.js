@@ -50,7 +50,7 @@ export default function SafetyTips() {
                 {/* Back Button */}
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center gap-2 text-slate-500 hover:text-blue-600 mb-6 font-semibold text-sm transition-colors"
+                    className="flex items-center gap-2 text-slate-500 hover:text-gold-700 mb-6 font-semibold text-sm transition-colors"
                 >
                     <ChevronLeft className="w-4 h-4" /> Back
                 </button>
@@ -58,7 +58,7 @@ export default function SafetyTips() {
                 {/* Header */}
                 <div className="text-center mb-10">
                     <div className="inline-flex p-3 bg-blue-100 rounded-2xl mb-4">
-                        <Shield className="w-8 h-8 text-blue-600" />
+                        <Shield className="w-8 h-8 text-gold-700" />
                     </div>
                     <h1 className="text-3xl font-black text-slate-900 mb-2">
                         Safety Tips
@@ -175,13 +175,13 @@ export default function SafetyTips() {
                     <h2 className="text-lg font-bold text-blue-900 mb-2">
                         Encountered something suspicious?
                     </h2>
-                    <p className="text-sm text-blue-700 mb-4">
+                    <p className="text-sm text-gold-700 mb-4">
                         Help us keep HamroGhar safe. Use the <strong>"Report"</strong> button on any listing to flag suspicious activity.
                         Our team reviews every report.
                     </p>
                     <button
                         onClick={() => navigate("/")}
-                        className="bg-blue-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-blue-700 transition-colors text-sm"
+                        className="bg-gold-500 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-gold-600 transition-colors text-sm"
                     >
                         Browse Listings Safely
                     </button>

@@ -52,9 +52,14 @@ const PAGE_LANG = {
     heroSignIn: "Already a member? Sign in",
     statsLive: "Live listings",
     statsProps: "properties available right now",
-    statsViews: "Average homes viewed per user",
-    statsCities: "Cities covered",
+    statsViews: "Avg. views",
+    statsCities: "Cities",
     statsQuote: "\u201cClean, simple and fast. Found my flat in 2 days.\u201d",
+    statsVerified: "Verified",
+    statsSampleTitle: "2BHK Flat, Baneshwor",
+    statsSampleLoc: "Kathmandu, Bagmati",
+    statsSamplePrice: "Rs 18,000",
+    statsSampleTag: "Owner-listed",
     strip1Title: "Community platform",
     strip1Text: "Listings are posted by real users — not agencies. Always verify before paying.",
     strip2Title: "Student friendly",
@@ -119,8 +124,13 @@ const PAGE_LANG = {
     heroSignIn: "पहिलेदेखि सदस्य हुनुहुन्छ? साइन इन गर्नुस्",
     statsLive: "लाइभ लिस्टिङ",
     statsProps: "अहिले उपलब्ध सम्पत्तिहरू",
-    statsViews: "प्रति प्रयोगकर्ता औसत हेरिएका घरहरू",
-    statsCities: "शहरहरू समेटिएका",
+    statsViews: "औसत हेराइ",
+    statsCities: "शहरहरू",
+    statsVerified: "प्रमाणित",
+    statsSampleTitle: "२ कोठे फ्ल्याट, बानेश्वर",
+    statsSampleLoc: "काठमाडौं, बागमती",
+    statsSamplePrice: "रु १८,०००",
+    statsSampleTag: "मालिकद्वारा सूचीकृत",
     statsQuote: "\u201cसरल र छिटो। २ दिनमा फ्ल्याट फेला पाएँ।\u201d",
     strip1Title: "सम्प्रदाय प्लेटफर्म",
     strip1Text: "लिस्टिङहरू एजेन्सीले होइन, वास्तविक प्रयोगकर्ताले पोस्ट गर्छन्। भुक्तानी गर्नु अघि सत्यापन गर्नुस्।",
@@ -457,7 +467,7 @@ export default function HomePage({
           setSavedIds(data.saved.map((h) => h._id || h.id));
         }
       } catch (err) {
-        if (err.message.includes("401")) return; // Expected for anonymous users
+        if (err.status === 401) return; // Expected for anonymous users
         console.error("Error loading saved homes", err);
       }
     };
@@ -793,7 +803,7 @@ export default function HomePage({
       {showBackToTop && !isFilterModalOpen && (
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="fixed bottom-24 sm:bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition-all hover:scale-110 active:scale-95"
+          className="fixed bottom-24 sm:bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-gold-500 text-white shadow-lg hover:bg-gold-600 transition-all hover:scale-110 active:scale-95"
           aria-label="Back to top"
         >
           <ChevronUp className="h-5 w-5" />
@@ -829,8 +839,8 @@ export default function HomePage({
           aria-label={showMap ? "Switch to list view" : "Switch to map view"}
         >
           {showMap
-            ? <Layers className="w-4 h-4 text-blue-400" />
-            : <MapPin className="w-4 h-4 text-blue-400" />
+            ? <Layers className="w-4 h-4 text-gold-400" />
+            : <MapPin className="w-4 h-4 text-gold-400" />
           }
           <span className="text-sm font-bold tracking-wide">
             {showMap ? "List" : "Map"}
@@ -846,12 +856,12 @@ export default function HomePage({
           className="relative flex items-center gap-2 px-5 py-2.5 rounded-full hover:bg-slate-800 transition-colors active:scale-95"
           aria-label="Open filters"
         >
-          <Tag className="w-4 h-4 text-blue-400" />
+          <Tag className="w-4 h-4 text-gold-400" />
           <span className="text-sm font-bold tracking-wide">Filters</span>
 
           {/* Active-filter badge dot */}
           {hasActiveFilters && (
-            <span className="absolute top-2 right-4 w-2 h-2 rounded-full bg-blue-500" />
+            <span className="absolute top-2 right-4 w-2 h-2 rounded-full bg-gold-400" />
           )}
         </button>
       </div>

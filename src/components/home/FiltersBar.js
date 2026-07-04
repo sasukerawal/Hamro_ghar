@@ -63,7 +63,7 @@ export const FiltersBar = ({
   };
 
   return (
-    <section className="bg-white border-y border-blue-50 relative z-10">
+    <section className="bg-white border-y border-slate-100 relative z-10">
       <div className="max-w-6xl mx-auto px-4 py-4">
         {/* Desktop layout */}
         <div className="hidden sm:flex flex-col gap-3">
@@ -77,7 +77,7 @@ export const FiltersBar = ({
                 type="button"
                 onClick={() => { if (isHostelActive) { setCategory(""); setHostelType(""); } onTypeFilter(val); }}
                 className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold border transition-all ${!isHostelActive && listingType === val
-                    ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                    ? "bg-gold-500 border-gold-500 text-white shadow-sm"
                     : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                   }`}
               >
@@ -128,7 +128,7 @@ export const FiltersBar = ({
             <button
               type="button"
               onClick={onToggleMap}
-              className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-100"
+              className="inline-flex items-center justify-center rounded-full border border-gold-200 bg-gold-50 px-3 py-1 text-[11px] font-semibold text-gold-800 hover:bg-gold-100"
             >
               {showMap ? "📋 Show list" : "🗺️ Show map"}
             </button>
@@ -146,7 +146,7 @@ export const FiltersBar = ({
               <button
                 type="button"
                 onClick={onOpenModal}
-                className="inline-flex items-center justify-center rounded-full bg-blue-50 text-blue-700 px-4 py-1.5 border border-blue-200 text-xs font-semibold hover:bg-blue-100"
+                className="inline-flex items-center justify-center rounded-full bg-gold-50 text-gold-800 px-4 py-1.5 border border-gold-200 text-xs font-semibold hover:bg-gold-100"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5 mr-1" />
                 Advanced
@@ -154,7 +154,7 @@ export const FiltersBar = ({
               <button
                 type="button"
                 onClick={onSearch}
-                className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+                className="inline-flex items-center justify-center rounded-full bg-gold-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-gold-600"
               >
                 Search
               </button>
@@ -178,7 +178,7 @@ export const FiltersBar = ({
                 type="button"
                 onClick={() => { if (isHostelActive) { setCategory(""); setHostelType(""); } onTypeFilter(val); }}
                 className={`flex-1 py-1.5 text-[11px] font-semibold rounded-full border transition-all ${!isHostelActive && listingType === val
-                    ? "bg-blue-600 border-blue-600 text-white"
+                    ? "bg-gold-500 border-gold-500 text-white"
                     : "border-slate-200 bg-white text-slate-600"
                   }`}
               >
@@ -226,14 +226,14 @@ export const FiltersBar = ({
               <button
                 type="button"
                 onClick={onToggleMap}
-                className="inline-flex items-center justify-center gap-1 rounded-full bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-700 border border-blue-200 hover:bg-blue-100"
+                className="inline-flex items-center justify-center gap-1 rounded-full bg-gold-50 px-3 py-1.5 text-[11px] font-semibold text-gold-800 border border-gold-200 hover:bg-gold-100"
               >
                 {showMap ? "List" : "Map"}
               </button>
               <button
                 type="button"
                 onClick={onOpenModal}
-                className="inline-flex items-center justify-center gap-1 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 border border-blue-200 hover:bg-blue-100"
+                className="inline-flex items-center justify-center gap-1 rounded-full bg-gold-50 px-3 py-1.5 text-xs font-semibold text-gold-800 border border-gold-200 hover:bg-gold-100"
               >
                 <SlidersHorizontal className="h-3.5 w-3.5" />
                 Filter
@@ -250,7 +250,7 @@ const FilterInput = ({ label, ...props }) => (
   <div className="text-xs">
     <p className="font-semibold text-slate-700 mb-1">{label}</p>
     <input
-      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-gold-300 focus:ring-1 focus:ring-gold-100"
       {...props}
     />
   </div>

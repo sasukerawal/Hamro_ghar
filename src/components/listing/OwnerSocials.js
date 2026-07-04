@@ -33,7 +33,7 @@ const OwnerSocials = ({ socials }) => {
             href: facebook?.startsWith("http") ? facebook : `https://facebook.com/${facebook}`,
             label: "Facebook",
             icon: <Facebook className="h-4 w-4" />,
-            bg: "bg-blue-600 hover:bg-blue-700",
+            bg: "bg-gold-500 hover:bg-gold-600",
         },
         {
             key: "instagram",

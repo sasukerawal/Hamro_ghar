@@ -82,7 +82,7 @@ export default function ChatWidget({ isOpen, onClose, currentUser, receiver }) {
   return (
     <div className="fixed bottom-4 right-4 z-[10000] w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-blue-100 flex flex-col overflow-hidden animate-scale-in">
       {/* Header */}
-      <div className="bg-blue-600 p-4 flex items-center justify-between text-white">
+      <div className="bg-gold-500 p-4 flex items-center justify-between text-white">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center font-bold">
             {receiverName[0] || "U"}
@@ -115,7 +115,7 @@ export default function ChatWidget({ isOpen, onClose, currentUser, receiver }) {
               <div
                 className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${
                   isMe
-                    ? "bg-blue-600 text-white rounded-br-none"
+                    ? "bg-gold-500 text-white rounded-br-none"
                     : "bg-white border border-slate-200 text-slate-800 rounded-bl-none"
                 }`}
               >
@@ -144,7 +144,7 @@ export default function ChatWidget({ isOpen, onClose, currentUser, receiver }) {
         className="p-3 bg-white border-t border-slate-100 flex gap-2"
       >
         <input
-          className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:border-blue-500"
+          className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400/40 focus-visible:border-gold-400"
           placeholder="Type a message..."
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
@@ -153,7 +153,7 @@ export default function ChatWidget({ isOpen, onClose, currentUser, receiver }) {
         <button
           type="submit"
           disabled={connecting || !inputText.trim()}
-          className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+          className="bg-gold-500 text-white p-2 rounded-full hover:bg-gold-600 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400/40"
         >
           <Send className="h-4 w-4" />
         </button>

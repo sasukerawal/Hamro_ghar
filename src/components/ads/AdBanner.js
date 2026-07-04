@@ -34,7 +34,7 @@ export default function AdBanner({ ad, className = "" }) {
 
         {/* Hover Overlay */}
         <div className="absolute inset-0 bg-blue-900/0 group-hover:bg-blue-900/10 transition-colors duration-300 flex items-center justify-center">
-          <div className="opacity-0 group-hover:opacity-100 bg-white text-blue-600 font-bold text-xs py-2 px-4 rounded-full shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 flex items-center gap-1">
+          <div className="opacity-0 group-hover:opacity-100 bg-white text-gold-700 font-bold text-xs py-2 px-4 rounded-full shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 flex items-center gap-1">
             Visit Sponsor <ExternalLink className="h-3 w-3" />
           </div>
         </div>

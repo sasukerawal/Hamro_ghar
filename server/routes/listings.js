@@ -28,12 +28,9 @@ function toNumber(value, fallback = undefined) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-// Get user id from request (supports multiple auth styles)
+// Get user id from the authenticated request (set by requireAuth)
 function getUserId(req) {
-  if (req.user && req.user.id) return req.user.id;
-  if (req.user && req.user._id) return req.user._id;
-  if (req.auth && req.auth.id) return req.auth.id;
-  return req.body.userId || req.headers["x-user-id"] || null;
+  return req.user?.id || req.user?._id || null;
 }
 
 /* =========================================
@@ -1279,17 +1276,7 @@ router.put("/admin/users/:id/verify", requireAuth, async (req, res) => {
    POST /api/listings/:id/report
 ========================================= */
 import Report from "../models/Report.js";
-import nodemailer from "nodemailer";
-
-const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false, // true for 465, false for 587
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+import { sendEmail } from "../utils/mailer.js";
 
 router.post("/:id/report", requireAuth, async (req, res) => {
   try {
@@ -1313,9 +1300,8 @@ router.post("/:id/report", requireAuth, async (req, res) => {
 
     // Send email to admin
     try {
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: process.env.EMAIL_USER, // Send to site admin
+      await sendEmail({
+        to: process.env.ADMIN_EMAIL || process.env.EMAIL_USER,
         subject: `[HamroGhar] Listing Reported: ${listing.title}`,
         text: `A user has reported a listing.\n\nListing ID: ${listingId}\nListing Title: ${listing.title}\nReporter ID: ${userId}\nUrl: ${process.env.CLIENT_ORIGIN || 'http://localhost:3000'}/?listing=${listingId}\n\nPlease review this listing.`,
       });
@@ -1334,8 +1320,14 @@ router.post("/:id/report", requireAuth, async (req, res) => {
    MIGRATE SCHEMA V2 (Admin Only / One-time)
    POST /api/listings/migrate-schema-v2
 ========================================= */
-router.post("/migrate-schema-v2", async (req, res) => {
+router.post("/migrate-schema-v2", requireAuth, async (req, res) => {
   try {
+    const userId = getUserId(req);
+    const user = await User.findById(userId);
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
     const listings = await Listing.find({});
     let migratedCount = 0;
 

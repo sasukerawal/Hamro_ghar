@@ -1,5 +1,5 @@
 /* src/index.css */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;1,700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -85,6 +85,21 @@ h6 {
 
 #root {
   min-height: 100vh;
+}
+
+/* ─── Keyboard focus ─────────────────────────────────────── */
+/* Visible focus ring for keyboard users on every interactive
+   element, using the brand color so it reads as intentional
+   rather than a browser default. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #C97850;
+  outline-offset: 2px;
+  border-radius: inherit;
 }
 
 /* ─── Glassmorphism ──────────────────────────────────────── */
@@ -183,11 +198,11 @@ h6 {
 
   0%,
   100% {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.20);
+    box-shadow: 0 0 20px rgba(180, 82, 47, 0.20);
   }
 
   50% {
-    box-shadow: 0 0 42px rgba(59, 130, 246, 0.40);
+    box-shadow: 0 0 42px rgba(180, 82, 47, 0.40);
   }
 }
 
@@ -195,12 +210,33 @@ h6 {
   animation: pulseGlow 4s ease-in-out infinite;
 }
 
-/* ─── Hero gradient text ─────────────────────────────────── */
-.gradient-text {
-  background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* ─── Verification stamp ─────────────────────────────────── */
+/* A rotated ink-stamp motif — the site's one signature graphic move.
+   Used anywhere a listing or owner is verified: the hero, listing
+   cards, and review/profile badges. Deliberately not a checkmark
+   pill; it should read as "stamped real", not "SaaS feature flag". */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  border: 1.5px solid currentColor;
+  border-radius: 9999px;
+  padding: 0.2em 0.65em 0.2em 0.5em;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: rotate(-3deg);
+  white-space: nowrap;
+}
+
+.stamp::before {
+  content: '';
+  width: 0.4em;
+  height: 0.4em;
+  border-radius: 9999px;
+  background: currentColor;
+  flex-shrink: 0;
 }
 
 /* ─── Card hover lift ────────────────────────────────────── */
@@ -211,7 +247,7 @@ h6 {
 
 .card-lift:hover {
   transform: translateY(-4px) scale(1.005);
-  box-shadow: 0 20px 40px -8px rgba(59, 130, 246, 0.18);
+  box-shadow: 0 20px 40px -8px rgba(180, 82, 47, 0.2);
 }
 
 /* ─── Smooth scroll ──────────────────────────────────────── */
@@ -219,10 +255,46 @@ html {
   scroll-behavior: smooth;
 }
 
+/* ─── Reduced motion ─────────────────────────────────────── */
+/* Decorative animation (entrances, float, pulse) is disabled
+   for users who've asked for reduced motion. Content stays
+   visible immediately — reveals never gate visibility, so
+   nothing depends on the animation actually running. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-float,
+  .animate-fade-in-up,
+  .animate-pulse-slow,
+  .animate-scale-up-down,
+  .glow-heavy,
+  [class*="stagger-"] {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    animation-delay: 0s !important;
+  }
+
+  .card-lift {
+    transition: box-shadow 0.15s ease !important;
+  }
+
+  .card-lift:hover {
+    transform: none !important;
+  }
+
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
 /* ─── District map tooltip ───────────────────────────────── */
 .district-tooltip {
-  background: rgba(15, 23, 42, 0.90);
-  border: 1px solid rgba(59, 130, 246, 0.25);
+  background: rgba(12, 20, 36, 0.92);
+  border: 1px solid rgba(201, 120, 80, 0.35);
   border-radius: 8px;
   color: #f8fafc;
   font-family: 'Outfit', sans-serif;

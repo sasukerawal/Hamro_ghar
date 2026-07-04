@@ -55,7 +55,7 @@ const NarrativeStep = ({ formData, isSubmitting }) => {
             </div>
 
             {isSubmitting && (
-                <div className="flex flex-col items-center gap-3 py-4 text-blue-600">
+                <div className="flex flex-col items-center gap-3 py-4 text-gold-700">
                     <div className="h-6 w-6 border-4 border-current border-t-transparent rounded-full animate-spin" />
                     <p className="text-xs font-black uppercase tracking-widest">Publishing Listing...</p>
                 </div>

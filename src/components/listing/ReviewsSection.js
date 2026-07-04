@@ -160,14 +160,14 @@ const ReviewsSection = ({ listingId }) => {
                         value={myComment}
                         onChange={(e) => setMyComment(e.target.value)}
                         placeholder="What was it like? Mention the owner, condition, or neighborhood..."
-                        className="w-full text-sm rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50 resize-none min-h-[100px]"
+                        className="w-full text-sm rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-gold-300 focus:ring-4 focus:ring-blue-50 resize-none min-h-[100px]"
                     />
 
                     <div className="flex gap-3">
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="flex-1 bg-blue-600 text-white text-sm font-bold rounded-xl py-3 hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-blue-200 transition-all"
+                            className="flex-1 bg-gold-500 text-white text-sm font-bold rounded-xl py-3 hover:bg-gold-600 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-blue-200 transition-all"
                         >
                             {submitting && <Loader className="h-4 w-4 animate-spin" />}
                             {myReviewId ? "Update Review" : "Post Review"}
@@ -191,7 +191,7 @@ const ReviewsSection = ({ listingId }) => {
 
             {loading ? (
                 <div className="flex justify-center py-10">
-                    <Loader className="h-6 w-6 animate-spin text-blue-400" />
+                    <Loader className="h-6 w-6 animate-spin text-gold-400" />
                 </div>
             ) : (
                 <div className="space-y-4">

@@ -31,13 +31,13 @@ const SpecsStep = ({ formData, setFormData, errors }) => {
                             value={formData.specs?.landArea || ''}
                             onChange={handleChange}
                             placeholder="e.g. 3.5"
-                            className="flex-1 px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 font-bold"
+                            className="flex-1 px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-gold-400 font-bold"
                         />
                         <select
                             name="landAreaUnit"
                             value={formData.specs?.landAreaUnit || 'Aana'}
                             onChange={handleChange}
-                            className="w-24 px-2 py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 bg-white font-bold"
+                            className="w-24 px-2 py-3 rounded-xl border border-slate-200 outline-none focus:border-gold-400 bg-white font-bold"
                         >
                             <option value="Aana">Aana</option>
                             <option value="Ropani">Ropani</option>
@@ -55,7 +55,7 @@ const SpecsStep = ({ formData, setFormData, errors }) => {
                         name="facing"
                         value={formData.specs?.facing || 'East'}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 bg-white font-bold"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-gold-400 bg-white font-bold"
                     >
                         <option value="East">East</option>
                         <option value="West">West</option>
@@ -79,7 +79,7 @@ const SpecsStep = ({ formData, setFormData, errors }) => {
                             value={formData.specs?.bedrooms || ''}
                             onChange={handleChange}
                             placeholder="e.g. 4"
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 font-bold"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-gold-400 font-bold"
                         />
                     </div>
                     <div className="space-y-2">
@@ -90,7 +90,7 @@ const SpecsStep = ({ formData, setFormData, errors }) => {
                             value={formData.specs?.bathrooms || ''}
                             onChange={handleChange}
                             placeholder="e.g. 2"
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 font-bold"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-gold-400 font-bold"
                         />
                     </div>
                     <div className="space-y-2">
@@ -101,7 +101,7 @@ const SpecsStep = ({ formData, setFormData, errors }) => {
                             value={formData.specs?.totalFloors || ''}
                             onChange={handleChange}
                             placeholder="e.g. 2.5"
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 font-bold"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-gold-400 font-bold"
                         />
                     </div>
                     <div className="space-y-2">
@@ -110,7 +110,7 @@ const SpecsStep = ({ formData, setFormData, errors }) => {
                             name="furnishing"
                             value={formData.specs?.furnishing || 'Not Furnished'}
                             onChange={handleChange}
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 bg-white font-bold"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-gold-400 bg-white font-bold"
                         >
                             <option value="Not Furnished">Not Furnished</option>
                             <option value="Semi Furnished">Semi Furnished</option>
@@ -129,7 +129,7 @@ const SpecsStep = ({ formData, setFormData, errors }) => {
                         value={formData.specs?.roadAccessFeet || ''}
                         onChange={handleChange}
                         placeholder="e.g. 13"
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 font-bold"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-gold-400 font-bold"
                     />
                 </div>
                 {!isLand && (
@@ -141,7 +141,7 @@ const SpecsStep = ({ formData, setFormData, errors }) => {
                             value={formData.specs?.builtYear || ''}
                             onChange={handleChange}
                             placeholder="e.g. 2022"
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-blue-500 font-bold"
+                            className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-gold-400 font-bold"
                         />
                     </div>
                 )}

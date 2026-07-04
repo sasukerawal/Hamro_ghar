@@ -33,7 +33,7 @@ export const AmenityTag = ({ active, children }) => (
     className={
       "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium border " +
       (active
-        ? "border-blue-200 bg-blue-50 text-blue-700"
+        ? "border-blue-200 bg-blue-50 text-gold-700"
         : "border-slate-200 bg-white text-slate-500")
     }
   >
@@ -255,7 +255,7 @@ export function ListingModal({
             {/* Price Badge Over Image */}
             {priceLabel && (
               <div className="absolute left-5 bottom-5 flex flex-col items-start gap-1">
-                <span className="bg-blue-600 px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm uppercase tracking-wide">
+                <span className="bg-gold-500 px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm uppercase tracking-wide">
                   {home.type === "sale" ? "For Sale" : "For Rent"}
                 </span>
                 <div className="text-white drop-shadow-md flex items-baseline gap-1">
@@ -295,7 +295,7 @@ export function ListingModal({
             {/* Title & Location */}
             <div className="mb-8">
               <div className="flex flex-wrap items-center gap-2 mb-2">
-                <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700 ring-1 ring-inset ring-blue-700/10 uppercase tracking-wider">
+                <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-[10px] font-bold text-gold-700 ring-1 ring-inset ring-gold-600/10 uppercase tracking-wider">
                   {home?.specs?.propertyType || "Property"}
                 </span>
                 {home?.status && home.status !== "active" && (
@@ -402,7 +402,7 @@ export function ListingModal({
               <div className="space-y-6">
 
                 {/* Contact Card */}
-                <div className="rounded-2xl bg-white border border-blue-100 shadow-xl shadow-blue-500/5 p-5 sticky top-5">
+                <div className="rounded-2xl bg-white border border-blue-100 shadow-xl shadow-gold-500/5 p-5 sticky top-5">
                   <h3 className="font-bold text-slate-900 mb-4">Contact Poster</h3>
                   <OwnerSocialsPanel socials={home.owner?.socials} />
 
@@ -424,7 +424,7 @@ export function ListingModal({
                         onClick={handleHeartClick}
                         className={`w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold border transition-colors ${isSaved
                             ? "bg-red-50 border-red-100 text-red-600 hover:bg-red-100"
-                            : "bg-blue-600 border-blue-600 text-white hover:bg-blue-700"
+                            : "bg-gold-500 border-gold-500 text-white hover:bg-gold-600"
                           }`}
                       >
                         <Heart className="h-4 w-4" fill={isSaved ? "currentColor" : "none"} />
@@ -441,7 +441,7 @@ export function ListingModal({
                         const url = `${window.location.origin}/?listing=${home._id || home.id}`;
                         navigator.clipboard.writeText(url).then(() => toast.success("Copied!")).catch(() => toast.error("Could not copy"));
                       }}
-                        className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors bg-slate-50 hover:bg-blue-50 rounded-lg"
+                        className="p-1.5 text-slate-400 hover:text-gold-700 transition-colors bg-slate-50 hover:bg-blue-50 rounded-lg"
                         title="Copy Link">
                         <Copy className="h-4 w-4" />
                       </button>
@@ -538,8 +538,8 @@ function OwnerSocialsPanel({ socials }) {
         : null,
       label: "Facebook",
       icon: <Facebook className="h-4 w-4" />,
-      bg: "bg-blue-600",
-      hover: "hover:bg-blue-700",
+      bg: "bg-gold-500",
+      hover: "hover:bg-gold-600",
     },
     {
       key: "instagram",
@@ -753,13 +753,13 @@ function ReviewsSection({ listingId }) {
             onChange={(e) => setMyComment(e.target.value)}
             placeholder="Share your experience with this listing..."
             maxLength={500}
-            className="w-full text-xs rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 min-h-[60px] resize-none"
+            className="w-full text-xs rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-gold-300 focus:ring-1 focus:ring-blue-100 min-h-[60px] resize-none"
           />
           <div className="flex items-center gap-2">
             <button
               type="submit"
               disabled={submitting}
-              className="flex-1 bg-blue-600 text-white text-xs font-semibold rounded-xl py-2 hover:bg-blue-700 disabled:opacity-60 flex items-center justify-center gap-1"
+              className="flex-1 bg-gold-500 text-white text-xs font-semibold rounded-xl py-2 hover:bg-gold-600 disabled:opacity-60 flex items-center justify-center gap-1"
             >
               {submitting && <Loader className="h-3 w-3 animate-spin" />}
               {myReviewId ? "Update" : "Submit"}
@@ -784,7 +784,7 @@ function ReviewsSection({ listingId }) {
       {/* Review List */}
       {loading ? (
         <div className="flex justify-center py-4">
-          <Loader className="h-4 w-4 animate-spin text-blue-400" />
+          <Loader className="h-4 w-4 animate-spin text-gold-400" />
         </div>
       ) : reviews.length === 0 ? (
         <p className="text-xs text-slate-400 italic">No reviews yet. Be the first!</p>

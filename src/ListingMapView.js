@@ -38,14 +38,16 @@ function getDistrict(listing) {
   );
 }
 
-// Pick a colour based on number of listings in a district.
+// Pick a colour based on number of listings in a district — a warm gold
+// heat scale against the navy system, so "hotter" districts read as
+// premium/valuable rather than just "more data".
 function districtColour(count) {
-  if (count === 0) return "#e2e8f0";   // slate-200  — no listings
-  if (count <= 2) return "#bfdbfe";   // blue-200
-  if (count <= 5) return "#93c5fd";   // blue-300
-  if (count <= 10) return "#60a5fa";   // blue-400
-  if (count <= 20) return "#3b82f6";   // blue-500
-  return "#1d4ed8";                    // blue-700 — hottest district
+  if (count === 0) return "#e2e8f0";   // slate-200 — no listings
+  if (count <= 2) return "#F6DFD2";    // gold-100
+  if (count <= 5) return "#DB9A74";    // gold-300
+  if (count <= 10) return "#C97850";   // gold-400
+  if (count <= 20) return "#9C4526";   // gold-600
+  return "#632C1A";                    // gold-800 — hottest district
 }
 
 // ─── Custom price pill icon ───────────────────────────────────────────────────
@@ -68,7 +70,7 @@ function SidebarCard({ listing, onClick }) {
     <button
       type="button"
       onClick={() => onClick(listing)}
-      className="w-full text-left group flex gap-3 p-3 rounded-xl bg-white hover:bg-blue-50 border border-slate-100 hover:border-blue-200 transition-all"
+      className="w-full text-left group flex gap-3 p-3 rounded-xl bg-white hover:bg-gold-50 border border-slate-100 hover:border-gold-200 transition-all"
     >
       <img
         src={img}
@@ -77,15 +79,15 @@ function SidebarCard({ listing, onClick }) {
         onError={(e) => { e.target.src = "https://placehold.co/160x90/eff6ff/0f172a?text=Home"; }}
       />
       <div className="overflow-hidden">
-        <p className="text-xs font-bold text-slate-900 line-clamp-1">
+        <p className="text-xs font-bold text-blue-900 line-clamp-1">
           {listing.title || listing.address || "Property"}
         </p>
         <p className="text-[11px] text-slate-500 mt-0.5">
           {listing?.location?.municipality || listing.city || "—"}
         </p>
-        <p className="mt-1 text-xs font-semibold text-blue-600">
+        <p className="mt-1 text-xs font-mono font-semibold text-gold-700">
           Rs. {Number(listing.price || 0).toLocaleString()}
-          {listing.type !== "sale" && <span className="text-[10px] text-blue-400">/mo</span>}
+          {listing.type !== "sale" && <span className="text-[10px] text-gold-500">/mo</span>}
         </p>
       </div>
     </button>
@@ -96,11 +98,11 @@ function SidebarCard({ listing, onClick }) {
 function DistrictPanel({ districtName, listings, onClose, onSelectListing }) {
   if (!districtName) return null;
   return (
-    <div className="absolute top-0 right-0 h-full w-72 bg-white/95 backdrop-blur-md border-l border-blue-100 z-[800] flex flex-col shadow-2xl">
+    <div className="absolute top-0 right-0 h-full w-72 bg-white/95 backdrop-blur-md border-l border-gold-100 z-[800] flex flex-col shadow-2xl">
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
         <div>
-          <p className="text-[10px] font-semibold text-blue-500 uppercase tracking-widest">District</p>
-          <h3 className="text-sm font-bold text-slate-900">{districtName}</h3>
+          <p className="text-[10px] font-semibold text-gold-700 uppercase tracking-widest">District</p>
+          <h3 className="text-sm font-bold text-blue-900">{districtName}</h3>
           <p className="text-[11px] text-slate-500">{listings.length} listing{listings.length !== 1 ? "s" : ""}</p>
         </div>
         <button
@@ -163,7 +165,7 @@ export default function ListingMapView({ listings = [], onSelectListing }) {
     return {
       fillColor: districtColour(count),
       fillOpacity: count > 0 ? 0.78 : 0.25,
-      color: isActive ? "#1d4ed8" : "#94a3b8",
+      color: isActive ? "#2B211A" : "#94a3b8",
       weight: isActive ? 2.5 : 0.8,
     };
   };
@@ -174,7 +176,7 @@ export default function ListingMapView({ listings = [], onSelectListing }) {
 
     layer.on({
       mouseover(e) {
-        e.target.setStyle({ fillOpacity: 0.92, weight: 2, color: "#1d4ed8" });
+        e.target.setStyle({ fillOpacity: 0.92, weight: 2, color: "#2B211A" });
         e.target.bringToFront();
       },
       mouseout(e) {
@@ -187,13 +189,13 @@ export default function ListingMapView({ listings = [], onSelectListing }) {
   };
 
   return (
-    <div className="relative w-full h-[460px] rounded-3xl overflow-hidden border border-blue-100 shadow-xl">
+    <div className="relative w-full h-[460px] rounded-3xl overflow-hidden border border-gold-100 shadow-xl">
       {/* Colour legend */}
       <div className="absolute bottom-6 left-4 z-[700] glass rounded-xl px-3 py-2 text-[10px] font-semibold text-slate-600 flex items-center gap-3 shadow-md">
         <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-sm bg-[#e2e8f0] inline-block border border-slate-300" />None</span>
-        <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-sm bg-[#bfdbfe] inline-block" />1-2</span>
-        <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-sm bg-[#60a5fa] inline-block" />3-10</span>
-        <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-sm bg-[#1d4ed8] inline-block" />20+</span>
+        <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-sm bg-[#DB9A74] inline-block" />1-2</span>
+        <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-sm bg-[#9C4526] inline-block" />3-10</span>
+        <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-sm bg-[#632C1A] inline-block" />20+</span>
       </div>
 
       <MapContainer
@@ -237,7 +239,7 @@ export default function ListingMapView({ listings = [], onSelectListing }) {
                   <div className="text-xs">
                     <p className="font-semibold">{l.title || l.address}</p>
                     <p className="text-slate-500">{l.city}</p>
-                    {l.price && <p className="text-blue-600 font-semibold mt-1">Rs. {Number(l.price).toLocaleString()}</p>}
+                    {l.price && <p className="text-gold-700 font-semibold mt-1">Rs. {Number(l.price).toLocaleString()}</p>}
                   </div>
                 </Popup>
               </Marker>

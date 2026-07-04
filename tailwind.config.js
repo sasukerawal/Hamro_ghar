@@ -8,6 +8,48 @@ module.exports = {
   ],
   theme: {
     extend: {
+      colors: {
+        // Brand ink — warm espresso instead of cold navy-black. Overrides
+        // Tailwind's stock blue scale so every remaining blue-* usage
+        // across the app (post-listing wizard, membership, profile,
+        // chat, etc.) picks up the same warm neutral automatically.
+        // Deliberately NOT a pale cream/sand background token — warmth
+        // comes from this ink + the terracotta accent below, not from
+        // tinting the page canvas (see DESIGN.md's cream-background ban).
+        blue: {
+          50: '#FAF8F6',
+          100: '#F3EFEB',
+          200: '#E5DFD8',
+          300: '#C9C0B5',
+          400: '#A69A8C',
+          500: '#837868',
+          600: '#6B6259',
+          700: '#57504A',
+          800: '#3D3833',
+          900: '#2B211A',
+          950: '#1A1410',
+        },
+        // Accent — warm terracotta, grounded in Kathmandu Valley fired-brick
+        // architecture. Unlike the gold it replaces, terracotta is dark
+        // enough to pair with white text directly (5:1+), so button text
+        // stays white rather than needing dark-on-light for contrast.
+        gold: {
+          50: '#FBF1EC',
+          100: '#F6DFD2',
+          200: '#EBBFA3',
+          300: '#DB9A74',
+          400: '#C97850',
+          500: '#B4522F',
+          600: '#9C4526',
+          700: '#7D3720',
+          800: '#632C1A',
+          900: '#4F2415',
+          950: '#2E1409',
+        },
+      },
+      fontFamily: {
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+      },
       keyframes: {
         'pulse-slow': {
           '0%, 100%': { opacity: 1 },
@@ -29,5 +71,5 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [require("tailwindcss-animate")],
 };

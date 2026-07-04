@@ -26,7 +26,7 @@ export default function AddressSuggestionsList({
           onClick={() => onSelect(s)}
           className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors flex items-center gap-2"
         >
-          <MapPin className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+          <MapPin className="h-3.5 w-3.5 text-gold-600 shrink-0" />
           <div className="flex-1 min-w-0">
             {/* Main name */}
             <p className="font-medium text-slate-800 truncate">

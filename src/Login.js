@@ -13,7 +13,7 @@ const AuthInput = ({ id, type, label, placeholder, Icon, value, onChange }) => (
       </div>
       <input
         id={id} type={type} value={value} onChange={onChange} placeholder={placeholder} required
-        className="block w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+        className="block w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-gold-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
       />
     </div>
   </div>
@@ -47,7 +47,7 @@ export default function Login({ onLogin, onGoRegister, onForgotPassword }) {
     <div className="min-h-[calc(100vh-5rem)] bg-gradient-to-br from-blue-50 via-white to-blue-100 flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md rounded-3xl bg-white border border-blue-100 shadow-lg px-6 py-7 sm:px-8 sm:py-8">
         <div className="mb-5 text-center">
-          <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white mb-2">
+          <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gold-500 text-white mb-2">
             <LogIn className="h-4 w-4" />
           </div>
           <h1 className="text-xl font-semibold text-slate-900">Welcome back</h1>
@@ -60,21 +60,21 @@ export default function Login({ onLogin, onGoRegister, onForgotPassword }) {
             <AuthInput id="login-password" type="password" label="Password" placeholder="password123" Icon={Lock} value={password} onChange={(e) => setPassword(e.target.value)} />
             {onForgotPassword && (
               <div className="text-right mt-1">
-                <button type="button" onClick={onForgotPassword} className="text-[11px] text-blue-600 hover:underline">
+                <button type="button" onClick={onForgotPassword} className="text-[11px] text-gold-700 hover:underline">
                   Forgot password?
                 </button>
               </div>
             )}
           </div>
           {error && <p className="text-xs text-red-500">{error}</p>}
-          <button type="submit" className="mt-1 w-full rounded-full bg-blue-600 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">
+          <button type="submit" className="mt-1 w-full rounded-full bg-gold-500 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-gold-600">
             Sign in
           </button>
         </form>
 
         <p className="mt-4 text-center text-xs text-slate-600">
           Don&apos;t have an account yet?{' '}
-          <button type="button" onClick={onGoRegister} className="font-semibold text-blue-700 hover:text-blue-800 underline-offset-2 hover:underline">
+          <button type="button" onClick={onGoRegister} className="font-semibold text-gold-700 hover:text-gold-800 underline-offset-2 hover:underline">
             Create one
           </button>
         </p>

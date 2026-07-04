@@ -10,7 +10,7 @@ import React from 'react';
 const AmenityTag = ({ active, children }) => {
     const baseClasses = "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium border transition-colors";
     const activeClasses = active
-        ? "border-blue-200 bg-blue-50 text-blue-700 font-semibold"
+        ? "border-blue-200 bg-blue-50 text-gold-700 font-semibold"
         : "border-slate-200 bg-white text-slate-500";
 
     return (

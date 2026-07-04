@@ -16,7 +16,7 @@ export default function NotFound() {
           </p>
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="h-20 w-20 rounded-full bg-white shadow-xl border border-blue-100 flex items-center justify-center">
-              <HomeIcon className="h-10 w-10 text-blue-500" />
+              <HomeIcon className="h-10 w-10 text-gold-600" />
             </div>
           </div>
         </div>
@@ -39,7 +39,7 @@ export default function NotFound() {
           </button>
           <button
             onClick={() => navigate("/")}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 shadow-sm"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-gold-500 text-white text-sm font-semibold hover:bg-gold-600 shadow-sm"
           >
             <Search className="h-4 w-4" />
             Browse homes

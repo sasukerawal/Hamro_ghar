@@ -18,12 +18,12 @@ const FormStepIndicator = ({ steps, currentStep, onStepClick }) => (
                     onClick={() => onStepClick(stepNum)}
                     className="flex flex-col items-center gap-2 group outline-none"
                 >
-                    <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ring-4 ring-white ${isActive ? 'bg-blue-600 text-white scale-110' :
+                    <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ring-4 ring-white ${isActive ? 'bg-gold-500 text-white scale-110' :
                             isCompleted ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-500'
                         }`}>
                         {isCompleted ? '✓' : stepNum}
                     </div>
-                    <span className={`hidden sm:block text-[10px] font-bold uppercase tracking-wider ${isActive ? 'text-blue-600' : 'text-slate-400'
+                    <span className={`hidden sm:block text-[10px] font-bold uppercase tracking-wider ${isActive ? 'text-gold-700' : 'text-slate-400'
                         }`}>
                         {step.label}
                     </span>
