@@ -575,6 +575,9 @@ router.get("/stats", async (req, res) => {
 
     const totalActive = await Listing.countDocuments(activeFilter);
 
+    const distinctDistricts = await Listing.distinct("location.district", activeFilter);
+    const citiesCount = distinctDistricts.filter(Boolean).length;
+
     const recent = await Listing.find(activeFilter)
       .sort({ createdAt: -1 })
       .limit(50);
@@ -596,6 +599,7 @@ router.get("/stats", async (req, res) => {
     const statsData = {
       totalActive,
       totalListings: totalActive, // alias — frontend reads this key
+      citiesCount,
       avgPrice,
       avgViews,
     };
