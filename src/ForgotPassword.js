@@ -12,18 +12,25 @@ export default function ForgotPassword({ onGoLogin }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [displayedCode, setDisplayedCode] = useState("");
 
   const sendCode = async (e) => {
     e.preventDefault();
     if (!email.trim()) { toast.error("Enter your email address"); return; }
     setLoading(true);
     try {
-      await apiFetch("/api/auth/forgot-password", {
+      const res = await apiFetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      toast.success("If an account exists, a reset code was sent to your email.");
+      if (res.code) {
+        setDisplayedCode(res.code);
+        toast.success("Here is your reset code.");
+      } else {
+        setDisplayedCode("");
+        toast.error("No account found with that email.");
+      }
       setStep(2);
     } catch (err) {
       toast.error(err.message || "Something went wrong");
@@ -96,10 +103,20 @@ export default function ForgotPassword({ onGoLogin }) {
           </h1>
           <p className="mt-1.5 text-sm text-slate-500 max-w-xs mx-auto">
             {step === 1
-              ? "Enter your email and we'll send you a 6-digit reset code."
-              : `We sent a code to ${email}. Enter it below to create a new password.`}
+              ? "Enter your email and we'll generate a 6-digit reset code."
+              : "Enter the code below to create a new password."}
           </p>
         </div>
+
+        {step === 2 && displayedCode && (
+          <div className="mb-5 rounded-xl border border-gold-200 bg-gold-50 px-4 py-3 text-center">
+            <p className="text-xs text-slate-600">Your reset code</p>
+            <p className="text-2xl font-bold tracking-widest text-gold-700">{displayedCode}</p>
+            <p className="mt-2 text-[11px] text-slate-400">
+              We're showing your code here instead of emailing it while we finish setting up email delivery.
+            </p>
+          </div>
+        )}
 
         {/* Step 1 — Email */}
         {step === 1 && (

@@ -40,7 +40,8 @@ export default function Register({ onGoLogin }) {
   
   // Verification Form State
   const [verificationCode, setVerificationCode] = useState('');
-  
+  const [displayedCode, setDisplayedCode] = useState('');
+
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
 
@@ -63,7 +64,8 @@ export default function Register({ onGoLogin }) {
 
       // If success, backend should return requiresVerification: true
       if (res.requiresVerification) {
-        toast.success('Account created! Code sent to your email.');
+        setDisplayedCode(res.code || '');
+        toast.success('Account created! Here is your verification code.');
         setStep(2); // Move to verification step
       } else {
         // Fallback if backend doesn't use verification logic yet
@@ -124,12 +126,13 @@ export default function Register({ onGoLogin }) {
   const handleResendCode = async () => {
     setResending(true);
     try {
-      await apiFetch('/api/auth/resend-code', {
+      const res = await apiFetch('/api/auth/resend-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-      toast.success('New code sent!');
+      setDisplayedCode(res.code || '');
+      toast.success('New code generated!');
     } catch (err) {
       toast.error(err.message || 'Failed to resend code');
     } finally {
@@ -150,11 +153,21 @@ export default function Register({ onGoLogin }) {
             {step === 1 ? 'Create an account' : 'Verify Email'}
           </h1>
           <p className="mt-1 text-xs text-slate-500">
-            {step === 1 
-              ? 'Sign up to save homes, set alerts, and access your dashboard.' 
-              : `We sent a 6-digit code to ${email}. Enter it below.`}
+            {step === 1
+              ? 'Sign up to save homes, set alerts, and access your dashboard.'
+              : `Enter the 6-digit verification code below.`}
           </p>
         </div>
+
+        {step === 2 && displayedCode && (
+          <div className="mb-5 rounded-xl border border-gold-200 bg-gold-50 px-4 py-3 text-center">
+            <p className="text-xs text-slate-600">Your verification code</p>
+            <p className="text-2xl font-bold tracking-widest text-gold-700">{displayedCode}</p>
+            <p className="mt-2 text-[11px] text-slate-400">
+              We're showing your code here instead of emailing it while we finish setting up email delivery.
+            </p>
+          </div>
+        )}
 
         {/* STEP 1: REGISTRATION FORM */}
         {step === 1 && (

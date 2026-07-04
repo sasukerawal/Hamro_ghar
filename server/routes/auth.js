@@ -3,7 +3,6 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import { sendEmail } from '../utils/mailer.js';
 
 const router = express.Router();
 
@@ -54,28 +53,11 @@ router.post('/register', async (req, res) => {
     console.log(`[REGISTER] Saving new user to DB: ${emailLower}`);
     await newUser.save();
 
-    console.log(`[REGISTER] Sending verification email to: ${emailLower}`);
-    try {
-      await sendEmail({
-        to: emailLower,
-        subject: 'HamroGhar - Verify your account',
-        text: `Your verification code is: ${verificationCode}`,
-        html: `<div style="font-family: sans-serif; padding: 20px;">
-                 <h2>Welcome to HamroGhar!</h2>
-                 <p>Please verify your account using the code below:</p>
-                 <h1 style="color: #2563EB; letter-spacing: 5px;">${verificationCode}</h1>
-                 <p>This code will expire in 24 hours.</p>
-               </div>`,
-      });
-      console.log(`[REGISTER] Verification email sent to: ${emailLower}`);
-    } catch (e) {
-      console.error(`[REGISTER] Verification email FAILED for ${emailLower}:`, e.message);
-    }
-
     return res.status(201).json({
-      message: 'Account created. Please check your email for a verification code.',
+      message: 'Account created. Use the code below to verify your account.',
       email: emailLower,
       requiresVerification: true,
+      code: verificationCode,
     });
 
   } catch (err) {
@@ -148,19 +130,7 @@ router.post('/resend-code', async (req, res) => {
     user.verificationCode = newCode;
     await user.save();
 
-    sendEmail({
-      to: user.email,
-      subject: 'HamroGhar - Resend verification code',
-      text: `Your new verification code is: ${newCode}`,
-      html: `<div style="font-family: sans-serif; padding: 20px;">
-               <h2>Resend Verification Code</h2>
-               <p>Use the code below to verify your account:</p>
-               <h1 style="color: #2563EB; letter-spacing: 5px;">${newCode}</h1>
-               <p>This code will expire in 24 hours.</p>
-             </div>`,
-    }).catch(e => console.error("[RESEND] Error:", e.message));
-
-    return res.json({ message: 'A new code has been sent to your email.' });
+    return res.json({ message: 'Here is your new code.', code: newCode });
   } catch (err) {
     console.error('Resend error:', err);
     return res.status(500).json({ error: 'Failed to resend code' });
@@ -245,8 +215,8 @@ router.post('/forgot-password', async (req, res) => {
     if (!email.trim()) return res.status(400).json({ error: 'Email is required' });
 
     const user = await User.findOne({ email: email.toLowerCase().trim() });
-    // Always return success to prevent email enumeration
-    if (!user) return res.json({ message: 'If an account exists, a code was sent.' });
+    // No account: don't reveal that, and there's no code to show.
+    if (!user) return res.json({ message: 'If an account exists, a code was generated.' });
 
     const code = generateCode();
     const hash = await bcrypt.hash(code, 8);
@@ -255,18 +225,7 @@ router.post('/forgot-password', async (req, res) => {
     user.resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     await user.save();
 
-    await sendEmail({
-      to: user.email,
-      subject: 'HamroGhar – Password Reset Code',
-      html: `<div style="font-family:sans-serif;padding:24px;max-width:420px">
-        <h2 style="color:#1e293b">Reset your password</h2>
-        <p>Use the code below to reset your HamroGhar password. It expires in <strong>1 hour</strong>.</p>
-        <div style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#2563EB;padding:16px 0">${code}</div>
-        <p style="color:#64748b;font-size:12px">If you did not request this, you can safely ignore this email.</p>
-      </div>`,
-    });
-
-    return res.json({ message: 'If an account exists, a code was sent.' });
+    return res.json({ message: 'Here is your reset code.', code });
   } catch (err) {
     console.error('Forgot password error:', err);
     return res.status(500).json({ error: 'Server error' });
