@@ -12,6 +12,9 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { X } from "lucide-react";
+import LoadingState from "./components/common/LoadingState";
+import EmptyState from "./components/common/EmptyState";
 
 // ─── Nepal districts GeoJSON ────────────────────────────────────────────────
 // Lightweight district polygons hosted on CDN. Loaded at runtime to keep
@@ -107,14 +110,15 @@ function DistrictPanel({ districtName, listings, onClose, onSelectListing }) {
         </div>
         <button
           onClick={onClose}
+          aria-label="Close district panel"
           className="h-7 w-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
         >
-          ✕
+          <X className="h-3.5 w-3.5 text-slate-600" />
         </button>
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {listings.length === 0 ? (
-          <p className="text-xs text-slate-400 text-center py-8">No listings in this district yet.</p>
+          <EmptyState title="No listings in this district yet." className="py-8" />
         ) : (
           listings.map((l) => (
             <SidebarCard key={l._id || l.id} listing={l} onClick={onSelectListing} />
@@ -249,7 +253,7 @@ export default function ListingMapView({ listings = [], onSelectListing }) {
       {/* Loading state */}
       {!geoData && !geoError && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-sm z-[600]">
-          <p className="text-sm font-semibold text-slate-500 animate-pulse">Loading district map…</p>
+          <LoadingState variant="inline" label="Loading district map…" />
         </div>
       )}
 

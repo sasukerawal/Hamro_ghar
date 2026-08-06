@@ -1,4 +1,6 @@
 import React from 'react';
+import { TreePine, Wifi, Fence, Dumbbell, Waves, ArrowUpDown, ShieldCheck, Zap } from 'lucide-react';
+import TagsSelector from '../common/TagsSelector';
 
 /**
  * FacilitiesStep - Fourth step of the property posting form.
@@ -25,32 +27,32 @@ const FacilitiesStep = ({ formData, setFormData }) => {
     };
 
     const amenities = [
-        { label: "Garden", icon: "🏡" },
-        { label: "Internet / WiFi", icon: "🌐" },
-        { label: "Fenced", icon: "🚧" },
-        { label: "Gym", icon: "🏋️" },
-        { label: "Pool", icon: "🏊" },
-        { label: "Lift", icon: "🛗" },
-        { label: "Security Guard", icon: "👮" },
-        { label: "Generator / Inverter", icon: "⚡" },
+        { label: "Garden", icon: TreePine },
+        { label: "Internet / WiFi", icon: Wifi },
+        { label: "Fenced", icon: Fence },
+        { label: "Gym", icon: Dumbbell },
+        { label: "Pool", icon: Waves },
+        { label: "Lift", icon: ArrowUpDown },
+        { label: "Security Guard", icon: ShieldCheck },
+        { label: "Generator / Inverter", icon: Zap },
     ];
 
-    const handleAmenityToggle = (amenity) => {
-        setFormData(prev => {
-            const current = prev.amenities || [];
-            const updated = current.includes(amenity)
-                ? current.filter(a => a !== amenity)
-                : [...current, amenity];
-            return { ...prev, amenities: updated };
-        });
-    };
+    const amenityOptions = amenities.map((item) => {
+        const Icon = item.icon;
+        return {
+            id: item.label,
+            label: item.label,
+            icon: <Icon className="h-3.5 w-3.5" />,
+        };
+    });
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-widest">Bike Parking (Count)</label>
+                    <label htmlFor="bikeParking" className="text-xs font-black text-slate-700 uppercase tracking-widest">Bike Parking (Count)</label>
                     <input
+                        id="bikeParking"
                         type="number"
                         value={formData.facilities?.bikeParking || 0}
                         onChange={(e) => handleCountChange('bikeParking', e.target.value)}
@@ -58,8 +60,9 @@ const FacilitiesStep = ({ formData, setFormData }) => {
                     />
                 </div>
                 <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-widest">Car Parking (Count)</label>
+                    <label htmlFor="carParking" className="text-xs font-black text-slate-700 uppercase tracking-widest">Car Parking (Count)</label>
                     <input
+                        id="carParking"
                         type="number"
                         value={formData.facilities?.carParking || 0}
                         onChange={(e) => handleCountChange('carParking', e.target.value)}
@@ -81,7 +84,8 @@ const FacilitiesStep = ({ formData, setFormData }) => {
                             key={fac.id}
                             type="button"
                             onClick={() => toggleFacility(fac.id)}
-                            className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${formData.facilities?.[fac.id]
+                            aria-pressed={!!formData.facilities?.[fac.id]}
+                            className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all min-h-[44px] ${formData.facilities?.[fac.id]
                                     ? 'border-gold-400 bg-blue-50 text-gold-700 font-bold'
                                     : 'border-slate-200 bg-white text-slate-400 font-medium'
                                 }`}
@@ -96,28 +100,12 @@ const FacilitiesStep = ({ formData, setFormData }) => {
                 </div>
             </div>
 
-            <div className="space-y-4">
-                <label className="text-xs font-black text-slate-700 uppercase tracking-widest">Additional Amenities</label>
-                <div className="flex flex-wrap gap-2">
-                    {amenities.map((item) => {
-                        const isSelected = (formData.amenities || []).includes(item.label);
-                        return (
-                            <button
-                                key={item.label}
-                                type="button"
-                                onClick={() => handleAmenityToggle(item.label)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-full border text-xs transition-all ${isSelected
-                                        ? 'border-gold-500 bg-gold-500 text-white font-bold'
-                                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400 font-medium'
-                                    }`}
-                            >
-                                <span>{item.icon}</span>
-                                <span>{item.label}</span>
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
+            <TagsSelector
+                label="Additional Amenities"
+                options={amenityOptions}
+                value={formData.amenities || []}
+                onChange={(amenities) => setFormData(prev => ({ ...prev, amenities }))}
+            />
         </div>
     );
 };

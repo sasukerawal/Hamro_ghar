@@ -25,8 +25,9 @@ const LocationStep = ({ formData, setFormData, errors }) => {
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-widest">City</label>
+                    <label htmlFor="locCity" className="text-xs font-black text-slate-700 uppercase tracking-widest">City</label>
                     <input
+                        id="locCity"
                         value={formData.city || ''}
                         onChange={handleCityChange}
                         placeholder="e.g. Kathmandu"
@@ -36,8 +37,9 @@ const LocationStep = ({ formData, setFormData, errors }) => {
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-widest">District</label>
+                    <label htmlFor="locDistrict" className="text-xs font-black text-slate-700 uppercase tracking-widest">District</label>
                     <input
+                        id="locDistrict"
                         value={formData.location?.district || ''}
                         onChange={(e) => handleNestedChange('location', 'district', e.target.value)}
                         placeholder="e.g. Lalitpur"
@@ -47,10 +49,11 @@ const LocationStep = ({ formData, setFormData, errors }) => {
             </div>
 
             <div className="space-y-2">
-                <label className="text-xs font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
+                <label htmlFor="locAddress" className="text-xs font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
                     <MapPin className="h-3 w-3" /> Address / Municipality
                 </label>
                 <input
+                    id="locAddress"
                     value={formData.address || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                     placeholder="e.g. Ward 4, Sukedhara"
@@ -72,8 +75,9 @@ const LocationStep = ({ formData, setFormData, errors }) => {
             </div>
 
             <div className="space-y-2">
-                <label className="text-xs font-black text-slate-700 uppercase tracking-widest">Google Maps URL</label>
+                <label htmlFor="locMapsUrl" className="text-xs font-black text-slate-700 uppercase tracking-widest">Google Maps URL</label>
                 <input
+                    id="locMapsUrl"
                     value={formData.location?.mapsUrl || ''}
                     onChange={handleMapsUrlPaste}
                     placeholder="https://maps.google.com/..."

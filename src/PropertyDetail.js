@@ -6,20 +6,22 @@ import { toast } from "react-toastify";
 import {
   MapPin, Share2, ChevronLeft, ChevronRight, X, Loader, Phone, CheckCircle2,
   AlertTriangle, Home, Ruler, Layers, Droplets, Wifi, Car, Bike, Grid, Maximize2, Tag, Building,
-  MessageCircle, Mail, Facebook, Instagram
+  MessageCircle, Mail, Facebook, Instagram, MessageSquare, Bed, Bath, Route, Compass,
+  UtensilsCrossed, Sofa
 } from "lucide-react";
 import { useMeasurement } from "./contexts/MeasurementContext";
 import VideoEmbed from "./components/VideoEmbed";
 import { ListingCard } from "./components/home/FeaturedListings";
 import useSWR from "swr";
 import AdBanner from "./components/ads/AdBanner";
+import ChatWidget from "./ChatWidget";
 
 const MetricBox = ({ label, value, icon }) => {
   if (!value) return null;
   return (
     <div className="flex flex-col border border-slate-200 rounded-xl p-3 bg-white shadow-sm hover:border-blue-300 transition-colors">
       <div className="flex items-center gap-1.5 mb-1 text-slate-500">
-        <span className="text-lg">{icon}</span>
+        {icon}
         <span className="text-[10px] uppercase font-bold tracking-wider">{label}</span>
       </div>
       <span className="font-black text-slate-900 text-sm leading-tight">{value}</span>
@@ -48,6 +50,8 @@ export default function PropertyDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lightboxIdx, setLightboxIdx] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [chatOpen, setChatOpen] = useState(false);
   const { formatPrice, formatArea } = useMeasurement();
 
   const swrFetcher = async (url) => {
@@ -81,6 +85,13 @@ export default function PropertyDetail() {
     apiFetch(`/api/listings/${id}/similar`)
       .then((data) => setSimilarListings(Array.isArray(data) ? data : []))
       .catch((err) => console.error("Could not load similar properties", err));
+
+    // Who's logged in (needed to know who's sending chat messages)
+    if (localStorage.getItem("token")) {
+      apiFetch("/api/auth/me")
+        .then((data) => setCurrentUser(data?.user || null))
+        .catch(() => setCurrentUser(null));
+    }
   }, [id]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader className="w-10 h-10 animate-spin text-gold-700" /></div>;
@@ -275,21 +286,21 @@ export default function PropertyDetail() {
                 {home.title || `${home.propertyType.charAt(0).toUpperCase() + home.propertyType.slice(1)} in ${home.location?.municipality || 'Nepal'}`}
               </h1>
               <p className="text-slate-600 font-medium flex items-center gap-2 text-lg">
-                <MapPin className="w-5 h-5 text-rose-500" /> {locationDisplay}
+                <MapPin className="w-5 h-5 text-gold-600" /> {locationDisplay}
                 {home.location?.nearestLandmark && <span className="text-slate-400 bg-slate-100 px-2 rounded ml-2 text-sm">(Near {home.location.nearestLandmark})</span>}
               </p>
             </div>
 
             {/* Quick Facts Metrics */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {!isLand && <MetricBox label="Bedrooms" value={specs.bedrooms || home.beds} icon="🛏️" />}
-              {!isLand && <MetricBox label="Bathrooms" value={specs.bathrooms || home.baths} icon="🛁" />}
-              <MetricBox label="Road Access" value={specs.roadAccess?.widthFeet ? `${specs.roadAccess.widthFeet} ft ${specs.roadAccess.type ? `(${specs.roadAccess.type})` : ''}` : null} icon="🛣️" />
-              <MetricBox label="Facing" value={specs.facing} icon="🧭" />
-              <MetricBox label="Land Area" value={formatArea(specs.landArea, specs.builtUpAreaSqFt || home.sqft)} icon="📐" />
-              {!isLand && <MetricBox label="Kitchens" value={specs.kitchen} icon="🍳" />}
-              {!isLand && <MetricBox label="Furnished" value={specs.furnishing || (home.furnished ? 'Fully' : 'No')} icon="🛋️" />}
-              {isHouse && <MetricBox label="Floors" value={specs.totalFloors} icon="🏢" />}
+              {!isLand && <MetricBox label="Bedrooms" value={specs.bedrooms || home.beds} icon={<Bed className="h-4 w-4" />} />}
+              {!isLand && <MetricBox label="Bathrooms" value={specs.bathrooms || home.baths} icon={<Bath className="h-4 w-4" />} />}
+              <MetricBox label="Road Access" value={specs.roadAccess?.widthFeet ? `${specs.roadAccess.widthFeet} ft ${specs.roadAccess.type ? `(${specs.roadAccess.type})` : ''}` : null} icon={<Route className="h-4 w-4" />} />
+              <MetricBox label="Facing" value={specs.facing} icon={<Compass className="h-4 w-4" />} />
+              <MetricBox label="Land Area" value={formatArea(specs.landArea, specs.builtUpAreaSqFt || home.sqft)} icon={<Maximize2 className="h-4 w-4" />} />
+              {!isLand && <MetricBox label="Kitchens" value={specs.kitchen} icon={<UtensilsCrossed className="h-4 w-4" />} />}
+              {!isLand && <MetricBox label="Furnished" value={specs.furnishing || (home.furnished ? 'Fully' : 'No')} icon={<Sofa className="h-4 w-4" />} />}
+              {isHouse && <MetricBox label="Floors" value={specs.totalFloors} icon={<Layers className="h-4 w-4" />} />}
             </div>
 
             <hr className="border-slate-200" />
@@ -302,7 +313,10 @@ export default function PropertyDetail() {
                   <h3 className="font-bold text-amber-900 mb-3 text-sm uppercase tracking-widest">Key Highlights</h3>
                   <ul className="space-y-2">
                     {home.highlights.map((h, i) => (
-                      <li key={i} className="flex gap-3 text-amber-950 font-medium"><span className="text-amber-500 font-bold">✓</span> {h}</li>
+                      <li key={i} className="flex gap-3 items-start text-amber-950 font-medium">
+                        <CheckCircle2 className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                        {h}
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -444,7 +458,7 @@ export default function PropertyDetail() {
               <h2 className="text-2xl font-extrabold text-slate-900 mb-5">Location & Map</h2>
               {home.mapsUrl ? (
                 <div className="bg-slate-100 p-6 rounded-3xl flex flex-col items-center justify-center text-center">
-                  <MapPin className="w-10 h-10 text-rose-500 mb-3" />
+                  <MapPin className="w-10 h-10 text-gold-600 mb-3" />
                   <p className="font-bold text-slate-700 mb-4">The owner has provided a direct Google Maps link.</p>
                   <a href={home.mapsUrl} target="_blank" rel="noreferrer" className="bg-gold-500 hover:bg-gold-600 text-white font-bold px-6 py-3 rounded-xl shadow-md transition-all">
                     Open in Google Maps
@@ -502,6 +516,16 @@ export default function PropertyDetail() {
                     <a href={`https://wa.me/${home.contact.whatsapp.replace(/[^0-9+]/g, '')}`} target="_blank" rel="noreferrer" className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transform active:scale-95 text-lg">
                       <MessageCircle className="w-5 h-5" /> WhatsApp Owner
                     </a>
+                  )}
+
+                  {home.owner && currentUser && String(currentUser.id || currentUser._id) !== String(home.owner._id || home.owner.id) && (
+                    <button
+                      type="button"
+                      onClick={() => setChatOpen(true)}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 transform active:scale-95 text-lg"
+                    >
+                      <MessageSquare className="w-5 h-5" /> Message Owner
+                    </button>
                   )}
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
@@ -588,6 +612,16 @@ export default function PropertyDetail() {
           <p className="text-xl font-black text-slate-900 tracking-tight">{priceLabel} <span className="text-sm font-bold text-slate-500">{home.type === 'rent' && '/mo'}</span></p>
         </div>
         <div className="flex gap-2">
+          {home.owner && currentUser && String(currentUser.id || currentUser._id) !== String(home.owner._id || home.owner.id) && (
+            <button
+              type="button"
+              onClick={() => setChatOpen(true)}
+              aria-label="Message owner"
+              className="bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 active:scale-95 font-black h-12 w-12 rounded-xl flex items-center justify-center transition-transform"
+            >
+              <MessageSquare className="w-5 h-5" />
+            </button>
+          )}
           {home.contact?.whatsapp && (
             <a href={`https://wa.me/${home.contact.whatsapp.replace(/[^0-9+]/g, '')}`} target="_blank" rel="noreferrer" className="bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 active:scale-95 font-black h-12 w-12 rounded-xl flex items-center justify-center transition-transform">
               <MessageCircle className="w-5 h-5" />
@@ -622,6 +656,15 @@ export default function PropertyDetail() {
           )}
         </div>
       </div>
+
+      {home.owner && (
+        <ChatWidget
+          isOpen={chatOpen}
+          onClose={() => setChatOpen(false)}
+          currentUser={currentUser}
+          receiver={home.owner}
+        />
+      )}
 
     </div>
   );

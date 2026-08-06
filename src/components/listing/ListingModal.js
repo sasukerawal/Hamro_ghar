@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import {
     Heart, ChevronLeft, ChevronRight, Edit3, MapPin,
-    AlertTriangle, Copy, Share2, X
+    AlertTriangle, Copy, Share2, X, Bed, Bath, Ruler, Compass,
+    Car, Bike, Sofa, Sparkles
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
@@ -31,6 +32,15 @@ const ListingModal = ({
     useEffect(() => {
         setActiveIndex(0);
     }, [home?._id, home?.id]);
+
+    // Close on Escape key
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === "Escape") onClose?.();
+        };
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, [onClose]);
 
     // Derived Values
     const images = useMemo(() => {
@@ -77,7 +87,7 @@ const ListingModal = ({
     if (!home) return null;
 
     return (
-        <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-0 sm:p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
+        <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true" aria-label={name} onClick={(e) => e.target === e.currentTarget && onClose()}>
             {/* Dynamic SEO */}
             <Helmet>
                 <title>{`${name} - HamroGhar`}</title>
@@ -92,7 +102,7 @@ const ListingModal = ({
                             <Edit3 className="h-4 w-4" /> Edit
                         </button>
                     )}
-                    <button onClick={onClose} className="bg-white/90 hover:bg-white text-slate-800 h-10 w-10 rounded-full flex items-center justify-center shadow-lg shadow-black/10 backdrop-blur-md transition-all active:scale-95">
+                    <button onClick={onClose} aria-label="Close listing details" className="bg-white/90 hover:bg-white text-slate-800 h-10 w-10 rounded-full flex items-center justify-center shadow-lg shadow-black/10 backdrop-blur-md transition-all active:scale-95">
                         <X className="h-5 w-5" />
                     </button>
                 </div>
@@ -117,12 +127,14 @@ const ListingModal = ({
                     {images.length > 1 && (
                         <>
                             <button
+                                aria-label="Previous photo"
                                 onClick={(e) => { e.stopPropagation(); setActiveIndex(prev => (prev - 1 + images.length) % images.length); }}
                                 className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full backdrop-blur-md transition-all opacity-0 group-hover:opacity-100"
                             >
                                 <ChevronLeft className="h-8 w-8" />
                             </button>
                             <button
+                                aria-label="Next photo"
                                 onClick={(e) => { e.stopPropagation(); setActiveIndex(prev => (prev + 1) % images.length); }}
                                 className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full backdrop-blur-md transition-all opacity-0 group-hover:opacity-100"
                             >
@@ -158,10 +170,10 @@ const ListingModal = ({
 
                         {/* Grid Facts */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <QuickFact label="Bedrooms" value={home.specs?.bedrooms || home.beds} icon="🛏️" />
-                            <QuickFact label="Bathrooms" value={home.specs?.bathrooms || home.baths} icon="🛁" />
-                            <QuickFact label="Land Area" value={home.specs?.display || home.sqft} icon="📐" />
-                            <QuickFact label="Facing" value={home.specs?.facing} icon="🧭" />
+                            <QuickFact label="Bedrooms" value={home.specs?.bedrooms || home.beds} icon={Bed} />
+                            <QuickFact label="Bathrooms" value={home.specs?.bathrooms || home.baths} icon={Bath} />
+                            <QuickFact label="Land Area" value={home.specs?.display || home.sqft} icon={Ruler} />
+                            <QuickFact label="Facing" value={home.specs?.facing} icon={Compass} />
                         </div>
 
                         <div className="grid lg:grid-cols-3 gap-12">
@@ -183,10 +195,10 @@ const ListingModal = ({
                                         Facilities
                                     </h3>
                                     <div className="flex flex-wrap gap-2">
-                                        {home.facilities?.carParking > 0 && <AmenityTag active>🚗 Car Parking ({home.facilities.carParking})</AmenityTag>}
-                                        {home.facilities?.bikeParking > 0 && <AmenityTag active>🏍️ Bike Parking ({home.facilities.bikeParking})</AmenityTag>}
-                                        {home.specs?.furnishing && <AmenityTag active>🛋️ {home.specs.furnishing}</AmenityTag>}
-                                        {home.amenities?.map(a => <AmenityTag key={a} active>✨ {a}</AmenityTag>)}
+                                        {home.facilities?.carParking > 0 && <AmenityTag active><Car className="h-3.5 w-3.5" /> Car Parking ({home.facilities.carParking})</AmenityTag>}
+                                        {home.facilities?.bikeParking > 0 && <AmenityTag active><Bike className="h-3.5 w-3.5" /> Bike Parking ({home.facilities.bikeParking})</AmenityTag>}
+                                        {home.specs?.furnishing && <AmenityTag active><Sofa className="h-3.5 w-3.5" /> {home.specs.furnishing}</AmenityTag>}
+                                        {home.amenities?.map(a => <AmenityTag key={a} active><Sparkles className="h-3.5 w-3.5" /> {a}</AmenityTag>)}
                                     </div>
                                 </section>
 
@@ -222,8 +234,8 @@ const ListingModal = ({
                                     <div className="flex items-center justify-between pt-2">
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Share</span>
                                         <div className="flex gap-2">
-                                            <button onClick={handleCopyLink} className="p-2.5 rounded-xl bg-white border border-slate-100 text-slate-500 hover:text-gold-700 hover:border-blue-100 transition-all"><Copy className="h-4 w-4" /></button>
-                                            <button className="p-2.5 rounded-xl bg-white border border-slate-100 text-slate-500 hover:text-green-600 hover:border-green-100 transition-all"><Share2 className="h-4 w-4" /></button>
+                                            <button onClick={handleCopyLink} aria-label="Copy listing link" className="p-2.5 rounded-xl bg-white border border-slate-100 text-slate-500 hover:text-gold-700 hover:border-blue-100 transition-all"><Copy className="h-4 w-4" /></button>
+                                            <button aria-label="Share listing" className="p-2.5 rounded-xl bg-white border border-slate-100 text-slate-500 hover:text-emerald-600 hover:border-emerald-100 transition-all"><Share2 className="h-4 w-4" /></button>
                                         </div>
                                     </div>
                                 </div>

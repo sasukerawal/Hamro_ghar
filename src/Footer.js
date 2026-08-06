@@ -15,6 +15,15 @@ export default function Footer() {
         </div>
         <div className="flex items-center gap-4">
           <Link
+            to="/our-story"
+            className="hover:text-gold-700"
+            onClick={() =>
+              window.scrollTo({ top: 0, behavior: "smooth" })
+            }
+          >
+            Our Story
+          </Link>
+          <Link
             to="/login"
             className="hover:text-gold-700"
             onClick={() =>

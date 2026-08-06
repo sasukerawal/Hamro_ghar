@@ -8,10 +8,10 @@ import {
 } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { Loader } from "lucide-react";
 
 import { apiFetch } from "./api";
 import { MeasurementProvider } from "./contexts/MeasurementContext";
+import LoadingState from "./components/common/LoadingState";
 
 // Core components needed immediately
 import Header from "./Header";
@@ -30,13 +30,10 @@ const NotFound = lazy(() => import("./NotFound"));
 const AdminDashboard = lazy(() => import("./AdminDashboard"));
 const PropertyDetail = lazy(() => import("./PropertyDetail"));
 const SafetyTips = lazy(() => import("./SafetyTips"));
+const OurStory = lazy(() => import("./OurStory"));
 
 // Loading fallback for suspended routes
-const FallbackSpinner = () => (
-  <div className="flex-1 flex items-center justify-center min-h-[50vh]">
-    <Loader className="h-8 w-8 animate-spin text-gold-600" />
-  </div>
-);
+const FallbackSpinner = () => <LoadingState />;
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -225,6 +222,9 @@ function App() {
 
               {/* Safety Tips */}
               <Route path="/safety" element={<SafetyTips />} />
+
+              {/* Our Story — immersive brand intro */}
+              <Route path="/our-story" element={<OurStory />} />
 
               {/* Fallback: proper 404 page */}
               <Route path="*" element={<NotFound />} />

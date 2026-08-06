@@ -18,6 +18,11 @@ export default function ChatWidget({ isOpen, onClose, currentUser, receiver }) {
     setConnecting(true);
 
     const socket = getSocket();
+    if (!socket) {
+      // Not logged in / no token — nothing to wire up.
+      setConnecting(false);
+      return;
+    }
 
     const handleReceive = (msg) => {
       const myId = currentUser.id || currentUser._id;
@@ -67,7 +72,7 @@ export default function ChatWidget({ isOpen, onClose, currentUser, receiver }) {
     if (!text || !currentUser || !receiver) return;
 
     const socket = getSocket();
-    if (!socket.connected) return;
+    if (!socket || !socket.connected) return;
 
     const otherId = receiver.id || receiver._id;
     socket.emit("sendMessage", { to: otherId, content: text });
@@ -97,7 +102,8 @@ export default function ChatWidget({ isOpen, onClose, currentUser, receiver }) {
         <button
           type="button"
           onClick={onClose}
-          className="p-1 hover:bg-white/20 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+          aria-label="Close chat"
+          className="h-11 w-11 flex items-center justify-center hover:bg-white/20 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
         >
           <X className="h-5 w-5" />
         </button>
@@ -153,7 +159,8 @@ export default function ChatWidget({ isOpen, onClose, currentUser, receiver }) {
         <button
           type="submit"
           disabled={connecting || !inputText.trim()}
-          className="bg-gold-500 text-white p-2 rounded-full hover:bg-gold-600 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400/40"
+          aria-label="Send message"
+          className="bg-gold-500 text-white h-11 w-11 flex items-center justify-center rounded-full hover:bg-gold-600 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400/40"
         >
           <Send className="h-4 w-4" />
         </button>

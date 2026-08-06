@@ -3,6 +3,9 @@ import React, { useState, useEffect } from "react";
 import { apiFetch } from "./api";
 import { toast } from "react-toastify";
 import { Loader, Trash2, Users, HomeIcon, Eye, Shield, AlertTriangle, CheckCircle } from "lucide-react";
+import Pill from "./components/common/Pill";
+import EmptyState from "./components/common/EmptyState";
+import LoadingState from "./components/common/LoadingState";
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
@@ -93,7 +96,7 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader className="h-8 w-8 animate-spin text-gold-700" />
+        <LoadingState variant="inline" label="Loading dashboard…" />
       </div>
     );
   }
@@ -124,8 +127,8 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
             { label: "Total Listings", value: data?.totalListings ?? "—", icon: <HomeIcon className="h-5 w-5 text-gold-600" /> },
-            { label: "Active Listings", value: data?.activeListings ?? "—", icon: <Eye className="h-5 w-5 text-green-500" /> },
-            { label: "Total Users", value: data?.totalUsers ?? "—", icon: <Users className="h-5 w-5 text-purple-500" /> },
+            { label: "Active Listings", value: data?.activeListings ?? "—", icon: <Eye className="h-5 w-5 text-emerald-500" /> },
+            { label: "Total Users", value: data?.totalUsers ?? "—", icon: <Users className="h-5 w-5 text-slate-500" /> },
             { label: "Pending Reports", value: data?.totalReports ?? "—", icon: <AlertTriangle className="h-5 w-5 text-amber-500" /> },
           ].map((s) => (
             <div key={s.label} className="rounded-2xl bg-white border border-blue-50 shadow-sm p-5 flex items-center gap-4">
@@ -182,7 +185,7 @@ export default function AdminDashboard() {
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                           l.type === "wanted" || l.type === "rent"
-                            ? "bg-purple-50 text-purple-700 border border-purple-200"
+                            ? "bg-slate-100 text-slate-600 border border-slate-200"
                             : "bg-blue-50 text-gold-700 border border-blue-200"
                         }`}>
                           {l.type}
@@ -192,23 +195,23 @@ export default function AdminDashboard() {
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                           l.status === "active"
-                            ? "bg-green-50 text-green-700 border border-green-200"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                             : "bg-slate-100 text-slate-500 border border-slate-200"
                         }`}>
                           {l.status}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <button
+                        <Pill
+                          size="sm"
+                          variant="success"
+                          active={l.isVerified}
+                          icon={l.isVerified ? <CheckCircle className="h-3.5 w-3.5" /> : undefined}
                           onClick={() => handleToggleVerify(l._id, l.isVerified)}
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${
-                            l.isVerified
-                              ? "bg-gold-500 text-white border-gold-600 shadow-sm"
-                              : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
-                          }`}
+                          aria-label={l.isVerified ? "Remove listing verification" : "Verify listing"}
                         >
-                          {l.isVerified ? "✓ Verified" : "Unverified"}
-                        </button>
+                          {l.isVerified ? "Verified" : "Unverified"}
+                        </Pill>
                       </td>
                       <td className="px-4 py-3 text-slate-500 text-[11px]">
                         {new Date(l.createdAt).toLocaleDateString()}
@@ -217,9 +220,10 @@ export default function AdminDashboard() {
                         <button
                           onClick={() => handleDelete(l._id)}
                           disabled={deletingId === l._id}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-200 text-red-500 text-[11px] font-semibold hover:bg-red-50 transition-colors disabled:opacity-50"
+                          aria-label="Delete listing"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 min-h-[44px] rounded-lg border border-red-200 text-red-500 text-xs font-semibold hover:bg-red-50 transition-colors disabled:opacity-50"
                         >
-                          {deletingId === l._id ? <Loader className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                          {deletingId === l._id ? <Loader className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                           Delete
                         </button>
                       </td>
@@ -228,7 +232,7 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
               {(!data?.recentListings || data.recentListings.length === 0) && (
-                <p className="text-center text-sm text-slate-400 py-8">No listings found</p>
+                <EmptyState icon={HomeIcon} title="No listings found" />
               )}
             </div>
           </div>
@@ -269,7 +273,7 @@ export default function AdminDashboard() {
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                           r.status === "resolved" || r.status === "reviewed"
-                            ? "bg-green-50 text-green-700 border border-green-200"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                             : "bg-amber-50 text-amber-700 border border-amber-200"
                         }`}>
                           {r.status}
@@ -278,14 +282,15 @@ export default function AdminDashboard() {
                       <td className="px-4 py-3 text-slate-500 text-[11px]">
                         {new Date(r.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-3 flex gap-2">
+                      <td className="px-4 py-3 flex flex-wrap items-center gap-2">
                          {r.status !== "resolved" && (
                            <button
                              onClick={() => handleResolveReport(r._id)}
                              disabled={resolvingId === r._id}
-                             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-green-200 text-green-600 text-[11px] font-semibold hover:bg-green-50 transition-colors disabled:opacity-50"
+                             aria-label="Mark report resolved"
+                             className="inline-flex items-center gap-1.5 px-3.5 py-2.5 min-h-[44px] rounded-lg border border-emerald-200 text-emerald-600 text-xs font-semibold hover:bg-emerald-50 transition-colors disabled:opacity-50"
                            >
-                             {resolvingId === r._id ? <Loader className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
+                             {resolvingId === r._id ? <Loader className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
                              Mark Resolved
                            </button>
                          )}
@@ -293,9 +298,10 @@ export default function AdminDashboard() {
                            <button
                              onClick={() => handleDelete(r.listingId._id)}
                              disabled={deletingId === r.listingId._id}
-                             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-200 text-red-500 text-[11px] font-semibold hover:bg-red-50 transition-colors disabled:opacity-50"
+                             aria-label="Delete listing"
+                             className="inline-flex items-center gap-1.5 px-3.5 py-2.5 min-h-[44px] rounded-lg border border-red-200 text-red-500 text-xs font-semibold hover:bg-red-50 transition-colors disabled:opacity-50"
                            >
-                             {deletingId === r.listingId._id ? <Loader className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                             {deletingId === r.listingId._id ? <Loader className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                              Delete Listing
                            </button>
                          )}
@@ -305,13 +311,7 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
               {(!data?.reports || data.reports.length === 0) && (
-                <div className="text-center py-10">
-                  <div className="mx-auto w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mb-3">
-                    <CheckCircle className="w-6 h-6 text-green-500" />
-                  </div>
-                  <p className="text-sm font-semibold text-slate-700">All caught up!</p>
-                  <p className="text-xs text-slate-500 mt-1">There are no pending reports in the queue.</p>
-                </div>
+                <EmptyState icon={CheckCircle} title="All caught up!" text="There are no pending reports in the queue." />
               )}
             </div>
           </div>
@@ -356,23 +356,23 @@ export default function AdminDashboard() {
                         {new Date(u.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3">
-                        <button
+                        <Pill
+                          size="sm"
+                          variant="success"
+                          active={u.isVerified}
+                          icon={u.isVerified ? <CheckCircle className="h-3.5 w-3.5" /> : undefined}
                           onClick={() => handleToggleVerifyUser(u._id, u.isVerified)}
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${
-                            u.isVerified
-                              ? "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200"
-                              : "bg-gold-500 text-white border-gold-600 shadow-sm hover:bg-gold-600"
-                          }`}
+                          aria-label={u.isVerified ? "Remove user verification" : "Verify user"}
                         >
-                          {u.isVerified ? "Remove Verify" : "Verify User"}
-                        </button>
+                          {u.isVerified ? "Verified" : "Unverified"}
+                        </Pill>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               {(!data?.recentUsers || data.recentUsers.length === 0) && (
-                <p className="text-center text-sm text-slate-400 py-8">No users found</p>
+                <EmptyState icon={Users} title="No users found" />
               )}
             </div>
           </div>

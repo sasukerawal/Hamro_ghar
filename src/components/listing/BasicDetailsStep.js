@@ -13,8 +13,9 @@ const BasicDetailsStep = ({ formData, setFormData, errors }) => {
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-widest">Property Title</label>
+                    <label htmlFor="listingName" className="text-xs font-black text-slate-700 uppercase tracking-widest">Property Title</label>
                     <input
+                        id="listingName"
                         name="name"
                         value={formData.name || ''}
                         onChange={handleChange}
@@ -25,8 +26,9 @@ const BasicDetailsStep = ({ formData, setFormData, errors }) => {
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-widest">Listing Type</label>
+                    <label htmlFor="listingDealType" className="text-xs font-black text-slate-700 uppercase tracking-widest">Listing Type</label>
                     <select
+                        id="listingDealType"
                         name="type"
                         value={formData.type || 'sale'}
                         onChange={handleChange}
@@ -39,8 +41,9 @@ const BasicDetailsStep = ({ formData, setFormData, errors }) => {
             </div>
 
             <div className="space-y-2">
-                <label className="text-xs font-black text-slate-700 uppercase tracking-widest">Property Description</label>
+                <label htmlFor="listingDescription" className="text-xs font-black text-slate-700 uppercase tracking-widest">Property Description</label>
                 <textarea
+                    id="listingDescription"
                     name="description"
                     value={formData.description || ''}
                     onChange={handleChange}
@@ -52,8 +55,9 @@ const BasicDetailsStep = ({ formData, setFormData, errors }) => {
 
             <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-widest">Price (NPR)</label>
+                    <label htmlFor="listingPrice" className="text-xs font-black text-slate-700 uppercase tracking-widest">Price (NPR)</label>
                     <input
+                        id="listingPrice"
                         name="price"
                         type="number"
                         value={formData.price || ''}
@@ -65,8 +69,9 @@ const BasicDetailsStep = ({ formData, setFormData, errors }) => {
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-widest">Property Type</label>
+                    <label htmlFor="listingPropertyType" className="text-xs font-black text-slate-700 uppercase tracking-widest">Property Type</label>
                     <select
+                        id="listingPropertyType"
                         name="propertyType"
                         value={formData.propertyType || 'House'}
                         onChange={(e) => setFormData(prev => ({

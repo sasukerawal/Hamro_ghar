@@ -23,9 +23,10 @@ const SpecsStep = ({ formData, setFormData, errors }) => {
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-widest">Land Area / Size</label>
+                    <label htmlFor="specLandArea" className="text-xs font-black text-slate-700 uppercase tracking-widest">Land Area / Size</label>
                     <div className="flex gap-2">
                         <input
+                            id="specLandArea"
                             name="landArea"
                             type="number"
                             value={formData.specs?.landArea || ''}
@@ -33,7 +34,9 @@ const SpecsStep = ({ formData, setFormData, errors }) => {
                             placeholder="e.g. 3.5"
                             className="flex-1 px-4 py-3 rounded-xl border border-slate-200 outline-none focus:border-gold-400 font-bold"
                         />
+                        <label htmlFor="specLandAreaUnit" className="sr-only">Land area unit</label>
                         <select
+                            id="specLandAreaUnit"
                             name="landAreaUnit"
                             value={formData.specs?.landAreaUnit || 'Aana'}
                             onChange={handleChange}
@@ -50,8 +53,9 @@ const SpecsStep = ({ formData, setFormData, errors }) => {
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-widest">Facing Direction</label>
+                    <label htmlFor="specFacing" className="text-xs font-black text-slate-700 uppercase tracking-widest">Facing Direction</label>
                     <select
+                        id="specFacing"
                         name="facing"
                         value={formData.specs?.facing || 'East'}
                         onChange={handleChange}
@@ -72,8 +76,9 @@ const SpecsStep = ({ formData, setFormData, errors }) => {
             {!isLand && (
                 <div className="grid gap-6 sm:grid-cols-2">
                     <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-700 uppercase tracking-widest">Bedrooms</label>
+                        <label htmlFor="specBedrooms" className="text-xs font-black text-slate-700 uppercase tracking-widest">Bedrooms</label>
                         <input
+                            id="specBedrooms"
                             name="bedrooms"
                             type="number"
                             value={formData.specs?.bedrooms || ''}
@@ -83,8 +88,9 @@ const SpecsStep = ({ formData, setFormData, errors }) => {
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-700 uppercase tracking-widest">Bathrooms</label>
+                        <label htmlFor="specBathrooms" className="text-xs font-black text-slate-700 uppercase tracking-widest">Bathrooms</label>
                         <input
+                            id="specBathrooms"
                             name="bathrooms"
                             type="number"
                             value={formData.specs?.bathrooms || ''}
@@ -94,8 +100,9 @@ const SpecsStep = ({ formData, setFormData, errors }) => {
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-700 uppercase tracking-widest">Total Floors</label>
+                        <label htmlFor="specTotalFloors" className="text-xs font-black text-slate-700 uppercase tracking-widest">Total Floors</label>
                         <input
+                            id="specTotalFloors"
                             name="totalFloors"
                             type="number"
                             value={formData.specs?.totalFloors || ''}
@@ -105,8 +112,9 @@ const SpecsStep = ({ formData, setFormData, errors }) => {
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-700 uppercase tracking-widest">Furnishing</label>
+                        <label htmlFor="specFurnishing" className="text-xs font-black text-slate-700 uppercase tracking-widest">Furnishing</label>
                         <select
+                            id="specFurnishing"
                             name="furnishing"
                             value={formData.specs?.furnishing || 'Not Furnished'}
                             onChange={handleChange}
@@ -122,8 +130,9 @@ const SpecsStep = ({ formData, setFormData, errors }) => {
 
             <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-widest">Road Access (Feet)</label>
+                    <label htmlFor="specRoadAccessFeet" className="text-xs font-black text-slate-700 uppercase tracking-widest">Road Access (Feet)</label>
                     <input
+                        id="specRoadAccessFeet"
                         name="roadAccessFeet"
                         type="number"
                         value={formData.specs?.roadAccessFeet || ''}
@@ -134,8 +143,9 @@ const SpecsStep = ({ formData, setFormData, errors }) => {
                 </div>
                 {!isLand && (
                     <div className="space-y-2">
-                        <label className="text-xs font-black text-slate-700 uppercase tracking-widest">Built Year</label>
+                        <label htmlFor="specBuiltYear" className="text-xs font-black text-slate-700 uppercase tracking-widest">Built Year</label>
                         <input
+                            id="specBuiltYear"
                             name="builtYear"
                             type="number"
                             value={formData.specs?.builtYear || ''}

@@ -2,8 +2,10 @@
  * Listing Service
  * Handles listing-related API operations and persistent logic.
  */
+import React from 'react';
 import { apiFetch } from '../api';
 import { toast } from 'react-toastify';
+import { Heart } from 'lucide-react';
 
 /**
  * Toggles the saved status of a property.
@@ -41,7 +43,13 @@ export async function toggleSaveListing(listing, savedIds, setSavedIds, onGoLogi
 
         // Success notification
         toast.success(
-            isSaved ? "Removed from your favourites" : "Home saved to favourites ❤️"
+            isSaved ? (
+                "Removed from your favourites"
+            ) : (
+                <span className="inline-flex items-center gap-1">
+                    Home saved to favourites <Heart className="h-3.5 w-3.5 fill-current" />
+                </span>
+            )
         );
     } catch (err) {
         // Handle specific auth failures

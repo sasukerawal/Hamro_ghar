@@ -1,5 +1,6 @@
 import React from 'react';
 import { CheckCircle2 } from 'lucide-react';
+import LoadingState from '../common/LoadingState';
 
 /**
  * NarrativeStep - Final step of the property posting form.
@@ -8,8 +9,8 @@ const NarrativeStep = ({ formData, isSubmitting }) => {
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="text-center space-y-4">
-                <div className="inline-flex h-20 w-20 rounded-full bg-green-100 items-center justify-center mb-2">
-                    <CheckCircle2 className="h-10 w-10 text-green-600" />
+                <div className="inline-flex h-20 w-20 rounded-full bg-emerald-100 items-center justify-center mb-2">
+                    <CheckCircle2 className="h-10 w-10 text-emerald-600" />
                 </div>
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">Almost Done!</h2>
                 <p className="text-sm text-slate-600 max-w-sm mx-auto font-medium leading-relaxed">
@@ -55,10 +56,7 @@ const NarrativeStep = ({ formData, isSubmitting }) => {
             </div>
 
             {isSubmitting && (
-                <div className="flex flex-col items-center gap-3 py-4 text-gold-700">
-                    <div className="h-6 w-6 border-4 border-current border-t-transparent rounded-full animate-spin" />
-                    <p className="text-xs font-black uppercase tracking-widest">Publishing Listing...</p>
-                </div>
+                <LoadingState variant="inline" label="Publishing Listing..." />
             )}
         </div>
     );

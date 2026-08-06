@@ -3,7 +3,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft, ArrowRight, CheckCircle, MapPin, UploadCloud, X, Plus, Trash, Youtube
+  ArrowLeft, ArrowRight, CheckCircle, MapPin, UploadCloud, X, Plus, Trash, Youtube,
+  Home, Building2, User, Users, Mountain, Wheat
 } from "lucide-react";
 import { apiFetch } from "./api";
 import { NEPAL_DATA, PROVINCES, FACING_DIRECTIONS } from "./utils/nepalLocations";
@@ -475,7 +476,7 @@ export default function PostListing() {
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate("/membership")} className="p-2 bg-white rounded-full shadow-sm hover:text-gold-700 transition-colors">
+            <button onClick={() => navigate("/membership")} aria-label="Back to membership" className="p-2 bg-white rounded-full shadow-sm hover:text-gold-700 transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
@@ -514,17 +515,17 @@ export default function PostListing() {
                 <div>
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Listing Category *</label>
                   <div className="flex gap-3">
-                    {[{ val: "home", label: "🏠 Home / Property" }, { val: "hostel", label: "🏨 Hostel" }].map(({ val, label }) => (
+                    {[{ val: "home", label: "Home / Property", Icon: Home }, { val: "hostel", label: "Hostel", Icon: Building2 }].map(({ val, label, Icon }) => (
                       <button
                         key={val}
                         type="button"
                         onClick={() => handleChange("category")({ target: { value: val } })}
-                        className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${form.category === val
+                        className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all flex items-center justify-center gap-2 ${form.category === val
                           ? "border-gold-400 bg-blue-50 text-gold-800 shadow-sm"
                           : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                           }`}
                       >
-                        {label}
+                        <Icon className="w-4 h-4" /> {label}
                       </button>
                     ))}
                   </div>
@@ -535,17 +536,17 @@ export default function PostListing() {
                   <div>
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Hostel Type *</label>
                     <div className="flex gap-3">
-                      {[{ val: "boys", label: "👦 Boys" }, { val: "girls", label: "👧 Girls" }, { val: "mix", label: "🤝 Mix" }].map(({ val, label }) => (
+                      {[{ val: "boys", label: "Boys", Icon: User }, { val: "girls", label: "Girls", Icon: User }, { val: "mix", label: "Mix", Icon: Users }].map(({ val, label, Icon }) => (
                         <button
                           key={val}
                           type="button"
                           onClick={() => handleChange("hostelType")({ target: { value: val } })}
-                          className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${form.hostelType === val
+                          className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all flex items-center justify-center gap-2 ${form.hostelType === val
                             ? "border-gold-400 bg-blue-50 text-gold-800 shadow-sm"
                             : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                             }`}
                         >
-                          {label}
+                          <Icon className="w-4 h-4" /> {label}
                         </button>
                       ))}
                     </div>
@@ -554,15 +555,15 @@ export default function PostListing() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Deal Type *</label>
-                    <select value={form.type} onChange={handleChange("type")} className="w-full border-2 border-slate-200 outline-none p-4 rounded-xl font-bold focus:border-gold-400 text-slate-800 focus:bg-white bg-slate-50 transition-colors">
+                    <label htmlFor="dealType" className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Deal Type *</label>
+                    <select id="dealType" value={form.type} onChange={handleChange("type")} className="w-full border-2 border-slate-200 outline-none p-4 rounded-xl font-bold focus:border-gold-400 text-slate-800 focus:bg-white bg-slate-50 transition-colors">
                       <option value="sale">For Sale</option>
                       <option value="rent">For Rent</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Property Type *</label>
-                    <select value={form.propertyType} onChange={handleChange("propertyType")} className="w-full border-2 border-slate-200 outline-none p-4 rounded-xl font-bold focus:border-gold-400 text-slate-800 focus:bg-white bg-slate-50 transition-colors">
+                    <label htmlFor="propertyType" className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Property Type *</label>
+                    <select id="propertyType" value={form.propertyType} onChange={handleChange("propertyType")} className="w-full border-2 border-slate-200 outline-none p-4 rounded-xl font-bold focus:border-gold-400 text-slate-800 focus:bg-white bg-slate-50 transition-colors">
                       <option value="house">House</option>
                       <option value="apartment">Apartment / Flat</option>
                       <option value="land">Land / Plot</option>
@@ -572,10 +573,10 @@ export default function PostListing() {
                   </div>
                 </div>
                 <div className="bg-blue-50/70 border border-blue-100 p-6 rounded-2xl relative overflow-hidden mt-6">
-                  <label className="text-xs uppercase tracking-widest text-gold-700 font-black block mb-2">{form.type === 'rent' ? 'Monthly Rent *' : 'Total Price *'}</label>
+                  <label htmlFor="price" className="text-xs uppercase tracking-widest text-gold-700 font-black block mb-2">{form.type === 'rent' ? 'Monthly Rent *' : 'Total Price *'}</label>
                   <div className="relative z-10 text-slate-800">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-xl">Rs.</span>
-                    <input type="number" min="0" placeholder="e.g. 15000000" value={form.price} onChange={handleChange("price")} className="w-full border-2 border-transparent outline-none focus:border-gold-300 p-4 pl-14 rounded-xl text-2xl font-black bg-white shadow-sm transition-colors" />
+                    <input id="price" type="number" min="0" placeholder="e.g. 15000000" value={form.price} onChange={handleChange("price")} className="w-full border-2 border-transparent outline-none focus:border-gold-300 p-4 pl-14 rounded-xl text-2xl font-black bg-white shadow-sm transition-colors" />
                   </div>
                 </div>
               </div>
@@ -590,15 +591,15 @@ export default function PostListing() {
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Province *</label>
-                    <select value={form.province} onChange={handleChange("province")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl focus:border-gold-400 bg-slate-50 focus:bg-white transition-colors font-bold text-slate-800">
+                    <label htmlFor="province" className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Province *</label>
+                    <select id="province" value={form.province} onChange={handleChange("province")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl focus:border-gold-400 bg-slate-50 focus:bg-white transition-colors font-bold text-slate-800">
                       <option value="">Select Province</option>
                       {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">District *</label>
-                    <select value={form.district} onChange={handleChange("district")} disabled={!form.province} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl focus:border-gold-400 bg-slate-50 focus:bg-white transition-colors font-bold text-slate-800 disabled:opacity-50">
+                    <label htmlFor="district" className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">District *</label>
+                    <select id="district" value={form.district} onChange={handleChange("district")} disabled={!form.province} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl focus:border-gold-400 bg-slate-50 focus:bg-white transition-colors font-bold text-slate-800 disabled:opacity-50">
                       <option value="">{form.province ? 'Select District' : 'Select Province first'}</option>
                       {form.province && NEPAL_DATA[form.province] && Object.keys(NEPAL_DATA[form.province]).sort().map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
@@ -607,46 +608,47 @@ export default function PostListing() {
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Municipality / VDC *</label>
-                    <select value={form.municipality} onChange={handleChange("municipality")} disabled={!form.district} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl focus:border-gold-400 bg-slate-50 focus:bg-white transition-colors font-bold text-slate-800 disabled:opacity-50">
+                    <label htmlFor="municipality" className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Municipality / VDC *</label>
+                    <select id="municipality" value={form.municipality} onChange={handleChange("municipality")} disabled={!form.district} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl focus:border-gold-400 bg-slate-50 focus:bg-white transition-colors font-bold text-slate-800 disabled:opacity-50">
                       <option value="">{form.district ? 'Select Municipality' : 'Select District first'}</option>
                       {form.province && form.district && NEPAL_DATA[form.province]?.[form.district]?.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Ward No</label>
-                      <input type="number" placeholder="e.g. 10" value={form.wardNo} onChange={handleChange("wardNo")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl focus:border-gold-400 bg-slate-50 focus:bg-white transition-colors font-medium text-center" />
+                      <label htmlFor="wardNo" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Ward No</label>
+                      <input id="wardNo" type="number" placeholder="e.g. 10" value={form.wardNo} onChange={handleChange("wardNo")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl focus:border-gold-400 bg-slate-50 focus:bg-white transition-colors font-medium text-center" />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Nearest Landmark</label>
-                      <input type="text" placeholder="e.g. Big Mart" value={form.nearestLandmark} onChange={handleChange("nearestLandmark")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl focus:border-gold-400 bg-slate-50 focus:bg-white transition-colors font-medium" />
+                      <label htmlFor="nearestLandmark" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Nearest Landmark</label>
+                      <input id="nearestLandmark" type="text" placeholder="e.g. Big Mart" value={form.nearestLandmark} onChange={handleChange("nearestLandmark")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl focus:border-gold-400 bg-slate-50 focus:bg-white transition-colors font-medium" />
                     </div>
                   </div>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Tole / Area {form.category !== 'hostel' ? '*' : '(Optional)'}</label>
-                    <input type="text" placeholder="e.g. Shantinagar" value={form.tole} onChange={handleChange("tole")} className="w-full border-2 border-slate-200 p-4 outline-none rounded-xl focus:border-gold-400 bg-slate-50 focus:bg-white transition-colors font-bold text-lg" />
+                    <label htmlFor="tole" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Tole / Area {form.category !== 'hostel' ? '*' : '(Optional)'}</label>
+                    <input id="tole" type="text" placeholder="e.g. Shantinagar" value={form.tole} onChange={handleChange("tole")} className="w-full border-2 border-slate-200 p-4 outline-none rounded-xl focus:border-gold-400 bg-slate-50 focus:bg-white transition-colors font-bold text-lg" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Nearest Chowk</label>
-                    <input type="text" placeholder="e.g. Shrijana Chowk" value={form.nearestChowk} onChange={handleChange("nearestChowk")} className="w-full border-2 border-slate-200 p-4 outline-none rounded-xl focus:border-gold-400 bg-slate-50 focus:bg-white transition-colors font-bold text-lg" />
+                    <label htmlFor="nearestChowk" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Nearest Chowk</label>
+                    <input id="nearestChowk" type="text" placeholder="e.g. Shrijana Chowk" value={form.nearestChowk} onChange={handleChange("nearestChowk")} className="w-full border-2 border-slate-200 p-4 outline-none rounded-xl focus:border-gold-400 bg-slate-50 focus:bg-white transition-colors font-bold text-lg" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Road Name</label>
-                    <input type="text" placeholder="e.g. Madan Bhandari Path" value={form.roadName} onChange={handleChange("roadName")} className="w-full border-2 border-slate-200 p-4 outline-none rounded-xl focus:border-gold-400 bg-slate-50 focus:bg-white transition-colors font-bold text-lg" />
+                    <label htmlFor="roadName" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Road Name</label>
+                    <input id="roadName" type="text" placeholder="e.g. Madan Bhandari Path" value={form.roadName} onChange={handleChange("roadName")} className="w-full border-2 border-slate-200 p-4 outline-none rounded-xl focus:border-gold-400 bg-slate-50 focus:bg-white transition-colors font-bold text-lg" />
                   </div>
                 </div>
 
                 <div className="bg-slate-50 p-5 mt-2 border border-slate-200 rounded-xl space-y-4">
                   <div>
-                    <label className="text-sm font-bold flex items-center gap-2 text-slate-700">
+                    <label htmlFor="mapsUrl" className="text-sm font-bold flex items-center gap-2 text-slate-700">
                       <MapPin className="w-4 h-4 text-gold-700" /> Google Maps Pin URL
                     </label>
                     <p className="text-xs text-slate-500 font-medium mb-3">Copy-paste the share URL from Google Maps to instantly pinpoint your property.</p>
                     <input
+                      id="mapsUrl"
                       type="url"
                       placeholder="https://www.google.com/maps/place/..."
                       value={form.mapsUrl}
@@ -687,43 +689,43 @@ export default function PostListing() {
 
                 {/* Land Unit System Toggle */}
                 <div className="flex gap-2 mb-4">
-                  <button type="button" onClick={() => handleChange('landUnitSystem')({ target: { value: 'hills' } })} className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-colors ${form.landUnitSystem === 'hills' ? 'bg-gold-500 text-white border-gold-500' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'}`}>🏔️ Hill Units (Ropani)</button>
-                  <button type="button" onClick={() => handleChange('landUnitSystem')({ target: { value: 'terai' } })} className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-colors ${form.landUnitSystem === 'terai' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-slate-600 border-slate-200 hover:border-green-300'}`}>🌾 Terai Units (Bigha)</button>
+                  <button type="button" onClick={() => handleChange('landUnitSystem')({ target: { value: 'hills' } })} className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-colors flex items-center gap-2 ${form.landUnitSystem === 'hills' ? 'bg-gold-500 text-white border-gold-500' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'}`}><Mountain className="w-4 h-4" /> Hill Units (Ropani)</button>
+                  <button type="button" onClick={() => handleChange('landUnitSystem')({ target: { value: 'terai' } })} className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-colors flex items-center gap-2 ${form.landUnitSystem === 'terai' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'}`}><Wheat className="w-4 h-4" /> Terai Units (Bigha)</button>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {form.landUnitSystem === 'terai' ? (
                     <>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Bigha</label>
-                        <input type="number" min="0" placeholder="0" value={form.bigha} onChange={handleChange("bigha")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
+                        <label htmlFor="bigha" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Bigha</label>
+                        <input id="bigha" type="number" min="0" placeholder="0" value={form.bigha} onChange={handleChange("bigha")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Katha</label>
-                        <input type="number" min="0" placeholder="0" value={form.katha} onChange={handleChange("katha")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
+                        <label htmlFor="katha" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Katha</label>
+                        <input id="katha" type="number" min="0" placeholder="0" value={form.katha} onChange={handleChange("katha")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Dhur</label>
-                        <input type="number" min="0" placeholder="0" value={form.dhur} onChange={handleChange("dhur")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
+                        <label htmlFor="dhur" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Dhur</label>
+                        <input id="dhur" type="number" min="0" placeholder="0" value={form.dhur} onChange={handleChange("dhur")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
                       </div>
                     </>
                   ) : (
                     <>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Ropani</label>
-                        <input type="number" min="0" placeholder="0" value={form.ropani} onChange={handleChange("ropani")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
+                        <label htmlFor="ropani" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Ropani</label>
+                        <input id="ropani" type="number" min="0" placeholder="0" value={form.ropani} onChange={handleChange("ropani")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Aana</label>
-                        <input type="number" min="0" placeholder="0" value={form.aana} onChange={handleChange("aana")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
+                        <label htmlFor="aana" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Aana</label>
+                        <input id="aana" type="number" min="0" placeholder="0" value={form.aana} onChange={handleChange("aana")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Paisa</label>
-                        <input type="number" min="0" placeholder="0" value={form.paisa} onChange={handleChange("paisa")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
+                        <label htmlFor="paisa" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Paisa</label>
+                        <input id="paisa" type="number" min="0" placeholder="0" value={form.paisa} onChange={handleChange("paisa")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Daam</label>
-                        <input type="number" min="0" placeholder="0" value={form.daam} onChange={handleChange("daam")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
+                        <label htmlFor="daam" className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Daam</label>
+                        <input id="daam" type="number" min="0" placeholder="0" value={form.daam} onChange={handleChange("daam")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
                       </div>
                     </>
                   )}
@@ -731,19 +733,19 @@ export default function PostListing() {
 
                 <div className="grid sm:grid-cols-3 gap-5 border-y border-slate-100 py-6">
                   <div>
-                    <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Road Access Width (Ft.)</label>
-                    <input type="number" min="0" placeholder="e.g. 13" value={form.roadAccessWidth} onChange={handleChange("roadAccessWidth")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl bg-slate-50 focus:border-gold-300 transition-colors font-bold" />
+                    <label htmlFor="roadAccessWidth" className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Road Access Width (Ft.)</label>
+                    <input id="roadAccessWidth" type="number" min="0" placeholder="e.g. 13" value={form.roadAccessWidth} onChange={handleChange("roadAccessWidth")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl bg-slate-50 focus:border-gold-300 transition-colors font-bold" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Road Type</label>
-                    <select value={form.roadAccessType} onChange={handleChange("roadAccessType")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl bg-slate-50 focus:border-gold-300 transition-colors font-bold text-slate-700">
+                    <label htmlFor="roadAccessType" className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Road Type</label>
+                    <select id="roadAccessType" value={form.roadAccessType} onChange={handleChange("roadAccessType")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl bg-slate-50 focus:border-gold-300 transition-colors font-bold text-slate-700">
                       <option value="">Select Type</option>
                       {ROAD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Property Facing</label>
-                    <select value={form.facing} onChange={handleChange("facing")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl bg-slate-50 focus:border-gold-300 transition-colors font-bold text-slate-700">
+                    <label htmlFor="facing" className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Property Facing</label>
+                    <select id="facing" value={form.facing} onChange={handleChange("facing")} className="w-full border-2 border-slate-200 p-3.5 outline-none rounded-xl bg-slate-50 focus:border-gold-300 transition-colors font-bold text-slate-700">
                       <option value="">Select Facing</option>
                       {FACING_DIRECTIONS.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
@@ -754,47 +756,47 @@ export default function PostListing() {
                   <>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="col-span-1">
-                        <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Bedrooms</label>
-                        <input type="number" min="0" placeholder="0" value={form.bedrooms} onChange={handleChange("bedrooms")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold text-lg" />
+                        <label htmlFor="bedrooms" className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Bedrooms</label>
+                        <input id="bedrooms" type="number" min="0" placeholder="0" value={form.bedrooms} onChange={handleChange("bedrooms")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold text-lg" />
                       </div>
                       <div className="col-span-1">
-                        <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Total Bathrooms</label>
-                        <input type="number" min="0" placeholder="0" value={form.bathrooms} onChange={handleChange("bathrooms")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold text-lg" />
+                        <label htmlFor="bathrooms" className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Total Bathrooms</label>
+                        <input id="bathrooms" type="number" min="0" placeholder="0" value={form.bathrooms} onChange={handleChange("bathrooms")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold text-lg" />
                       </div>
                       <div className="col-span-1">
-                        <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Kitchens</label>
-                        <input type="number" min="0" placeholder="0" value={form.kitchen} onChange={handleChange("kitchen")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
+                        <label htmlFor="kitchen" className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Kitchens</label>
+                        <input id="kitchen" type="number" min="0" placeholder="0" value={form.kitchen} onChange={handleChange("kitchen")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
                       </div>
                       <div className="col-span-1">
-                        <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Living Rooms</label>
-                        <input type="number" min="0" placeholder="0" value={form.livingRoom} onChange={handleChange("livingRoom")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
+                        <label htmlFor="livingRoom" className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Living Rooms</label>
+                        <input id="livingRoom" type="number" min="0" placeholder="0" value={form.livingRoom} onChange={handleChange("livingRoom")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       {!isApt && !isCommercial && (
                         <div>
-                          <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Total Floors</label>
-                          <input type="number" step="0.5" placeholder="2.5" value={form.totalFloors} onChange={handleChange("totalFloors")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
+                          <label htmlFor="totalFloors" className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Total Floors</label>
+                          <input id="totalFloors" type="number" step="0.5" placeholder="2.5" value={form.totalFloors} onChange={handleChange("totalFloors")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
                         </div>
                       )}
                       {isApt && (
                         <div>
-                          <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Floor No.</label>
-                          <input type="number" placeholder="2" value={form.floorNumber} onChange={handleChange("floorNumber")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
+                          <label htmlFor="floorNumber" className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Floor No.</label>
+                          <input id="floorNumber" type="number" placeholder="2" value={form.floorNumber} onChange={handleChange("floorNumber")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
                         </div>
                       )}
                       <div>
-                        <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Balconies</label>
-                        <input type="number" min="0" placeholder="0" value={form.balcony} onChange={handleChange("balcony")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
+                        <label htmlFor="balcony" className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Balconies</label>
+                        <input id="balcony" type="number" min="0" placeholder="0" value={form.balcony} onChange={handleChange("balcony")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Built Area (SqFt)</label>
-                        <input type="number" min="0" placeholder="1200" value={form.builtUpAreaSqFt} onChange={handleChange("builtUpAreaSqFt")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
+                        <label htmlFor="builtUpAreaSqFt" className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Built Area (SqFt)</label>
+                        <input id="builtUpAreaSqFt" type="number" min="0" placeholder="1200" value={form.builtUpAreaSqFt} onChange={handleChange("builtUpAreaSqFt")} className="w-full border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-center font-bold" />
                       </div>
                       <div className="col-span-1 md:col-span-2">
-                        <label className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Furnishing</label>
-                        <select value={form.furnishing} onChange={handleChange("furnishing")} className="w-full border-2 border-slate-200 p-3 outline-none rounded-xl bg-slate-50 focus:border-gold-300 transition-colors font-bold text-slate-700">
+                        <label htmlFor="furnishing" className="text-[10px] font-bold block mb-1.5 text-slate-400 uppercase tracking-widest">Furnishing</label>
+                        <select id="furnishing" value={form.furnishing} onChange={handleChange("furnishing")} className="w-full border-2 border-slate-200 p-3 outline-none rounded-xl bg-slate-50 focus:border-gold-300 transition-colors font-bold text-slate-700">
                           <option value="">Select Furnishing</option>
                           <option value="Unfurnished">Unfurnished</option>
                           <option value="Semi Furnished">Semi Furnished</option>
@@ -808,25 +810,26 @@ export default function PostListing() {
                         <h3 className="font-bold text-sm text-slate-800 mb-3 border-b pb-2">Parking</h3>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="text-[10px] font-bold text-slate-500 uppercase">Bike Parking</label>
-                            <input type="number" min="0" value={form.bikeParking} onChange={handleChange("bikeParking")} className="w-full border-2 p-2 rounded-lg bg-slate-50 text-center font-bold" placeholder="0" />
+                            <label htmlFor="bikeParking" className="text-[10px] font-bold text-slate-500 uppercase">Bike Parking</label>
+                            <input id="bikeParking" type="number" min="0" value={form.bikeParking} onChange={handleChange("bikeParking")} className="w-full border-2 p-2 rounded-lg bg-slate-50 text-center font-bold" placeholder="0" />
                           </div>
                           <div>
-                            <label className="text-[10px] font-bold text-slate-500 uppercase">Car Parking</label>
-                            <input type="number" min="0" value={form.carParking} onChange={handleChange("carParking")} className="w-full border-2 p-2 rounded-lg bg-slate-50 text-center font-bold" placeholder="0" />
+                            <label htmlFor="carParking" className="text-[10px] font-bold text-slate-500 uppercase">Car Parking</label>
+                            <input id="carParking" type="number" min="0" value={form.carParking} onChange={handleChange("carParking")} className="w-full border-2 p-2 rounded-lg bg-slate-50 text-center font-bold" placeholder="0" />
                           </div>
                         </div>
                       </div>
                       <div>
                         <h3 className="font-bold text-sm text-slate-800 mb-3 border-b pb-2">Utilities</h3>
                         <div className="space-y-3">
-                          <label className="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" checked={form.waterAvailable} onChange={handleChange("waterAvailable")} className="w-5 h-5 rounded border-slate-300 text-gold-700 focus:ring-gold-400" />
+                          <label htmlFor="waterAvailable" className="flex items-center gap-3 cursor-pointer">
+                            <input id="waterAvailable" type="checkbox" checked={form.waterAvailable} onChange={handleChange("waterAvailable")} className="w-5 h-5 rounded border-slate-300 text-gold-700 focus:ring-gold-400" />
                             <span className="font-semibold text-slate-700 text-sm">Water Available</span>
                           </label>
                           {form.waterAvailable && (
                             <div className="pl-8 space-y-3">
-                              <select value={form.waterSource} onChange={handleChange("waterSource")} className="w-full border-2 border-slate-200 p-2 text-sm outline-none rounded-lg bg-slate-50 focus:border-gold-300 font-medium">
+                              <label htmlFor="waterSource" className="sr-only">Water Source</label>
+                              <select id="waterSource" value={form.waterSource} onChange={handleChange("waterSource")} className="w-full border-2 border-slate-200 p-2 text-sm outline-none rounded-lg bg-slate-50 focus:border-gold-300 font-medium">
                                 <option value="">Water Source?</option>
                                 <option value="Government">Government (Melamchi, etc.)</option>
                                 <option value="Boring">Boring / Deep Tube Well</option>
@@ -834,22 +837,22 @@ export default function PostListing() {
                                 <option value="Well">Well</option>
                                 <option value="Mixed">Mixed</option>
                               </select>
-                              <label className="flex items-center gap-3 cursor-pointer">
-                                <input type="checkbox" checked={form.waterSupply247} onChange={handleChange("waterSupply247")} className="w-4 h-4 rounded border-slate-300 text-gold-700 focus:ring-gold-400" />
+                              <label htmlFor="waterSupply247" className="flex items-center gap-3 cursor-pointer">
+                                <input id="waterSupply247" type="checkbox" checked={form.waterSupply247} onChange={handleChange("waterSupply247")} className="w-4 h-4 rounded border-slate-300 text-gold-700 focus:ring-gold-400" />
                                 <span className="font-medium text-slate-600 text-xs">24/7 Water Supply</span>
                               </label>
-                              <label className="flex items-center gap-3 cursor-pointer">
-                                <input type="checkbox" checked={form.waterTank} onChange={handleChange("waterTank")} className="w-4 h-4 rounded border-slate-300 text-gold-700 focus:ring-gold-400" />
+                              <label htmlFor="waterTank" className="flex items-center gap-3 cursor-pointer">
+                                <input id="waterTank" type="checkbox" checked={form.waterTank} onChange={handleChange("waterTank")} className="w-4 h-4 rounded border-slate-300 text-gold-700 focus:ring-gold-400" />
                                 <span className="font-medium text-slate-600 text-xs">Reserve Tank Built</span>
                               </label>
                             </div>
                           )}
-                          <label className="flex items-center gap-3 cursor-pointer mt-3">
-                            <input type="checkbox" checked={form.electricity} onChange={handleChange("electricity")} className="w-5 h-5 rounded border-slate-300 text-gold-700 focus:ring-gold-400" />
+                          <label htmlFor="electricity" className="flex items-center gap-3 cursor-pointer mt-3">
+                            <input id="electricity" type="checkbox" checked={form.electricity} onChange={handleChange("electricity")} className="w-5 h-5 rounded border-slate-300 text-gold-700 focus:ring-gold-400" />
                             <span className="font-semibold text-slate-700 text-sm">Electricity Connected</span>
                           </label>
-                          <label className="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" checked={form.wifiAvailable} onChange={handleChange("wifiAvailable")} className="w-5 h-5 rounded border-slate-300 text-gold-700 focus:ring-gold-400" />
+                          <label htmlFor="wifiAvailable" className="flex items-center gap-3 cursor-pointer">
+                            <input id="wifiAvailable" type="checkbox" checked={form.wifiAvailable} onChange={handleChange("wifiAvailable")} className="w-5 h-5 rounded border-slate-300 text-gold-700 focus:ring-gold-400" />
                             <span className="font-semibold text-slate-700 text-sm">Internet / WiFi Available</span>
                           </label>
                         </div>
@@ -917,6 +920,8 @@ export default function PostListing() {
                           className="w-1/3 border-2 border-slate-200 p-3 rounded-xl bg-slate-50 text-sm font-bold focus:border-gold-300 outline-none"
                         />
                         <button
+                          type="button"
+                          aria-label={`Remove nearby landmark ${idx + 1}`}
                           onClick={() => setForm(p => ({ ...p, nearby: p.nearby.filter((_, i) => i !== idx) }))}
                           className="p-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl transition-colors"
                         >
@@ -977,16 +982,16 @@ export default function PostListing() {
 
                   <div className="grid sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Max Guests</label>
-                      <input type="number" min="1" placeholder="e.g. 4" value={form.houseRules_guestsLimit} onChange={handleChange("houseRules_guestsLimit")} className="w-full border-2 border-slate-200 p-3 outline-none rounded-xl bg-slate-50 focus:border-gold-300 transition-colors font-bold text-slate-700" />
+                      <label htmlFor="houseRules_guestsLimit" className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Max Guests</label>
+                      <input id="houseRules_guestsLimit" type="number" min="1" placeholder="e.g. 4" value={form.houseRules_guestsLimit} onChange={handleChange("houseRules_guestsLimit")} className="w-full border-2 border-slate-200 p-3 outline-none rounded-xl bg-slate-50 focus:border-gold-300 transition-colors font-bold text-slate-700" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Quiet Hours Start</label>
-                      <input type="time" value={form.houseRules_quietHoursStart} onChange={handleChange("houseRules_quietHoursStart")} className="w-full border-2 border-slate-200 p-3 outline-none rounded-xl bg-slate-50 focus:border-gold-300 transition-colors font-bold text-slate-700" />
+                      <label htmlFor="houseRules_quietHoursStart" className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Quiet Hours Start</label>
+                      <input id="houseRules_quietHoursStart" type="time" value={form.houseRules_quietHoursStart} onChange={handleChange("houseRules_quietHoursStart")} className="w-full border-2 border-slate-200 p-3 outline-none rounded-xl bg-slate-50 focus:border-gold-300 transition-colors font-bold text-slate-700" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Quiet Hours End</label>
-                      <input type="time" value={form.houseRules_quietHoursEnd} onChange={handleChange("houseRules_quietHoursEnd")} className="w-full border-2 border-slate-200 p-3 outline-none rounded-xl bg-slate-50 focus:border-gold-300 transition-colors font-bold text-slate-700" />
+                      <label htmlFor="houseRules_quietHoursEnd" className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1.5">Quiet Hours End</label>
+                      <input id="houseRules_quietHoursEnd" type="time" value={form.houseRules_quietHoursEnd} onChange={handleChange("houseRules_quietHoursEnd")} className="w-full border-2 border-slate-200 p-3 outline-none rounded-xl bg-slate-50 focus:border-gold-300 transition-colors font-bold text-slate-700" />
                     </div>
                   </div>
                 </div>
@@ -1025,8 +1030,8 @@ export default function PostListing() {
                     <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 mt-6">
                       {existingImages.map((src, i) => (
                         <div key={'old-' + i} className="relative aspect-[4/3] group rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white">
-                          <img src={src} className={`w-full h-full object-cover transition-all duration-300 ${keepExisting[i] ? 'opacity-100' : 'opacity-20 grayscale'}`} alt="" />
-                          <button onClick={() => setKeepExisting(p => p.map((v, idx) => idx === i ? !v : v))} className={`absolute top-2 right-2 p-1.5 shadow-md rounded-full text-white transition-transform hover:scale-110 z-10 ${keepExisting[i] ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}>
+                          <img src={src} className={`w-full h-full object-cover transition-all duration-300 ${keepExisting[i] ? 'opacity-100' : 'opacity-20 grayscale'}`} alt={`Listing upload ${i + 1}`} />
+                          <button type="button" aria-label={keepExisting[i] ? `Remove photo ${i + 1}` : `Restore photo ${i + 1}`} onClick={() => setKeepExisting(p => p.map((v, idx) => idx === i ? !v : v))} className={`absolute top-2 right-2 p-1.5 shadow-md rounded-full text-white transition-transform hover:scale-110 z-10 ${keepExisting[i] ? 'bg-red-500 hover:bg-red-600' : 'bg-emerald-500 hover:bg-emerald-600'}`}>
                             {keepExisting[i] ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
                           </button>
                           {i === 0 && keepExisting[i] && <span className="absolute bottom-2 left-2 bg-slate-900/80 text-white text-[10px] font-black px-2 py-0.5 rounded backdrop-blur-sm shadow-sm">COVER</span>}
@@ -1034,8 +1039,8 @@ export default function PostListing() {
                       ))}
                       {mediaFiles.map((m, i) => (
                         <div key={'new-' + i} className="relative aspect-[4/3] group rounded-xl overflow-hidden shadow-sm border-2 border-gold-300 bg-white">
-                          <img src={m.previewUrl} className="w-full h-full object-cover" alt="" />
-                          <button onClick={() => setMediaFiles(p => p.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 shadow-md text-white p-1.5 rounded-full transition-transform hover:scale-110 z-10"><X className="w-3.5 h-3.5" /></button>
+                          <img src={m.previewUrl} className="w-full h-full object-cover" alt={`Listing upload ${existingImages.length + i + 1}`} />
+                          <button type="button" aria-label={`Remove photo ${existingImages.length + i + 1}`} onClick={() => setMediaFiles(p => p.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 shadow-md text-white p-1.5 rounded-full transition-transform hover:scale-110 z-10"><X className="w-3.5 h-3.5" /></button>
                         </div>
                       ))}
                     </div>
@@ -1044,16 +1049,18 @@ export default function PostListing() {
                   <div className="pt-8 border-t border-slate-100">
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="font-extrabold text-slate-800">Video Tour (Optional)</h3>
-                      <span className="bg-indigo-100 text-indigo-700 text-[10px] uppercase font-black px-2 py-0.5 rounded">Boosts Engagement</span>
+                      <span className="bg-gold-100 text-gold-700 text-[10px] uppercase font-black px-2 py-0.5 rounded">Boosts Engagement</span>
                     </div>
                     <p className="text-xs text-slate-500 mb-3">Paste a link to a YouTube, TikTok, or Instagram Reel walkthrough of the property.</p>
                     <div className="relative">
+                      <label htmlFor="videoUrl" className="sr-only">Video Tour URL</label>
                       <input
+                        id="videoUrl"
                         type="url"
                         placeholder="https://youtube.com/watch?v=..."
                         value={form.videoUrl}
                         onChange={handleChange("videoUrl")}
-                        className="w-full border-2 border-slate-200 pl-4 pr-20 py-3.5 rounded-xl outline-none focus:border-indigo-500 bg-slate-50 focus:bg-white font-medium transition-colors"
+                        className="w-full border-2 border-slate-200 pl-4 pr-20 py-3.5 rounded-xl outline-none focus:border-gold-400 bg-slate-50 focus:bg-white font-medium transition-colors"
                       />
                       <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none gap-1">
                         <Youtube className="w-5 h-5 text-red-500" />
@@ -1072,8 +1079,8 @@ export default function PostListing() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Listing Title</label>
-                  <input type="text" placeholder="e.g. 3 BHK Flat in Baluwatar" value={form.title} onChange={handleChange("title")} className="w-full border-2 border-slate-200 p-4 rounded-xl outline-none focus:border-gold-400 bg-slate-50 focus:bg-white font-bold text-lg transition-colors" />
+                  <label htmlFor="title" className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Listing Title</label>
+                  <input id="title" type="text" placeholder="e.g. 3 BHK Flat in Baluwatar" value={form.title} onChange={handleChange("title")} className="w-full border-2 border-slate-200 p-4 rounded-xl outline-none focus:border-gold-400 bg-slate-50 focus:bg-white font-bold text-lg transition-colors" />
                 </div>
 
                 <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 border border-amber-200/60 rounded-3xl mt-4">
@@ -1087,7 +1094,7 @@ export default function PostListing() {
                           const n = [...form.highlights]; n[i] = e.target.value;
                           setForm(p => ({ ...p, highlights: n }));
                         }} placeholder="e.g. 5 mins walk from Ring Road" className="flex-1 border-b-2 border-amber-200 focus:border-amber-500 p-2 text-sm outline-none bg-transparent transition-colors font-bold text-amber-950 placeholder:text-amber-900/40" />
-                        <button onClick={() => {
+                        <button type="button" aria-label={`Remove highlight ${i + 1}`} onClick={() => {
                           let n = form.highlights.filter((_, idx) => idx !== i);
                           if (!n.length) n = [""];
                           setForm(p => ({ ...p, highlights: n }));
@@ -1103,8 +1110,8 @@ export default function PostListing() {
                 </div>
 
                 <div className="mt-4">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-1">Full Description *</label>
-                  <textarea rows="6" placeholder="Describe the atmosphere, community, neighbors, and quality of the build..." value={form.description} onChange={handleChange("description")} className="w-full border-2 border-slate-200 p-4 rounded-xl outline-none focus:border-gold-400 bg-slate-50 focus:bg-white leading-relaxed font-medium transition-colors resize-none" />
+                  <label htmlFor="description" className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-1">Full Description *</label>
+                  <textarea id="description" rows="6" placeholder="Describe the atmosphere, community, neighbors, and quality of the build..." value={form.description} onChange={handleChange("description")} className="w-full border-2 border-slate-200 p-4 rounded-xl outline-none focus:border-gold-400 bg-slate-50 focus:bg-white leading-relaxed font-medium transition-colors resize-none" />
                 </div>
 
                 <div className="mt-8 border-t border-slate-100 pt-6">
@@ -1114,24 +1121,24 @@ export default function PostListing() {
                   </div>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Phone Number</label>
-                      <input type="tel" placeholder="e.g. 9812345678" value={form.contactPhone} onChange={handleChange("contactPhone")} className="w-full border-2 border-slate-200 p-3 rounded-xl outline-none focus:border-gold-400 bg-slate-50 focus:bg-white font-bold transition-colors" />
+                      <label htmlFor="contactPhone" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Phone Number</label>
+                      <input id="contactPhone" type="tel" placeholder="e.g. 9812345678" value={form.contactPhone} onChange={handleChange("contactPhone")} className="w-full border-2 border-slate-200 p-3 rounded-xl outline-none focus:border-gold-400 bg-slate-50 focus:bg-white font-bold transition-colors" />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">WhatsApp Number</label>
-                      <input type="tel" placeholder="e.g. 9812345678" value={form.contactWhatsapp} onChange={handleChange("contactWhatsapp")} className="w-full border-2 border-slate-200 p-3 rounded-xl outline-none focus:border-gold-400 bg-slate-50 focus:bg-white font-bold transition-colors" />
+                      <label htmlFor="contactWhatsapp" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">WhatsApp Number</label>
+                      <input id="contactWhatsapp" type="tel" placeholder="e.g. 9812345678" value={form.contactWhatsapp} onChange={handleChange("contactWhatsapp")} className="w-full border-2 border-slate-200 p-3 rounded-xl outline-none focus:border-gold-400 bg-slate-50 focus:bg-white font-bold transition-colors" />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Email Address</label>
-                      <input type="email" placeholder="e.g. owner@example.com" value={form.contactEmail} onChange={handleChange("contactEmail")} className="w-full border-2 border-slate-200 p-3 rounded-xl outline-none focus:border-gold-400 bg-slate-50 focus:bg-white font-bold transition-colors" />
+                      <label htmlFor="contactEmail" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Email Address</label>
+                      <input id="contactEmail" type="email" placeholder="e.g. owner@example.com" value={form.contactEmail} onChange={handleChange("contactEmail")} className="w-full border-2 border-slate-200 p-3 rounded-xl outline-none focus:border-gold-400 bg-slate-50 focus:bg-white font-bold transition-colors" />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Facebook Link</label>
-                      <input type="url" placeholder="https://facebook.com/..." value={form.contactFacebook || ''} onChange={handleChange("contactFacebook")} className="w-full border-2 border-slate-200 p-3 rounded-xl outline-none focus:border-gold-400 bg-slate-50 focus:bg-white font-bold transition-colors" />
+                      <label htmlFor="contactFacebook" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Facebook Link</label>
+                      <input id="contactFacebook" type="url" placeholder="https://facebook.com/..." value={form.contactFacebook || ''} onChange={handleChange("contactFacebook")} className="w-full border-2 border-slate-200 p-3 rounded-xl outline-none focus:border-gold-400 bg-slate-50 focus:bg-white font-bold transition-colors" />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Instagram Link/ID</label>
-                      <input type="text" placeholder="@username or URL" value={form.contactInstagram || ''} onChange={handleChange("contactInstagram")} className="w-full border-2 border-slate-200 p-3 rounded-xl outline-none focus:border-gold-400 bg-slate-50 focus:bg-white font-bold transition-colors" />
+                      <label htmlFor="contactInstagram" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Instagram Link/ID</label>
+                      <input id="contactInstagram" type="text" placeholder="@username or URL" value={form.contactInstagram || ''} onChange={handleChange("contactInstagram")} className="w-full border-2 border-slate-200 p-3 rounded-xl outline-none focus:border-gold-400 bg-slate-50 focus:bg-white font-bold transition-colors" />
                     </div>
                   </div>
                 </div>
@@ -1150,7 +1157,7 @@ export default function PostListing() {
                 Next Step <ArrowRight className="w-4 h-4" />
               </button>
             ) : (
-              <button onClick={handleSubmit} disabled={submitting} className="px-10 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-full font-bold shadow-lg shadow-green-500/30 flex items-center gap-2 disabled:opacity-70 disabled:scale-100 transition-all transform active:scale-95">
+              <button onClick={handleSubmit} disabled={submitting} className="px-10 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-full font-bold shadow-lg shadow-emerald-500/30 flex items-center gap-2 disabled:opacity-70 disabled:scale-100 transition-all transform active:scale-95">
                 {submitting ? "Publishing..." : (editId ? "Update Listing" : "Go Live!")}
               </button>
             )}

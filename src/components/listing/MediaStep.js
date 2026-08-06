@@ -42,11 +42,12 @@ const MediaStep = ({ images, setImages, onFileSelect, uploadLoading }) => {
                         <div key={idx} className="aspect-square rounded-2xl overflow-hidden relative group border border-slate-100 shadow-sm">
                             <img
                                 src={img.url || img}
-                                alt={`Upload ${idx}`}
+                                alt={`Listing upload ${idx + 1}`}
                                 className="w-full h-full object-cover"
                             />
                             <button
                                 type="button"
+                                aria-label={`Remove photo ${idx + 1}`}
                                 onClick={() => removeImage(idx)}
                                 className="absolute top-2 right-2 h-7 w-7 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                             >
@@ -61,8 +62,8 @@ const MediaStep = ({ images, setImages, onFileSelect, uploadLoading }) => {
                     ))}
                     {images.length < 10 && (
                         <div className="aspect-square rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300 hover:text-gold-400 hover:border-blue-200 transition-all cursor-pointer relative">
-                            <input type="file" multiple accept="image/*" onChange={onFileSelect} className="absolute inset-0 opacity-0 cursor-pointer" />
-                            <Plus className="h-8 w-8" />
+                            <input type="file" multiple accept="image/*" onChange={onFileSelect} aria-label="Add more photos" className="absolute inset-0 opacity-0 cursor-pointer" />
+                            <Plus className="h-8 w-8" aria-hidden="true" />
                         </div>
                     )}
                 </div>

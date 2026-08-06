@@ -19,6 +19,7 @@ import {
   KeyRound,
   Loader,
 } from "lucide-react";
+import LoadingState from "./components/common/LoadingState";
 
 /* ----------------------------------------
    MOBILE HEADER
@@ -182,7 +183,7 @@ export default function UserProfile({ onGoHome, onLogout }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader className="h-7 w-7 animate-spin text-gold-600" />
+        <LoadingState variant="inline" label="Loading profile…" />
       </div>
     );
   }

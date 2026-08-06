@@ -11,13 +11,14 @@ import {
   EyeOff,
   Plus,
   LayoutDashboard,
-  Loader,
   MoreHorizontal,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { apiFetch } from "./api";
 import { ListingModal } from "./ListingUtils";
+import EmptyState from "./components/common/EmptyState";
+import LoadingState from "./components/common/LoadingState";
 
 export default function Membership({ onLogout, onGoHome, onEditListing }) {
   const [savedHomes, setSavedHomes] = useState([]);
@@ -166,7 +167,7 @@ export default function Membership({ onLogout, onGoHome, onEditListing }) {
           </div>
           <button
             onClick={() => navigate("/listings/new")}
-            className="inline-flex items-center gap-1.5 bg-gold-500 text-white text-xs font-semibold rounded-full px-4 py-2.5 hover:bg-gold-600 active:scale-95 shadow-md transition-all"
+            className="inline-flex items-center gap-1.5 bg-gold-500 text-white text-xs font-semibold rounded-full px-5 py-2.5 hover:bg-gold-600 active:scale-95 shadow-md transition-all"
           >
             <Plus className="h-4 w-4" />
             Post listing
@@ -177,10 +178,10 @@ export default function Membership({ onLogout, onGoHome, onEditListing }) {
         {activeTab === "listings" && (
           <>
             {loadingMyListings ? (
-              <EmptyState icon={<Loader className="h-8 w-8 animate-spin text-gold-400" />} text="Loading your listings…" />
+              <LoadingState variant="inline" label="Loading your listings…" />
             ) : myListings.length === 0 ? (
               <EmptyState
-                icon={<Home className="h-10 w-10 text-blue-200" />}
+                icon={Home}
                 title="No listings yet"
                 text="You haven't posted any homes. Click 'Post listing' to get started."
               />
@@ -208,10 +209,10 @@ export default function Membership({ onLogout, onGoHome, onEditListing }) {
         {activeTab === "saved" && (
           <>
             {loadingSaved ? (
-              <EmptyState icon={<Loader className="h-8 w-8 animate-spin text-gold-400" />} text="Loading saved homes…" />
+              <LoadingState variant="inline" label="Loading saved homes…" />
             ) : savedHomes.length === 0 ? (
               <EmptyState
-                icon={<Heart className="h-10 w-10 text-blue-200" />}
+                icon={Heart}
                 title="No saved homes"
                 text="Tap the heart icon on any listing to save it here."
               />
@@ -259,16 +260,6 @@ function TabBtn({ active, onClick, icon, label }) {
   );
 }
 
-function EmptyState({ icon, title, text }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-in-up">
-      <div className="mb-3 opacity-60 animate-float">{icon}</div>
-      {title && <p className="text-sm font-semibold text-slate-700 mb-1">{title}</p>}
-      <p className="text-xs text-slate-400 max-w-xs">{text}</p>
-    </div>
-  );
-}
-
 function MyListingCard({ home, openMenuId, setOpenMenuId, onView, onEdit, onToggle, onDelete }) {
   const img = home.images?.[0] || "https://placehold.co/300x200/eff6ff/0f172a?text=Home";
   const isActive = home.status === "active";
@@ -276,7 +267,12 @@ function MyListingCard({ home, openMenuId, setOpenMenuId, onView, onEdit, onTogg
 
   return (
     <div className="card-lift bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col items-stretch overflow-visible">
-      <div className="relative h-44 overflow-hidden rounded-t-2xl cursor-pointer group" onClick={onView}>
+      <button
+        type="button"
+        onClick={onView}
+        aria-label={`View ${home.title || "listing"} details`}
+        className="relative block w-full h-44 overflow-hidden rounded-t-2xl cursor-pointer group text-left"
+      >
         <img src={img} alt={home.title} className="h-full w-full object-cover transition-transform group-hover:scale-105 duration-500" onError={(e) => { e.target.src = "https://placehold.co/300x200/eff6ff/0f172a?text=Home"; }} />
 
         {/* Top Fade overlay */}
@@ -292,7 +288,7 @@ function MyListingCard({ home, openMenuId, setOpenMenuId, onView, onEdit, onTogg
         <span className="absolute bottom-3 right-3 bg-gold-500/95 backdrop-blur shadow-md rounded-xl px-3 py-1.5 text-xs font-mono font-bold text-white">
           Rs. {home.price?.toLocaleString()}
         </span>
-      </div>
+      </button>
       <div className="p-4 flex flex-col flex-1 relative z-0">
         <p className="text-base font-bold text-slate-900 line-clamp-1 mb-1">{home.title || home.address}</p>
         <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5 mb-4">
@@ -305,7 +301,13 @@ function MyListingCard({ home, openMenuId, setOpenMenuId, onView, onEdit, onTogg
                <ActionBtn onClick={onEdit} title="Edit" icon={<Edit3 className="h-4 w-4" />} />
              </div>
              <div className="relative z-50">
-               <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(menuOpen ? null : home._id); }} className={`p-2 rounded-xl transition-colors ${menuOpen ? 'bg-blue-50 text-gold-700' : 'text-slate-400 hover:bg-slate-100'}`}>
+               <button
+                 onClick={(e) => { e.stopPropagation(); setOpenMenuId(menuOpen ? null : home._id); }}
+                 aria-label="More actions"
+                 aria-haspopup="true"
+                 aria-expanded={menuOpen}
+                 className={`p-2 rounded-xl transition-colors ${menuOpen ? 'bg-blue-50 text-gold-700' : 'text-slate-400 hover:bg-slate-100'}`}
+               >
                  <MoreHorizontal className="h-5 w-5" />
                </button>
                
@@ -333,7 +335,19 @@ function SavedCard({ home, onView, onUnsave }) {
   const img = home.images?.[0] || "https://placehold.co/300x200/eff6ff/0f172a?text=Home";
   return (
     <div className="card-lift bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col items-stretch overflow-visible">
-      <div className="relative h-44 overflow-hidden rounded-t-2xl cursor-pointer group" onClick={onView}>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onView}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onView();
+          }
+        }}
+        aria-label={`View ${home.title || "listing"} details`}
+        className="relative h-44 overflow-hidden rounded-t-2xl cursor-pointer group"
+      >
         <img src={img} alt={home.title} className="h-full w-full object-cover transition-transform group-hover:scale-105 duration-500" onError={(e) => { e.target.src = "https://placehold.co/300x200/eff6ff/0f172a?text=Home"; }} />
 
         {/* Top Fade overlay */}

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Star, Loader } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { apiFetch } from '../../api';
+import LoadingState from '../common/LoadingState';
 
 /**
  * ReviewsSection - Handles property-specific reviews and ratings.
@@ -141,6 +142,8 @@ const ReviewsSection = ({ listingId }) => {
                             <button
                                 key={n}
                                 type="button"
+                                aria-label={`Rate ${n} star${n > 1 ? 's' : ''}`}
+                                aria-pressed={myRating === n}
                                 onClick={() => setMyRating(n)}
                                 onMouseEnter={() => setHoverRating(n)}
                                 onMouseLeave={() => setHoverRating(0)}
@@ -156,7 +159,9 @@ const ReviewsSection = ({ listingId }) => {
                         )}
                     </div>
 
+                    <label htmlFor="reviewComment" className="sr-only">Review comment</label>
                     <textarea
+                        id="reviewComment"
                         value={myComment}
                         onChange={(e) => setMyComment(e.target.value)}
                         placeholder="What was it like? Mention the owner, condition, or neighborhood..."
@@ -190,9 +195,7 @@ const ReviewsSection = ({ listingId }) => {
             )}
 
             {loading ? (
-                <div className="flex justify-center py-10">
-                    <Loader className="h-6 w-6 animate-spin text-gold-400" />
-                </div>
+                <LoadingState variant="inline" label="Loading reviews…" />
             ) : (
                 <div className="space-y-4">
                     {reviews.map((rev) => (

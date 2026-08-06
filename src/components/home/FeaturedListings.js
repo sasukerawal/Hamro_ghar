@@ -1,8 +1,9 @@
 import React from "react";
-import { ChevronLeft, ChevronRight, Heart, MapPin, Eye } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, MapPin, Eye, Home, Zap, Building2, Bed, Bath, Ruler } from "lucide-react";
 import { useMeasurement } from "../../contexts/MeasurementContext";
 import { useScrollReveal } from "../../hooks/useScrollReveal";
 import AdBanner from "../ads/AdBanner";
+import EmptyState from "../common/EmptyState";
 
 // Skeleton shimmer card
 export const SkeletonCard = () => (
@@ -58,11 +59,12 @@ export const FeaturedListings = ({
           ))}
         </div>
       ) : listings.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-4xl mb-3">🏠</p>
-          <p className="text-base font-semibold text-slate-700">{t.listingsEmpty}</p>
-          <p className="text-xs text-slate-500 mt-1">{t.listingsEmptyHint}</p>
-        </div>
+        <EmptyState
+          icon={Home}
+          title={t.listingsEmpty}
+          text={t.listingsEmptyHint}
+          className="py-16"
+        />
       ) : (
         <>
           {/* Masonry: CSS columns so varying card heights (photo aspect ratio,
@@ -106,7 +108,7 @@ export const FeaturedListings = ({
               <button
                 onClick={() => onPageChange(page - 1)}
                 disabled={page <= 1}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1 px-3 py-1.5 min-h-[44px] rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <ChevronLeft className="h-3.5 w-3.5" /> {t.listingsPrev}
               </button>
@@ -114,7 +116,9 @@ export const FeaturedListings = ({
                 <button
                   key={pg}
                   onClick={() => pg !== page && onPageChange(pg)}
-                  className={`h-8 w-8 rounded-full text-xs font-semibold font-mono transition-all ${pg === page
+                  aria-label={`Go to page ${pg}`}
+                  aria-current={pg === page ? "page" : undefined}
+                  className={`h-11 w-11 rounded-full text-xs font-semibold font-mono transition-all ${pg === page
                     ? "bg-gold-500 text-white shadow-sm"
                     : "border border-slate-200 text-slate-600 hover:bg-slate-50"
                     }`}
@@ -125,7 +129,7 @@ export const FeaturedListings = ({
               <button
                 onClick={() => onPageChange(page + 1)}
                 disabled={page >= totalPages}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1 px-3 py-1.5 min-h-[44px] rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {t.listingsNext} <ChevronRight className="h-3.5 w-3.5" />
               </button>
@@ -150,10 +154,21 @@ export const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved, isVirtual
     onToggleSave(home);
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onOpenHome(home);
+    }
+  };
+
   return (
     <div
       className={`card-lift group rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden cursor-pointer flex flex-col ${isVirtualized ? "h-full" : "sm:block"}`}
       onClick={() => onOpenHome(home)}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label={`View details for ${home.title || home.address}`}
     >
       <div className={`relative ${photoHeight} w-full overflow-hidden`}>
         <img
@@ -179,12 +194,12 @@ export const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved, isVirtual
           )}
           {home.urgency === "high" && (
             <span className="inline-flex items-center gap-1 rounded-full bg-red-500/95 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm backdrop-blur-sm tracking-wider uppercase">
-              ⚡ Urgent
+              <Zap className="h-2.5 w-2.5 fill-current" /> Urgent
             </span>
           )}
           {home.category === "hostel" && (
             <span className="inline-flex items-center gap-1 rounded-full bg-purple-600/95 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm backdrop-blur-sm tracking-wider uppercase">
-              🏨 {home.hostelType ? home.hostelType.charAt(0).toUpperCase() + home.hostelType.slice(1) : "Hostel"}
+              <Building2 className="h-2.5 w-2.5" /> {home.hostelType ? home.hostelType.charAt(0).toUpperCase() + home.hostelType.slice(1) : "Hostel"}
             </span>
           )}
         </div>
@@ -225,11 +240,11 @@ export const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved, isVirtual
 
         <div className="mt-auto pt-3">
           <div className="flex items-center justify-between text-[11px] font-mono font-medium text-slate-600 bg-slate-50 rounded-lg p-2 border border-slate-100">
-            <span className="flex items-center gap-1"><span className="text-slate-400">🛏️</span> {home?.specs?.bedrooms || home.beds || "-"}</span>
+            <span className="flex items-center gap-1"><Bed className="h-3 w-3 text-slate-400" /> {home?.specs?.bedrooms || home.beds || "-"}</span>
             <div className="w-px h-3 bg-slate-200" />
-            <span className="flex items-center gap-1"><span className="text-slate-400">🛁</span> {home?.specs?.bathrooms || home.baths || "-"}</span>
+            <span className="flex items-center gap-1"><Bath className="h-3 w-3 text-slate-400" /> {home?.specs?.bathrooms || home.baths || "-"}</span>
             <div className="w-px h-3 bg-slate-200" />
-            <span className="flex items-center gap-1 truncate max-w-[90px]"><span className="text-slate-400">📐</span> {formatArea(home?.specs?.landArea, home.sqft)}</span>
+            <span className="flex items-center gap-1 truncate max-w-[90px]"><Ruler className="h-3 w-3 text-slate-400 shrink-0" /> {formatArea(home?.specs?.landArea, home.sqft)}</span>
           </div>
 
           <div className="mt-2.5 flex items-center justify-between text-[10px] text-slate-400 font-medium">

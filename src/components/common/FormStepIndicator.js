@@ -1,4 +1,5 @@
 import React from 'react';
+import { Check } from 'lucide-react';
 
 /**
  * FormStepIndicator - Progress tracker for multi-step forms.
@@ -16,12 +17,14 @@ const FormStepIndicator = ({ steps, currentStep, onStepClick }) => (
                     key={step.id}
                     disabled={!isCompleted && !isActive}
                     onClick={() => onStepClick(stepNum)}
+                    aria-label={`Step ${stepNum}: ${step.label}`}
+                    aria-current={isActive ? 'step' : undefined}
                     className="flex flex-col items-center gap-2 group outline-none"
                 >
                     <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ring-4 ring-white ${isActive ? 'bg-gold-500 text-white scale-110' :
-                            isCompleted ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-500'
+                            isCompleted ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'
                         }`}>
-                        {isCompleted ? '✓' : stepNum}
+                        {isCompleted ? <Check className="w-4 h-4" /> : stepNum}
                     </div>
                     <span className={`hidden sm:block text-[10px] font-bold uppercase tracking-wider ${isActive ? 'text-gold-700' : 'text-slate-400'
                         }`}>

@@ -3,6 +3,8 @@ import { Star, Loader } from "lucide-react";
 import { toast } from "react-toastify";
 import { apiFetch } from "../../api";
 import { useScrollReveal } from "../../hooks/useScrollReveal";
+import LoadingState from "../common/LoadingState";
+import EmptyState from "../common/EmptyState";
 
 export function SiteReviewsSection({ isLoggedIn, t }) {
   const [reviews, setReviews] = useState([]);
@@ -102,7 +104,7 @@ export function SiteReviewsSection({ isLoggedIn, t }) {
             </p>
             <div className="flex items-center gap-1">
               {[1,2,3,4,5].map((n) => (
-                <button key={n} type="button" onClick={() => setMyRating(n)} onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(0)} className="focus:outline-none">
+                <button key={n} type="button" onClick={() => setMyRating(n)} onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(0)} aria-label={`Rate ${n} star${n > 1 ? "s" : ""}`} className="p-2.5 -m-2.5 focus:outline-none">
                   <Star className={`h-6 w-6 transition-colors ${n <= (hover || myRating) ? "text-gold-500 fill-gold-500" : "text-slate-300"}`} />
                 </button>
               ))}
@@ -116,12 +118,12 @@ export function SiteReviewsSection({ isLoggedIn, t }) {
               className="w-full text-sm rounded-xl border border-slate-200 bg-white px-3 py-2.5 outline-none focus:border-gold-300 min-h-[70px] resize-none"
             />
             <div className="flex items-center gap-2">
-              <button type="submit" disabled={submitting} className="flex-1 bg-gold-500 text-white text-sm font-semibold rounded-xl py-2 hover:bg-gold-600 disabled:opacity-60 flex items-center justify-center gap-2">
+              <button type="submit" disabled={submitting} className="flex-1 bg-gold-500 text-white text-sm font-semibold rounded-xl py-2 min-h-[44px] hover:bg-gold-600 disabled:opacity-60 flex items-center justify-center gap-2">
                 {submitting && <Loader className="h-4 w-4 animate-spin" />}
                 {myReviewId ? t.reviewUpdate : t.reviewSubmit}
               </button>
               {myReviewId && (
-                <button type="button" onClick={handleDelete} className="px-4 py-2 text-sm text-red-600 border border-red-200 rounded-xl hover:bg-red-50">{t.reviewRemove}</button>
+                <button type="button" onClick={handleDelete} className="px-4 py-2 min-h-[44px] text-sm text-red-600 border border-red-200 rounded-xl hover:bg-red-50">{t.reviewRemove}</button>
               )}
             </div>
           </form>
@@ -129,9 +131,9 @@ export function SiteReviewsSection({ isLoggedIn, t }) {
 
         {/* Reviews list */}
         {loading ? (
-          <div className="flex justify-center py-8"><Loader className="h-5 w-5 animate-spin text-gold-500" /></div>
+          <LoadingState variant="inline" label="Loading reviews…" className="py-8" />
         ) : reviews.length === 0 ? (
-          <p className="text-sm text-slate-400 italic text-center py-6">{t.reviewNone}</p>
+          <EmptyState icon={Star} title={t.reviewNone} className="py-6" />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {reviews.map((r, i) => (

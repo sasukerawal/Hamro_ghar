@@ -29,7 +29,7 @@ export default function AdBanner({ ad, className = "" }) {
         <img
           src={ad.imageUrl}
           alt={`Advertisement by ${ad.sponsorName}`}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
 
         {/* Hover Overlay */}

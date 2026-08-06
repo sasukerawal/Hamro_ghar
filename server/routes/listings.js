@@ -845,7 +845,9 @@ router.get("/:id", async (req, res) => {
     const obj = listing.toObject();
     if (listing.ownerId) {
       const owner = await User.findById(listing.ownerId).select('name socials');
-      obj.owner = owner ? { name: owner.name, socials: owner.socials || {} } : {};
+      // Include _id so the frontend can start a chat thread with the owner
+      // (ChatWidget needs a concrete user id, not just display info).
+      obj.owner = owner ? { _id: owner._id, name: owner.name, socials: owner.socials || {} } : {};
     }
 
     res.json({ listing: obj });

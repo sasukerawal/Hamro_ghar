@@ -61,7 +61,7 @@ export const HeroSection = ({
             <button
               type="button"
               onClick={onSearch}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gold-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-gold-600 active:scale-95 transition-all shadow-md shadow-gold-600/25"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gold-500 px-5 py-3 min-h-[44px] text-sm font-semibold text-white hover:bg-gold-600 active:scale-95 transition-all shadow-md shadow-gold-600/25"
             >
               <Search className="h-4 w-4" />
               {t.searchBtn}

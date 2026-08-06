@@ -16,7 +16,24 @@ import {
   Share2,
   Copy,
   Flag,
+  X,
+  Bed,
+  Bath,
+  Ruler,
+  Compass,
+  Route,
+  Hammer,
+  Bike,
+  Car,
+  Droplet,
+  Droplets,
+  Sofa,
+  Wifi,
+  Dog,
+  Sparkles,
+  ParkingSquare,
 } from "lucide-react";
+import LoadingState from "./components/common/LoadingState";
 import { apiFetch } from "./api";
 import { Helmet } from "react-helmet";
 
@@ -31,7 +48,7 @@ export const SpecPill = ({ children }) => (
 export const AmenityTag = ({ active, children }) => (
   <span
     className={
-      "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium border " +
+      "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium border " +
       (active
         ? "border-blue-200 bg-blue-50 text-gold-700"
         : "border-slate-200 bg-white text-slate-500")
@@ -62,7 +79,13 @@ export async function handleToggleSaveHome(listing, savedIds, setSavedIds, onGoL
     });
 
     toast.success(
-      isSaved ? "Removed from your favourites" : "Home saved to favourites ❤️"
+      isSaved ? (
+        "Removed from your favourites"
+      ) : (
+        <span className="inline-flex items-center gap-1">
+          Home saved to favourites <Heart className="h-3.5 w-3.5 fill-current" />
+        </span>
+      )
     );
 
     setSavedIds((prev) =>
@@ -223,17 +246,17 @@ export function ListingModal({
           {isOwner && (
             <button
               onClick={handleEditClick}
-              className="bg-white hover:bg-slate-50 text-slate-800 px-3 py-1.5 rounded-full text-[11px] font-bold shadow-md flex items-center gap-1 transition-colors"
+              className="bg-white hover:bg-slate-50 text-slate-800 px-3 py-1.5 min-h-[44px] rounded-full text-[11px] font-bold shadow-md flex items-center gap-1 transition-colors"
             >
               <Edit3 className="h-3.5 w-3.5" /> Edit
             </button>
           )}
           <button
             onClick={onClose}
-            className="bg-white hover:bg-slate-50 text-slate-800 h-8 w-8 rounded-full flex items-center justify-center shadow-md transition-colors"
+            aria-label="Close"
+            className="bg-white hover:bg-slate-50 text-slate-800 h-11 w-11 rounded-full flex items-center justify-center shadow-md transition-colors"
           >
-            <span className="sr-only">Close</span>
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            <X className="h-4 w-4" />
           </button>
         </div>
 
@@ -242,7 +265,7 @@ export function ListingModal({
           <div className="relative h-64 sm:h-80 w-full">
             <img
               src={currentImage}
-              alt="Home"
+              alt={home.title || home.address || "Property photo"}
               className="h-full w-full object-cover transition-transform duration-500"
               onError={(e) => {
                 e.target.onerror = null;
@@ -270,13 +293,15 @@ export function ListingModal({
               <>
                 <button
                   onClick={goPrev}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100"
+                  aria-label="Previous photo"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2.5 min-h-[44px] min-w-[44px] rounded-full backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100 flex items-center justify-center"
                 >
                   <ChevronLeft className="h-6 w-6" />
                 </button>
                 <button
                   onClick={goNext}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100"
+                  aria-label="Next photo"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2.5 min-h-[44px] min-w-[44px] rounded-full backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100 flex items-center justify-center"
                 >
                   <ChevronRight className="h-6 w-6" />
                 </button>
@@ -319,12 +344,12 @@ export function ListingModal({
 
             {/* Quick Facts Grid (V2 Schema) */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-              <QuickFact label="Bedrooms" value={home?.specs?.bedrooms || home.beds} icon="🛏️" />
-              <QuickFact label="Bathrooms" value={home?.specs?.bathrooms || home.baths} icon="🛁" />
-              <QuickFact label="Land Area" value={home?.specs?.landArea || home.sqft ? `${home?.specs?.landArea || home.sqft} ${home?.specs?.landAreaUnit || 'sqft'}` : null} icon="📐" />
-              <QuickFact label="Facing" value={home?.specs?.facing} icon="🧭" />
-              {home?.specs?.roadAccessFeet && <QuickFact label="Road Access" value={`${home.specs.roadAccessFeet} ft`} icon="🛣️" />}
-              {home?.specs?.builtYear && <QuickFact label="Built Year" value={home.specs.builtYear} icon="🏗️" />}
+              <QuickFact label="Bedrooms" value={home?.specs?.bedrooms || home.beds} icon={<Bed className="h-5 w-5 text-gold-600" />} />
+              <QuickFact label="Bathrooms" value={home?.specs?.bathrooms || home.baths} icon={<Bath className="h-5 w-5 text-gold-600" />} />
+              <QuickFact label="Land Area" value={home?.specs?.landArea || home.sqft ? `${home?.specs?.landArea || home.sqft} ${home?.specs?.landAreaUnit || 'sqft'}` : null} icon={<Ruler className="h-5 w-5 text-gold-600" />} />
+              <QuickFact label="Facing" value={home?.specs?.facing} icon={<Compass className="h-5 w-5 text-gold-600" />} />
+              {home?.specs?.roadAccessFeet && <QuickFact label="Road Access" value={`${home.specs.roadAccessFeet} ft`} icon={<Route className="h-5 w-5 text-gold-600" />} />}
+              {home?.specs?.builtYear && <QuickFact label="Built Year" value={home.specs.builtYear} icon={<Hammer className="h-5 w-5 text-gold-600" />} />}
             </div>
 
             <div className="grid gap-10 sm:grid-cols-3">
@@ -356,16 +381,16 @@ export function ListingModal({
                 <section>
                   <h2 className="text-lg font-bold text-slate-900 mb-3 border-b border-slate-100 pb-2">Facilities & Amenities</h2>
                   <div className="flex flex-wrap gap-2">
-                    {home?.facilities?.bikeParking > 0 && <AmenityTag active={true}>🏍️ Bike Parking ({home.facilities.bikeParking})</AmenityTag>}
-                    {home?.facilities?.carParking > 0 && <AmenityTag active={true}>🚗 Car Parking ({home.facilities.carParking})</AmenityTag>}
-                    {home?.facilities?.boringWater && <AmenityTag active={true}>💧 Boring Water (Yes)</AmenityTag>}
-                    {home?.facilities?.drinkingWater && <AmenityTag active={true}>🚰 Drinking Water (Yes)</AmenityTag>}
+                    {home?.facilities?.bikeParking > 0 && <AmenityTag active={true}><Bike className="h-3 w-3" /> Bike Parking ({home.facilities.bikeParking})</AmenityTag>}
+                    {home?.facilities?.carParking > 0 && <AmenityTag active={true}><Car className="h-3 w-3" /> Car Parking ({home.facilities.carParking})</AmenityTag>}
+                    {home?.facilities?.boringWater && <AmenityTag active={true}><Droplet className="h-3 w-3" /> Boring Water (Yes)</AmenityTag>}
+                    {home?.facilities?.drinkingWater && <AmenityTag active={true}><Droplets className="h-3 w-3" /> Drinking Water (Yes)</AmenityTag>}
 
-                    <AmenityTag active={!!(home?.specs?.furnishing === 'Fully Furnished' || home?.specs?.furnishing === 'fully' || home.furnished)}>🛋️ Furnished</AmenityTag>
-                    <AmenityTag active={!!home?.highlights?.find(h => h.toLowerCase().includes('internet') || h.toLowerCase().includes('wifi') || home.internet)}>🌐 Internet/WiFi</AmenityTag>
-                    <AmenityTag active={!!(home?.specs?.parking || home.parking)}>🅿️ Parking Available</AmenityTag>
-                    <AmenityTag active={!!home.petsAllowed}>🐕 Pets Allowed</AmenityTag>
-                    {home?.highlights?.map(h => <AmenityTag key={h} active={true}>✨ {h}</AmenityTag>)}
+                    <AmenityTag active={!!(home?.specs?.furnishing === 'Fully Furnished' || home?.specs?.furnishing === 'fully' || home.furnished)}><Sofa className="h-3 w-3" /> Furnished</AmenityTag>
+                    <AmenityTag active={!!home?.highlights?.find(h => h.toLowerCase().includes('internet') || h.toLowerCase().includes('wifi') || home.internet)}><Wifi className="h-3 w-3" /> Internet/WiFi</AmenityTag>
+                    <AmenityTag active={!!(home?.specs?.parking || home.parking)}><ParkingSquare className="h-3 w-3" /> Parking Available</AmenityTag>
+                    <AmenityTag active={!!home.petsAllowed}><Dog className="h-3 w-3" /> Pets Allowed</AmenityTag>
+                    {home?.highlights?.map(h => <AmenityTag key={h} active={true}><Sparkles className="h-3 w-3" /> {h}</AmenityTag>)}
                   </div>
                 </section>
 
@@ -414,7 +439,7 @@ export function ListingModal({
                       href={mapsUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors"
+                      className="w-full inline-flex items-center justify-center gap-2 py-2.5 min-h-[44px] rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors"
                     >
                       <MapPin className="h-4 w-4" /> View on Map
                     </a>
@@ -422,7 +447,7 @@ export function ListingModal({
                     {!isOwner && (
                       <button
                         onClick={handleHeartClick}
-                        className={`w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold border transition-colors ${isSaved
+                        className={`w-full inline-flex items-center justify-center gap-2 py-2.5 min-h-[44px] rounded-xl text-xs font-bold border transition-colors ${isSaved
                             ? "bg-red-50 border-red-100 text-red-600 hover:bg-red-100"
                             : "bg-gold-500 border-gold-500 text-white hover:bg-gold-600"
                           }`}
@@ -441,7 +466,8 @@ export function ListingModal({
                         const url = `${window.location.origin}/?listing=${home._id || home.id}`;
                         navigator.clipboard.writeText(url).then(() => toast.success("Copied!")).catch(() => toast.error("Could not copy"));
                       }}
-                        className="p-1.5 text-slate-400 hover:text-gold-700 transition-colors bg-slate-50 hover:bg-blue-50 rounded-lg"
+                        aria-label="Copy link"
+                        className="p-2.5 min-h-[44px] min-w-[44px] text-slate-400 hover:text-gold-700 transition-colors bg-slate-50 hover:bg-blue-50 rounded-lg"
                         title="Copy Link">
                         <Copy className="h-4 w-4" />
                       </button>
@@ -449,7 +475,8 @@ export function ListingModal({
                         const text = `Check out this home on HamroGhar: ${home.title || home.address} — Rs.${home.price}/mo\n${window.location.origin}/?listing=${home._id || home.id}`;
                         window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
                       }}
-                        className="p-1.5 text-slate-400 hover:text-green-500 transition-colors bg-slate-50 hover:bg-green-50 rounded-lg"
+                        aria-label="Share on WhatsApp"
+                        className="p-2.5 min-h-[44px] min-w-[44px] text-slate-400 hover:text-green-500 transition-colors bg-slate-50 hover:bg-green-50 rounded-lg"
                         title="WhatsApp">
                         <Share2 className="h-4 w-4" />
                       </button>
@@ -482,7 +509,7 @@ const QuickFact = ({ label, value, icon }) => {
   if (!value) return null;
   return (
     <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-      <span className="text-xl leading-none pt-0.5">{icon}</span>
+      <span className="leading-none pt-0.5">{icon}</span>
       <div>
         <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">{label}</p>
         <p className="text-sm font-semibold text-slate-900">{value}</p>
@@ -550,8 +577,8 @@ function OwnerSocialsPanel({ socials }) {
         : null,
       label: "Instagram",
       icon: <Instagram className="h-4 w-4" />,
-      bg: "bg-gradient-to-br from-purple-500 to-pink-500",
-      hover: "hover:from-purple-600 hover:to-pink-600",
+      bg: "bg-gold-600",
+      hover: "hover:bg-gold-700",
     },
     {
       key: "whatsapp",
@@ -579,7 +606,7 @@ function OwnerSocialsPanel({ socials }) {
           href={link.href}
           target="_blank"
           rel="noreferrer noopener"
-          className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-white text-xs font-semibold transition-all shadow-sm ${link.bg} ${link.hover}`}
+          className={`inline-flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-xl text-white text-xs font-semibold transition-all shadow-sm ${link.bg} ${link.hover}`}
         >
           {link.icon}
           {link.label}
@@ -732,7 +759,8 @@ function ReviewsSection({ listingId }) {
                 onClick={() => setMyRating(n)}
                 onMouseEnter={() => setHoverRating(n)}
                 onMouseLeave={() => setHoverRating(0)}
-                className="focus:outline-none"
+                aria-label={`Rate ${n} star${n > 1 ? "s" : ""}`}
+                className="p-2.5 -m-2.5 focus:outline-none"
               >
                 <Star
                   className={`h-5 w-5 transition-colors ${n <= (hoverRating || myRating)
@@ -759,7 +787,7 @@ function ReviewsSection({ listingId }) {
             <button
               type="submit"
               disabled={submitting}
-              className="flex-1 bg-gold-500 text-white text-xs font-semibold rounded-xl py-2 hover:bg-gold-600 disabled:opacity-60 flex items-center justify-center gap-1"
+              className="flex-1 bg-gold-500 text-white text-xs font-semibold rounded-xl py-2 min-h-[44px] hover:bg-gold-600 disabled:opacity-60 flex items-center justify-center gap-1"
             >
               {submitting && <Loader className="h-3 w-3 animate-spin" />}
               {myReviewId ? "Update" : "Submit"}
@@ -768,7 +796,7 @@ function ReviewsSection({ listingId }) {
               <button
                 type="button"
                 onClick={handleDelete}
-                className="px-3 py-2 text-xs text-red-600 border border-red-200 rounded-xl hover:bg-red-50"
+                className="px-3 py-2 min-h-[44px] text-xs text-red-600 border border-red-200 rounded-xl hover:bg-red-50"
               >
                 Delete
               </button>
@@ -783,9 +811,7 @@ function ReviewsSection({ listingId }) {
 
       {/* Review List */}
       {loading ? (
-        <div className="flex justify-center py-4">
-          <Loader className="h-4 w-4 animate-spin text-gold-400" />
-        </div>
+        <LoadingState variant="inline" label="Loading reviews…" className="py-4" />
       ) : reviews.length === 0 ? (
         <p className="text-xs text-slate-400 italic">No reviews yet. Be the first!</p>
       ) : (
@@ -851,7 +877,7 @@ function PriceHistoryChart({ history }) {
   const lastPt = pts[pts.length - 1];
   const firstPt = pts[0];
   const diff = prices[prices.length - 1] - prices[0];
-  const diffColor = diff > 0 ? "text-red-500" : diff < 0 ? "text-green-500" : "text-slate-500";
+  const diffColor = diff > 0 ? "text-red-500" : diff < 0 ? "text-emerald-500" : "text-slate-500";
   const diffText = diff === 0 ? "No change" : `${diff > 0 ? "+" : ""}Rs.${diff.toLocaleString()}`;
 
   return (
@@ -863,8 +889,8 @@ function PriceHistoryChart({ history }) {
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-14 overflow-visible">
         <defs>
           <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.15" />
-            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+            <stop offset="0%" stopColor="#B4522F" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="#B4522F" stopOpacity="0" />
           </linearGradient>
         </defs>
         {/* Fill area */}
@@ -873,10 +899,10 @@ function PriceHistoryChart({ history }) {
           fill="url(#chartGrad)"
         />
         {/* Line */}
-        <polyline points={polyline} fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+        <polyline points={polyline} fill="none" stroke="#B4522F" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
         {/* Dots */}
         {pts.map(([x, y], i) => (
-          <circle key={i} cx={x} cy={y} r="3" fill="#3b82f6" />
+          <circle key={i} cx={x} cy={y} r="3" fill="#B4522F" />
         ))}
       </svg>
       <div className="flex justify-between text-[10px] text-slate-400 mt-1">
@@ -919,7 +945,7 @@ function ReportListingButton({ listingId }) {
     <button
       onClick={handleReport}
       disabled={submitting || submitted}
-      className="w-full inline-flex items-center justify-center gap-1.5 py-1.5 rounded-xl border border-slate-200 text-[11px] text-slate-400 hover:border-red-200 hover:text-red-400 transition-colors disabled:opacity-50"
+      className="w-full inline-flex items-center justify-center gap-1.5 py-1.5 min-h-[44px] rounded-xl border border-slate-200 text-[11px] text-slate-400 hover:border-red-200 hover:text-red-400 transition-colors disabled:opacity-50"
     >
       <Flag className="h-3 w-3" />
       {submitted ? "Reported — thank you" : submitting ? "Submitting..." : "Report this listing"}

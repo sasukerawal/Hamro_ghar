@@ -1,5 +1,6 @@
 import React from "react";
-import { Tag, SlidersHorizontal } from "lucide-react";
+import { Tag, SlidersHorizontal, Building2, User, Users, List, Map as MapIcon } from "lucide-react";
+import Pill from "../common/Pill";
 
 export const FiltersBar = ({
   searchCity,
@@ -72,51 +73,46 @@ export const FiltersBar = ({
             <Tag className="h-3.5 w-3.5 text-slate-400" />
             <span className="text-[11px] font-semibold text-slate-500 mr-1">Deal:</span>
             {[{ val: "sale", label: "For Sale" }, { val: "rent", label: "For Rent" }].map(({ val, label }) => (
-              <button
+              <Pill
                 key={val}
-                type="button"
+                size="sm"
+                active={!isHostelActive && listingType === val}
                 onClick={() => { if (isHostelActive) { setCategory(""); setHostelType(""); } onTypeFilter(val); }}
-                className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold border transition-all ${!isHostelActive && listingType === val
-                    ? "bg-gold-500 border-gold-500 text-white shadow-sm"
-                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                  }`}
               >
                 {label}
-              </button>
+              </Pill>
             ))}
-            <button
-              type="button"
+            <Pill
+              variant="hostel"
+              size="sm"
+              active={isHostelActive}
               onClick={handleHostelToggle}
-              className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold border transition-all ${isHostelActive
-                  ? "bg-purple-600 border-purple-600 text-white shadow-sm"
-                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                }`}
+              icon={<Building2 className="w-3.5 h-3.5" />}
             >
-              🏨 Hostel
-            </button>
+              Hostel
+            </Pill>
 
             {/* Hostel sub-filters */}
             {isHostelActive && (
               <>
                 <span className="text-slate-200">|</span>
-                {[{ val: "boys", label: "👦 Boys" }, { val: "girls", label: "👧 Girls" }, { val: "mix", label: "🤝 Mix" }].map(({ val, label }) => (
-                  <button
+                {[{ val: "boys", label: "Boys", Icon: User }, { val: "girls", label: "Girls", Icon: User }, { val: "mix", label: "Mix", Icon: Users }].map(({ val, label, Icon }) => (
+                  <Pill
                     key={val}
-                    type="button"
+                    variant="hostel"
+                    size="sm"
+                    active={hostelType === val}
                     onClick={() => handleHostelSubFilter(val)}
-                    className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold border transition-all ${hostelType === val
-                        ? "bg-purple-100 border-purple-400 text-purple-800"
-                        : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
-                      }`}
+                    icon={<Icon className="w-3.5 h-3.5" />}
                   >
                     {label}
-                  </button>
+                  </Pill>
                 ))}
               </>
             )}
 
             <span className="text-slate-200">|</span>
-            <select value={propertyType} onChange={e => setPropertyType(e.target.value)} className="outline-none border border-slate-200 bg-white text-[11px] text-slate-600 font-semibold px-2 py-1 rounded-full w-32 cursor-pointer hover:bg-slate-50">
+            <select value={propertyType} onChange={e => setPropertyType(e.target.value)} className="outline-none border border-slate-200 bg-white text-[11px] text-slate-600 font-semibold px-3 py-2.5 min-h-[44px] rounded-full w-32 cursor-pointer hover:bg-slate-50">
               <option value="">All Types</option>
               <option value="house">House</option>
               <option value="apartment">Apartment</option>
@@ -128,19 +124,20 @@ export const FiltersBar = ({
             <button
               type="button"
               onClick={onToggleMap}
-              className="inline-flex items-center justify-center rounded-full border border-gold-200 bg-gold-50 px-3 py-1 text-[11px] font-semibold text-gold-800 hover:bg-gold-100"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-gold-200 bg-gold-50 px-3 py-2.5 min-h-[44px] text-[11px] font-semibold text-gold-800 hover:bg-gold-100"
             >
-              {showMap ? "📋 Show list" : "🗺️ Show map"}
+              {showMap ? <List className="w-3.5 h-3.5" /> : <MapIcon className="w-3.5 h-3.5" />}
+              {showMap ? "Show list" : "Show map"}
             </button>
           </div>
 
           {/* Filter inputs row */}
           <div className="flex flex-row sm:items-end gap-3">
             <div className="grid gap-3 sm:grid-cols-4 flex-1">
-              <FilterInput label="District (e.g. Kathmandu)" type="text" value={district} onChange={(e) => setDistrict(e.target.value)} />
-              <FilterInput label="City/Municipality" type="text" value={municipality} onChange={(e) => setMunicipality(e.target.value)} />
-              <FilterInput label="Max rent/price" type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} />
-              <FilterInput label="Min beds" type="number" value={beds} onChange={(e) => setBeds(e.target.value)} />
+              <FilterInput id="filterDistrict" label="District (e.g. Kathmandu)" type="text" value={district} onChange={(e) => setDistrict(e.target.value)} />
+              <FilterInput id="filterMunicipality" label="City/Municipality" type="text" value={municipality} onChange={(e) => setMunicipality(e.target.value)} />
+              <FilterInput id="filterMaxPrice" label="Max rent/price" type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} />
+              <FilterInput id="filterBeds" label="Min beds" type="number" value={beds} onChange={(e) => setBeds(e.target.value)} />
             </div>
             <div className="flex flex-wrap gap-2 mt-2 sm:mt-0">
               <button
@@ -173,45 +170,43 @@ export const FiltersBar = ({
         <div className="sm:hidden">
           <div className="flex items-center gap-2 mb-2">
             {[{ val: "sale", label: "Buy" }, { val: "rent", label: "Rent" }].map(({ val, label }) => (
-              <button
+              <Pill
                 key={val}
-                type="button"
+                size="sm"
+                active={!isHostelActive && listingType === val}
                 onClick={() => { if (isHostelActive) { setCategory(""); setHostelType(""); } onTypeFilter(val); }}
-                className={`flex-1 py-1.5 text-[11px] font-semibold rounded-full border transition-all ${!isHostelActive && listingType === val
-                    ? "bg-gold-500 border-gold-500 text-white"
-                    : "border-slate-200 bg-white text-slate-600"
-                  }`}
+                className="flex-1"
               >
                 {label}
-              </button>
+              </Pill>
             ))}
-            <button
-              type="button"
+            <Pill
+              variant="hostel"
+              size="sm"
+              active={isHostelActive}
               onClick={handleHostelToggle}
-              className={`flex-1 py-1.5 text-[11px] font-semibold rounded-full border transition-all ${isHostelActive
-                  ? "bg-purple-600 border-purple-600 text-white"
-                  : "border-slate-200 bg-white text-slate-600"
-                }`}
+              icon={<Building2 className="w-3.5 h-3.5" />}
+              className="flex-1"
             >
-              🏨 Hostel
-            </button>
+              Hostel
+            </Pill>
           </div>
 
           {/* Mobile hostel sub-filters */}
           {isHostelActive && (
             <div className="flex items-center gap-2 mb-2">
-              {[{ val: "boys", label: "👦 Boys" }, { val: "girls", label: "👧 Girls" }, { val: "mix", label: "🤝 Mix" }].map(({ val, label }) => (
-                <button
+              {[{ val: "boys", label: "Boys", Icon: User }, { val: "girls", label: "Girls", Icon: User }, { val: "mix", label: "Mix", Icon: Users }].map(({ val, label, Icon }) => (
+                <Pill
                   key={val}
-                  type="button"
+                  variant="hostel"
+                  size="sm"
+                  active={hostelType === val}
                   onClick={() => handleHostelSubFilter(val)}
-                  className={`flex-1 py-1 text-[10px] font-semibold rounded-full border transition-all ${hostelType === val
-                      ? "bg-purple-100 border-purple-400 text-purple-800"
-                      : "border-slate-200 bg-white text-slate-500"
-                    }`}
+                  icon={<Icon className="w-3.5 h-3.5" />}
+                  className="flex-1"
                 >
                   {label}
-                </button>
+                </Pill>
               ))}
             </div>
           )}
@@ -226,14 +221,14 @@ export const FiltersBar = ({
               <button
                 type="button"
                 onClick={onToggleMap}
-                className="inline-flex items-center justify-center gap-1 rounded-full bg-gold-50 px-3 py-1.5 text-[11px] font-semibold text-gold-800 border border-gold-200 hover:bg-gold-100"
+                className="inline-flex items-center justify-center gap-1 rounded-full bg-gold-50 px-3 py-2.5 min-h-[44px] text-[11px] font-semibold text-gold-800 border border-gold-200 hover:bg-gold-100"
               >
                 {showMap ? "List" : "Map"}
               </button>
               <button
                 type="button"
                 onClick={onOpenModal}
-                className="inline-flex items-center justify-center gap-1 rounded-full bg-gold-50 px-3 py-1.5 text-xs font-semibold text-gold-800 border border-gold-200 hover:bg-gold-100"
+                className="inline-flex items-center justify-center gap-1 rounded-full bg-gold-50 px-3 py-2.5 min-h-[44px] text-xs font-semibold text-gold-800 border border-gold-200 hover:bg-gold-100"
               >
                 <SlidersHorizontal className="h-3.5 w-3.5" />
                 Filter
@@ -246,10 +241,11 @@ export const FiltersBar = ({
   );
 };
 
-const FilterInput = ({ label, ...props }) => (
+const FilterInput = ({ id, label, ...props }) => (
   <div className="text-xs">
-    <p className="font-semibold text-slate-700 mb-1">{label}</p>
+    <label htmlFor={id} className="font-semibold text-slate-700 mb-1 block">{label}</label>
     <input
+      id={id}
       className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-gold-300 focus:ring-1 focus:ring-gold-100"
       {...props}
     />
