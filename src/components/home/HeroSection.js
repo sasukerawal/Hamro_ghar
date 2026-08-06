@@ -1,6 +1,8 @@
 import React from "react";
 import { MapPin, Search, Star, Bed, Bath } from "lucide-react";
 import AddressSuggestionsList from "../../AddressSuggestionsList";
+import NumberTicker from "../common/NumberTicker";
+import { useRipple } from "../common/Ripple";
 
 export const HeroSection = ({
   t,
@@ -17,6 +19,7 @@ export const HeroSection = ({
   const total = stats.totalListings ?? "—";
   const cities = stats.citiesCount ?? "—";
   const avgViews = stats.avgViews ?? "—";
+  const searchRipple = useRipple();
 
   return (
     <section className="relative bg-slate-50 overflow-hidden">
@@ -61,8 +64,10 @@ export const HeroSection = ({
             <button
               type="button"
               onClick={onSearch}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gold-500 px-5 py-3 min-h-[44px] text-sm font-semibold text-white hover:bg-gold-600 active:scale-95 transition-all shadow-md shadow-gold-600/25"
+              onPointerDown={searchRipple.onPointerDown}
+              className="relative overflow-hidden inline-flex items-center justify-center gap-2 rounded-xl bg-gold-500 px-5 py-3 min-h-[44px] text-sm font-semibold text-white hover:bg-gold-600 active:scale-95 transition-all shadow-md shadow-gold-600/25"
             >
+              {searchRipple.rippleLayer}
               <Search className="h-4 w-4" />
               {t.searchBtn}
             </button>
@@ -148,7 +153,7 @@ const VerifiedShowcase = ({ t, totalListings, cities, avgViews, className = "" }
 
 const MiniStat = ({ value, label }) => (
   <div className="px-3 py-3 text-center">
-    <p className="font-mono text-sm font-bold text-slate-900">{value}</p>
+    <NumberTicker value={value} className="font-mono text-sm font-bold text-slate-900" />
     <p className="text-[9px] uppercase tracking-wider text-slate-400 mt-0.5 leading-tight">{label}</p>
   </div>
 );

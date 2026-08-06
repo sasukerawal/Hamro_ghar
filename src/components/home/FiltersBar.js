@@ -76,6 +76,7 @@ export const FiltersBar = ({
               <Pill
                 key={val}
                 size="sm"
+                layoutId="dealType-desktop"
                 active={!isHostelActive && listingType === val}
                 onClick={() => { if (isHostelActive) { setCategory(""); setHostelType(""); } onTypeFilter(val); }}
               >
@@ -85,6 +86,7 @@ export const FiltersBar = ({
             <Pill
               variant="hostel"
               size="sm"
+              layoutId="dealType-desktop"
               active={isHostelActive}
               onClick={handleHostelToggle}
               icon={<Building2 className="w-3.5 h-3.5" />}
@@ -101,6 +103,7 @@ export const FiltersBar = ({
                     key={val}
                     variant="hostel"
                     size="sm"
+                    layoutId="hostelSub-desktop"
                     active={hostelType === val}
                     onClick={() => handleHostelSubFilter(val)}
                     icon={<Icon className="w-3.5 h-3.5" />}
@@ -173,6 +176,7 @@ export const FiltersBar = ({
               <Pill
                 key={val}
                 size="sm"
+                layoutId="dealType-mobile"
                 active={!isHostelActive && listingType === val}
                 onClick={() => { if (isHostelActive) { setCategory(""); setHostelType(""); } onTypeFilter(val); }}
                 className="flex-1"
@@ -183,6 +187,7 @@ export const FiltersBar = ({
             <Pill
               variant="hostel"
               size="sm"
+              layoutId="dealType-mobile"
               active={isHostelActive}
               onClick={handleHostelToggle}
               icon={<Building2 className="w-3.5 h-3.5" />}
@@ -200,6 +205,7 @@ export const FiltersBar = ({
                   key={val}
                   variant="hostel"
                   size="sm"
+                  layoutId="hostelSub-mobile"
                   active={hostelType === val}
                   onClick={() => handleHostelSubFilter(val)}
                   icon={<Icon className="w-3.5 h-3.5" />}

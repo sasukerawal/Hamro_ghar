@@ -2,8 +2,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
+import { useRipple } from "./components/common/Ripple";
 import {
-  Menu,
   X,
   User,
   LogIn,
@@ -50,6 +51,7 @@ export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang
   const { unitSystem, toggleUnitSystem } = useMeasurement();
   const menuRef = useRef(null);
   const drawerRef = useRef(null);
+  const joinRipple = useRipple();
 
   const t = LANG[lang] || LANG.en;
 
@@ -172,9 +174,11 @@ export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang
               </Link>
               <Link
                 to="/register"
-                className="inline-flex items-center justify-center rounded-full bg-gold-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gold-600"
+                className="relative overflow-hidden inline-flex items-center justify-center rounded-full bg-gold-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gold-600"
                 onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                onPointerDown={joinRipple.onPointerDown}
               >
+                {joinRipple.rippleLayer}
                 {t.joinFree}
               </Link>
             </>
@@ -250,11 +254,24 @@ export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang
             aria-expanded={isMobileMenuOpen}
             className="relative inline-flex items-center justify-center rounded-full border border-slate-200 p-2 max-[425px]:p-1.5 text-slate-700 bg-white before:absolute before:inset-0 before:m-auto before:h-11 before:w-11 before:content-['']"
           >
-            {isMobileMenuOpen ? (
-              <X className="h-5 w-5 max-[425px]:h-4 max-[425px]:w-4" />
-            ) : (
-              <Menu className="h-5 w-5 max-[425px]:h-4 max-[425px]:w-4" />
-            )}
+            {/* Three bars morph into an X instead of the icon swapping instantly */}
+            <span className="relative flex h-4 w-4 max-[425px]:h-3.5 max-[425px]:w-3.5 flex-col items-center justify-center">
+              <motion.span
+                animate={{ rotate: isMobileMenuOpen ? 45 : 0, y: isMobileMenuOpen ? 0 : -5 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="absolute h-[1.5px] w-full bg-current rounded-full origin-center"
+              />
+              <motion.span
+                animate={{ opacity: isMobileMenuOpen ? 0 : 1, scale: isMobileMenuOpen ? 0.5 : 1 }}
+                transition={{ duration: 0.15 }}
+                className="absolute h-[1.5px] w-full bg-current rounded-full"
+              />
+              <motion.span
+                animate={{ rotate: isMobileMenuOpen ? -45 : 0, y: isMobileMenuOpen ? 0 : 5 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="absolute h-[1.5px] w-full bg-current rounded-full origin-center"
+              />
+            </span>
           </button>
 
           {/* MOBILE DRAWER — Portal rendered to <body> to escape stacking context */}

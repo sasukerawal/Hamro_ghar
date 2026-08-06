@@ -8,10 +8,12 @@ import {
 } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { MotionConfig } from "framer-motion";
 
 import { apiFetch } from "./api";
 import { MeasurementProvider } from "./contexts/MeasurementContext";
 import LoadingState from "./components/common/LoadingState";
+import ScrollProgressBar from "./components/common/ScrollProgressBar";
 
 // Core components needed immediately
 import Header from "./Header";
@@ -111,15 +113,20 @@ function App() {
   };
 
   return (
+    // reducedMotion="user" makes every framer-motion animation in the app
+    // (this component and any descendant) automatically honor
+    // prefers-reduced-motion — one switch instead of checking it per animation.
+    <MotionConfig reducedMotion="user">
     <MeasurementProvider>
       <div className="min-h-screen flex flex-col bg-white text-slate-900">
-        {/* Header appears on all pages */}
+        {/* Header + scroll progress appear on all pages */}
         <Header
           isLoggedIn={isLoggedIn}
           onLogout={handleLogout}
           lang={lang}
           onToggleLang={() => setLang((p) => (p === "en" ? "ne" : "en"))}
         />
+        <ScrollProgressBar />
 
         <main className="flex-1 pt-24 lg:pt-28 flex flex-col">
           <Suspense fallback={<FallbackSpinner />}>
@@ -253,6 +260,7 @@ function App() {
         />
       </div>
     </MeasurementProvider>
+    </MotionConfig>
   );
 }
 

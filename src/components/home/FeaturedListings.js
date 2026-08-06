@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronLeft, ChevronRight, Heart, MapPin, Eye, Home, Zap, Building2, Bed, Bath, Ruler } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, MapPin, Eye, Home, Zap, Building2, Bed, Bath, Ruler, Route, Compass } from "lucide-react";
 import { useMeasurement } from "../../contexts/MeasurementContext";
 import { useScrollReveal } from "../../hooks/useScrollReveal";
 import AdBanner from "../ads/AdBanner";
@@ -239,13 +239,32 @@ export const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved, isVirtual
         </p>
 
         <div className="mt-auto pt-3">
-          <div className="flex items-center justify-between text-[11px] font-mono font-medium text-slate-600 bg-slate-50 rounded-lg p-2 border border-slate-100">
-            <span className="flex items-center gap-1"><Bed className="h-3 w-3 text-slate-400" /> {home?.specs?.bedrooms || home.beds || "-"}</span>
-            <div className="w-px h-3 bg-slate-200" />
-            <span className="flex items-center gap-1"><Bath className="h-3 w-3 text-slate-400" /> {home?.specs?.bathrooms || home.baths || "-"}</span>
-            <div className="w-px h-3 bg-slate-200" />
-            <span className="flex items-center gap-1 truncate max-w-[90px]"><Ruler className="h-3 w-3 text-slate-400 shrink-0" /> {formatArea(home?.specs?.landArea, home.sqft)}</span>
-          </div>
+          {home.propertyType === "land" ? (
+            // Land has no bedrooms/bathrooms — show road access & area instead
+            // of a row of dashes.
+            <div className="flex items-center justify-between text-[11px] font-mono font-medium text-slate-600 bg-slate-50 rounded-lg p-2 border border-slate-100">
+              <span className="flex items-center gap-1 truncate">
+                <Route className="h-3 w-3 text-slate-400 shrink-0" />
+                {home?.specs?.roadAccess?.widthFeet ? `${home.specs.roadAccess.widthFeet} ft road` : "Road: —"}
+              </span>
+              <div className="w-px h-3 bg-slate-200 shrink-0" />
+              {home?.specs?.facing && (
+                <>
+                  <span className="flex items-center gap-1 truncate"><Compass className="h-3 w-3 text-slate-400 shrink-0" /> {home.specs.facing}</span>
+                  <div className="w-px h-3 bg-slate-200 shrink-0" />
+                </>
+              )}
+              <span className="flex items-center gap-1 truncate max-w-[100px]"><Ruler className="h-3 w-3 text-slate-400 shrink-0" /> {formatArea(home?.specs?.landArea, home.sqft)}</span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between text-[11px] font-mono font-medium text-slate-600 bg-slate-50 rounded-lg p-2 border border-slate-100">
+              <span className="flex items-center gap-1"><Bed className="h-3 w-3 text-slate-400" /> {home?.specs?.bedrooms || home.beds || "-"}</span>
+              <div className="w-px h-3 bg-slate-200" />
+              <span className="flex items-center gap-1"><Bath className="h-3 w-3 text-slate-400" /> {home?.specs?.bathrooms || home.baths || "-"}</span>
+              <div className="w-px h-3 bg-slate-200" />
+              <span className="flex items-center gap-1 truncate max-w-[90px]"><Ruler className="h-3 w-3 text-slate-400 shrink-0" /> {formatArea(home?.specs?.landArea, home.sqft)}</span>
+            </div>
+          )}
 
           <div className="mt-2.5 flex items-center justify-between text-[10px] text-slate-400 font-medium">
             <span className="inline-flex items-center gap-1">

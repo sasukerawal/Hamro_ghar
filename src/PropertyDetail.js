@@ -15,6 +15,23 @@ import { ListingCard } from "./components/home/FeaturedListings";
 import useSWR from "swr";
 import AdBanner from "./components/ads/AdBanner";
 import ChatWidget from "./ChatWidget";
+import PropertyLocationMap from "./components/common/PropertyLocationMap";
+import { useScrollReveal } from "./hooks/useScrollReveal";
+
+// Fades a section up into place as it enters the viewport while scrolling —
+// content is present (and readable) in the DOM the whole time, this only
+// adds motion on top per useScrollReveal's progressive-enhancement contract.
+const Reveal = ({ children, className = "" }) => {
+  const { ref, isVisible } = useScrollReveal();
+  return (
+    <div
+      ref={ref}
+      className={`transition-all duration-700 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"} ${className}`}
+    >
+      {children}
+    </div>
+  );
+};
 
 const MetricBox = ({ label, value, icon }) => {
   if (!value) return null;
@@ -230,15 +247,16 @@ export default function PropertyDetail() {
 
         {/* Full-screen Lightbox */}
         {lightboxIdx !== null && (
-          <div className="fixed inset-0 z-[9999] bg-black/95 flex flex-col items-center justify-center" onClick={() => setLightboxIdx(null)}>
+          <div className="fixed inset-0 z-[9999] bg-black/95 flex flex-col items-center justify-center animate-fade-in" onClick={() => setLightboxIdx(null)}>
             <button className="absolute top-4 right-4 z-50 text-white/80 hover:text-white bg-white/10 rounded-full p-2" onClick={() => setLightboxIdx(null)}>
               <X className="w-6 h-6" />
             </button>
             <div className="relative w-full h-full flex items-center justify-center px-4" onClick={(e) => e.stopPropagation()}>
               <img
+                key={lightboxIdx}
                 src={images[lightboxIdx]}
                 alt={`Property view ${lightboxIdx + 1}`}
-                className="max-w-full max-h-[85vh] object-contain rounded-xl"
+                className="max-w-full max-h-[85vh] object-contain rounded-xl animate-fade-in-up"
               />
               {images.length > 1 && (
                 <>
@@ -329,167 +347,175 @@ export default function PropertyDetail() {
             <hr className="border-slate-200" />
 
             {/* Detailed Specifications */}
-            <section className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-              <h2 className="text-xl font-extrabold text-slate-900 mb-6 flex items-center gap-2"><Maximize2 className="w-5 h-5 text-gold-700" /> Detailed Specifications</h2>
-              <div className="grid sm:grid-cols-2 gap-x-12 gap-y-1">
-                <DetailRow label="Property Type" value={<span className="capitalize">{home.propertyType}</span>} icon={Home} />
-                <DetailRow label="Listing Purpose" value={<span className="capitalize">{home.type}</span>} icon={Tag} />
-                {specs.builtYear && <DetailRow label="Year Built" value={specs.builtYear} icon={Building} />}
-                {specs.builtUpAreaSqFt && <DetailRow label="Built Up Area" value={`${specs.builtUpAreaSqFt} Sq.Ft`} icon={Ruler} />}
-                {(isApt || home.propertyType === 'room') && specs.floorNumber && <DetailRow label="Floor Level" value={specs.floorNumber} icon={Layers} />}
+            <Reveal>
+              <section className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                <h2 className="text-xl font-extrabold text-slate-900 mb-6 flex items-center gap-2"><Maximize2 className="w-5 h-5 text-gold-700" /> Detailed Specifications</h2>
+                <div className="grid sm:grid-cols-2 gap-x-12 gap-y-1">
+                  <DetailRow label="Property Type" value={<span className="capitalize">{home.propertyType}</span>} icon={Home} />
+                  <DetailRow label="Listing Purpose" value={<span className="capitalize">{home.type}</span>} icon={Tag} />
+                  {specs.builtYear && <DetailRow label="Year Built" value={specs.builtYear} icon={Building} />}
+                  {specs.builtUpAreaSqFt && <DetailRow label="Built Up Area" value={`${specs.builtUpAreaSqFt} Sq.Ft`} icon={Ruler} />}
+                  {(isApt || home.propertyType === 'room') && specs.floorNumber && <DetailRow label="Floor Level" value={specs.floorNumber} icon={Layers} />}
 
-                {/* Room specifics if available */}
-                {specs.attachedBathrooms > 0 && <DetailRow label="Attached Bathrooms" value={specs.attachedBathrooms} icon={Tag} />}
-                {specs.commonBathrooms > 0 && <DetailRow label="Common Bathrooms" value={specs.commonBathrooms} icon={Tag} />}
+                  {/* Room specifics if available */}
+                  {specs.attachedBathrooms > 0 && <DetailRow label="Attached Bathrooms" value={specs.attachedBathrooms} icon={Tag} />}
+                  {specs.commonBathrooms > 0 && <DetailRow label="Common Bathrooms" value={specs.commonBathrooms} icon={Tag} />}
 
-                {/* Parking Sub-section */}
-                {(specs.parking > 0 || fac.carParking > 0 || fac.bikeParking > 0 || home.parkingFeature) && (
-                  <>
-                    <DetailRow label="Car Parking" value={fac.carParking || specs.parking || (home.parkingFeature ? "Available" : "0")} icon={Car} />
-                    <DetailRow label="Bike Parking" value={fac.bikeParking || "0"} icon={Bike} />
-                  </>
-                )}
-              </div>
-            </section>
+                  {/* Parking Sub-section */}
+                  {(specs.parking > 0 || fac.carParking > 0 || fac.bikeParking > 0 || home.parkingFeature) && (
+                    <>
+                      <DetailRow label="Car Parking" value={fac.carParking || specs.parking || (home.parkingFeature ? "Available" : "0")} icon={Car} />
+                      <DetailRow label="Bike Parking" value={fac.bikeParking || "0"} icon={Bike} />
+                    </>
+                  )}
+                </div>
+              </section>
+            </Reveal>
 
             {/* Utilities */}
             {!isLand && (
-              <section className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-                <h2 className="text-xl font-extrabold text-slate-900 mb-6 flex items-center gap-2"><Droplets className="w-5 h-5 text-gold-700" /> Utilities</h2>
-                <div className="grid sm:grid-cols-2 gap-x-12 gap-y-1">
-                  <DetailRow label="Water Supply" value={specs.water?.available ? "Yes" : "No"} icon={Droplets} />
-                  {specs.water?.source && <DetailRow label="Water Source" value={specs.water.source} />}
-                  {specs.water?.drinkingWater && <DetailRow label="Drinking Water" value="Available" />}
-                  {specs.water?.hotWater && <DetailRow label="Hot Water" value="Available" />}
-                  {specs.water?.waterSupply247 && <DetailRow label="24/7 Water Supply" value="Yes" />}
-                  {specs.water?.waterTank && <DetailRow label="Reserve Tank" value="Installed" />}
-                  {specs.electricity && <DetailRow label="Electricity" value="Grid Connected" />}
-                  <DetailRow label="Internet / WiFi" value={(specs.wifi?.available || home.internet) ? "Available" : "No"} icon={Wifi} />
-                  {specs.wifi?.provider && <DetailRow label="ISP" value={specs.wifi.provider} />}
-                </div>
-              </section>
+              <Reveal>
+                <section className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                  <h2 className="text-xl font-extrabold text-slate-900 mb-6 flex items-center gap-2"><Droplets className="w-5 h-5 text-gold-700" /> Utilities</h2>
+                  <div className="grid sm:grid-cols-2 gap-x-12 gap-y-1">
+                    <DetailRow label="Water Supply" value={specs.water?.available ? "Yes" : "No"} icon={Droplets} />
+                    {specs.water?.source && <DetailRow label="Water Source" value={specs.water.source} />}
+                    {specs.water?.drinkingWater && <DetailRow label="Drinking Water" value="Available" />}
+                    {specs.water?.hotWater && <DetailRow label="Hot Water" value="Available" />}
+                    {specs.water?.waterSupply247 && <DetailRow label="24/7 Water Supply" value="Yes" />}
+                    {specs.water?.waterTank && <DetailRow label="Reserve Tank" value="Installed" />}
+                    {specs.electricity && <DetailRow label="Electricity" value="Grid Connected" />}
+                    <DetailRow label="Internet / WiFi" value={(specs.wifi?.available || home.internet) ? "Available" : "No"} icon={Wifi} />
+                    {specs.wifi?.provider && <DetailRow label="ISP" value={specs.wifi.provider} />}
+                  </div>
+                </section>
+              </Reveal>
             )}
 
             {/* Nearby Facilities */}
             {Array.isArray(home.nearby) && home.nearby.length > 0 && (
-              <section className="mt-10">
-                <h2 className="text-2xl font-extrabold text-slate-900 mb-6">Facilities</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-y-4 gap-x-6 bg-slate-100/50 p-6 rounded-3xl border border-slate-200">
-                  {home.nearby.map((n, i) => n.facility && n.distance ? (
-                    <div key={i} className="flex flex-col border-b sm:border-b-0 border-slate-200/60 pb-2 sm:pb-0">
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-tight">{n.facility}</span>
-                      <span className="text-sm font-extrabold text-slate-800">{n.distance}</span>
-                    </div>
-                  ) : null)}
-                </div>
-              </section>
+              <Reveal className="mt-10">
+                <section>
+                  <h2 className="text-2xl font-extrabold text-slate-900 mb-6">Facilities</h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-y-4 gap-x-6 bg-slate-100/50 p-6 rounded-3xl border border-slate-200">
+                    {home.nearby.map((n, i) => n.facility && n.distance ? (
+                      <div key={i} className="flex flex-col border-b sm:border-b-0 border-slate-200/60 pb-2 sm:pb-0">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-tight">{n.facility}</span>
+                        <span className="text-sm font-extrabold text-slate-800">{n.distance}</span>
+                      </div>
+                    ) : null)}
+                  </div>
+                </section>
+              </Reveal>
             )}
 
             {/* Amenities Grid */}
             {amenities.length > 0 && (
-              <section className="mt-10">
-                <h2 className="text-2xl font-extrabold text-slate-900 mb-6">Amenities</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-2">
-                  {amenities.map(a => (
-                    <div key={a} className="flex items-center gap-3 text-slate-700 font-bold text-sm bg-slate-100 p-3 rounded-xl border border-slate-200">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      {a}
-                    </div>
-                  ))}
-                </div>
-              </section>
+              <Reveal className="mt-10">
+                <section>
+                  <h2 className="text-2xl font-extrabold text-slate-900 mb-6">Amenities</h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-2">
+                    {amenities.map((a, i) => (
+                      <div
+                        key={a}
+                        className="flex items-center gap-3 text-slate-700 font-bold text-sm bg-slate-100 p-3 rounded-xl border border-slate-200 hover:border-gold-200 hover:bg-gold-50 transition-colors animate-fade-in-up"
+                        style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        {a}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </Reveal>
             )}
 
             {/* Video Tour Section */}
             {home.videoUrl && (
-              <section className="mt-10">
-                <h2 className="text-2xl font-extrabold text-slate-900 mb-6 flex items-center gap-2">Video Walkthrough</h2>
-                <VideoEmbed url={home.videoUrl} />
-              </section>
+              <Reveal className="mt-10">
+                <section>
+                  <h2 className="text-2xl font-extrabold text-slate-900 mb-6 flex items-center gap-2">Video Walkthrough</h2>
+                  <VideoEmbed url={home.videoUrl} />
+                </section>
+              </Reveal>
             )}
 
             {/* House Rules & Policies */}
             {home.houseRules && (Object.values(home.houseRules).some(val => val !== false && val !== undefined && val !== "")) && (
-              <section className="mt-10">
-                <h2 className="text-2xl font-extrabold text-slate-900 mb-6 flex items-center gap-2">House Rules</h2>
-                <div className="grid sm:grid-cols-2 gap-4 bg-slate-50 p-6 rounded-3xl border border-slate-200">
-                  {home.houseRules.petsAllowed !== undefined && (
-                    <div className="flex items-center justify-between border-b sm:border-b-0 border-slate-200/60 pb-3 sm:pb-0">
-                      <span className="text-sm font-bold text-slate-600">Pets</span>
-                      <span className={`text-sm font-black ${home.houseRules.petsAllowed ? 'text-emerald-600' : 'text-rose-500'}`}>{home.houseRules.petsAllowed ? 'Allowed' : 'Not Allowed'}</span>
-                    </div>
-                  )}
-                  {home.houseRules.smokingAllowed !== undefined && (
-                    <div className="flex items-center justify-between border-b sm:border-b-0 border-slate-200/60 pb-3 sm:pb-0">
-                      <span className="text-sm font-bold text-slate-600">Smoking</span>
-                      <span className={`text-sm font-black ${home.houseRules.smokingAllowed ? 'text-emerald-600' : 'text-rose-500'}`}>{home.houseRules.smokingAllowed ? 'Allowed' : 'Not Allowed'}</span>
-                    </div>
-                  )}
-                  {home.houseRules.partiesAllowed !== undefined && (
-                    <div className="flex items-center justify-between border-b sm:border-b-0 border-slate-200/60 pb-3 sm:pb-0">
-                      <span className="text-sm font-bold text-slate-600">Parties/Events</span>
-                      <span className={`text-sm font-black ${home.houseRules.partiesAllowed ? 'text-emerald-600' : 'text-rose-500'}`}>{home.houseRules.partiesAllowed ? 'Allowed' : 'Not Allowed'}</span>
-                    </div>
-                  )}
-                  {home.houseRules.shoesOff !== undefined && (
-                    <div className="flex items-center justify-between border-b sm:border-b-0 border-slate-200/60 pb-3 sm:pb-0">
-                      <span className="text-sm font-bold text-slate-600">Shoes Indoors</span>
-                      <span className={`text-sm font-black ${home.houseRules.shoesOff ? 'text-rose-500' : 'text-slate-500'}`}>{home.houseRules.shoesOff ? 'Must Take Off' : 'Optional'}</span>
-                    </div>
-                  )}
-                  {home.houseRules.guestsLimit > 0 && (
-                    <div className="flex items-center justify-between border-b sm:border-b-0 border-slate-200/60 pb-3 sm:pb-0">
-                      <span className="text-sm font-bold text-slate-600">Max Guests</span>
-                      <span className="text-sm font-black text-slate-800">{home.houseRules.guestsLimit} People</span>
-                    </div>
-                  )}
-                  {(home.houseRules.quietHoursStart || home.houseRules.quietHoursEnd) && (
-                    <div className="flex items-center justify-between border-b sm:border-b-0 border-slate-200/60 pb-3 sm:pb-0">
-                      <span className="text-sm font-bold text-slate-600">Quiet Hours</span>
-                      <span className="text-sm font-black text-slate-800">{home.houseRules.quietHoursStart || '?'} - {home.houseRules.quietHoursEnd || '?'}</span>
-                    </div>
-                  )}
-                </div>
-              </section>
+              <Reveal className="mt-10">
+                <section>
+                  <h2 className="text-2xl font-extrabold text-slate-900 mb-6 flex items-center gap-2">House Rules</h2>
+                  <div className="grid sm:grid-cols-2 gap-4 bg-slate-50 p-6 rounded-3xl border border-slate-200">
+                    {home.houseRules.petsAllowed !== undefined && (
+                      <div className="flex items-center justify-between border-b sm:border-b-0 border-slate-200/60 pb-3 sm:pb-0">
+                        <span className="text-sm font-bold text-slate-600">Pets</span>
+                        <span className={`text-sm font-black ${home.houseRules.petsAllowed ? 'text-emerald-600' : 'text-rose-500'}`}>{home.houseRules.petsAllowed ? 'Allowed' : 'Not Allowed'}</span>
+                      </div>
+                    )}
+                    {home.houseRules.smokingAllowed !== undefined && (
+                      <div className="flex items-center justify-between border-b sm:border-b-0 border-slate-200/60 pb-3 sm:pb-0">
+                        <span className="text-sm font-bold text-slate-600">Smoking</span>
+                        <span className={`text-sm font-black ${home.houseRules.smokingAllowed ? 'text-emerald-600' : 'text-rose-500'}`}>{home.houseRules.smokingAllowed ? 'Allowed' : 'Not Allowed'}</span>
+                      </div>
+                    )}
+                    {home.houseRules.partiesAllowed !== undefined && (
+                      <div className="flex items-center justify-between border-b sm:border-b-0 border-slate-200/60 pb-3 sm:pb-0">
+                        <span className="text-sm font-bold text-slate-600">Parties/Events</span>
+                        <span className={`text-sm font-black ${home.houseRules.partiesAllowed ? 'text-emerald-600' : 'text-rose-500'}`}>{home.houseRules.partiesAllowed ? 'Allowed' : 'Not Allowed'}</span>
+                      </div>
+                    )}
+                    {home.houseRules.shoesOff !== undefined && (
+                      <div className="flex items-center justify-between border-b sm:border-b-0 border-slate-200/60 pb-3 sm:pb-0">
+                        <span className="text-sm font-bold text-slate-600">Shoes Indoors</span>
+                        <span className={`text-sm font-black ${home.houseRules.shoesOff ? 'text-rose-500' : 'text-slate-500'}`}>{home.houseRules.shoesOff ? 'Must Take Off' : 'Optional'}</span>
+                      </div>
+                    )}
+                    {home.houseRules.guestsLimit > 0 && (
+                      <div className="flex items-center justify-between border-b sm:border-b-0 border-slate-200/60 pb-3 sm:pb-0">
+                        <span className="text-sm font-bold text-slate-600">Max Guests</span>
+                        <span className="text-sm font-black text-slate-800">{home.houseRules.guestsLimit} People</span>
+                      </div>
+                    )}
+                    {(home.houseRules.quietHoursStart || home.houseRules.quietHoursEnd) && (
+                      <div className="flex items-center justify-between border-b sm:border-b-0 border-slate-200/60 pb-3 sm:pb-0">
+                        <span className="text-sm font-bold text-slate-600">Quiet Hours</span>
+                        <span className="text-sm font-black text-slate-800">{home.houseRules.quietHoursStart || '?'} - {home.houseRules.quietHoursEnd || '?'}</span>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              </Reveal>
             )}
 
             {/* Location */}
-            <section className="mt-10">
-              <h2 className="text-2xl font-extrabold text-slate-900 mb-5">Location & Map</h2>
-              {home.mapsUrl ? (
-                <div className="bg-slate-100 p-6 rounded-3xl flex flex-col items-center justify-center text-center">
-                  <MapPin className="w-10 h-10 text-gold-600 mb-3" />
-                  <p className="font-bold text-slate-700 mb-4">The owner has provided a direct Google Maps link.</p>
-                  <a href={home.mapsUrl} target="_blank" rel="noreferrer" className="bg-gold-500 hover:bg-gold-600 text-white font-bold px-6 py-3 rounded-xl shadow-md transition-all">
-                    Open in Google Maps
-                  </a>
-                </div>
-              ) : (
-                <div className="h-64 bg-slate-200 rounded-3xl flex items-center justify-center text-slate-500 font-bold border-2 border-dashed border-slate-300">
-                  Approximate Location Area
-                </div>
-              )}
-            </section>
+            <Reveal className="mt-10">
+              <section>
+                <h2 className="text-2xl font-extrabold text-slate-900 mb-5">Location & Map</h2>
+                <PropertyLocationMap home={home} />
+              </section>
+            </Reveal>
 
             {/* Similar Properties Nearby */}
             {similarListings.length > 0 && (
-              <section className="mt-16 pt-10 border-t-2 border-slate-100">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-extrabold text-slate-900">Similar Properties Nearby</h2>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  {similarListings.map(listing => (
-                    <ListingCard
-                      key={listing._id}
-                      home={listing}
-                      onToggleSave={() => { }} // Disabled in this view for simplicity
-                      onOpenHome={() => navigate(`/property/${listing._id}`)}
-                      isSaved={false}
-                      isVirtualized={true}
-                    />
-                  ))}
-                </div>
-              </section>
+              <Reveal className="mt-16 pt-10 border-t-2 border-slate-100">
+                <section>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-extrabold text-slate-900">Similar Properties Nearby</h2>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {similarListings.map(listing => (
+                      <ListingCard
+                        key={listing._id}
+                        home={listing}
+                        onToggleSave={() => { }} // Disabled in this view for simplicity
+                        onOpenHome={() => navigate(`/property/${listing._id}`)}
+                        isSaved={false}
+                        isVirtualized={true}
+                      />
+                    ))}
+                  </div>
+                </section>
+              </Reveal>
             )}
           </div>
 
