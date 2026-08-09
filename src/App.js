@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   useNavigate,
+  useLocation,
   Navigate,
 } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
@@ -43,6 +44,7 @@ function App() {
   const [lang, setLang] = useState("en"); // 🌐 "en" | "ne" — global language toggle
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Check Login Status once on load — also silently refresh the JWT so it stays valid
   useEffect(() => {
@@ -130,6 +132,12 @@ function App() {
 
         <main className="flex-1 pt-24 lg:pt-28 flex flex-col">
           <Suspense fallback={<FallbackSpinner />}>
+            {/* Keyed by path so every real page change gets one fast,
+                consistent crossfade — continuity between pages that
+                previously just snapped. Filter/state changes within a
+                page (e.g. HomePage's search) don't touch the pathname,
+                so they never replay this. */}
+            <div key={location.pathname} className="route-fade-in flex-1 flex flex-col min-w-0">
             <Routes>
               {/* Home */}
               <Route
@@ -246,6 +254,7 @@ function App() {
                 }
               />
             </Routes>
+            </div>
           </Suspense>
         </main>
 

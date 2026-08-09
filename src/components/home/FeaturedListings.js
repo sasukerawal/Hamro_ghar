@@ -39,14 +39,10 @@ export const FeaturedListings = ({
   <section ref={ref} className="bg-slate-50 py-10">
     <div className={`max-w-6xl mx-auto px-4 transition-all duration-700 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
       <div className="flex items-end justify-between gap-4 mb-6">
-        <div>
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-gold-700 uppercase">
-            {t.listingsLabel}
-          </p>
-          <h2 className="text-xl sm:text-2xl font-bold text-blue-900">
-            {t.listingsTitle}
-          </h2>
-        </div>
+        {/* No eyebrow label — the heading carries this on its own */}
+        <h2 className="text-xl sm:text-2xl font-bold text-blue-900">
+          {t.listingsTitle}
+        </h2>
         {!loading && listings.length > 0 && (
           <p className="text-xs text-slate-500 font-mono">{t.listingsPage} {page} {t.listingsOf} {totalPages}</p>
         )}
@@ -188,17 +184,17 @@ export const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved, isVirtual
         {/* Verification Badges */}
         <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5 z-10 pointer-events-none">
           {(home.verifiedSeller || home.isVerified) && (
-            <span className="stamp bg-white/95 text-gold-700 text-[9px] shadow-sm">
+            <span className="stamp bg-white/95 text-gold-700 text-[11px] shadow-sm">
               Verified
             </span>
           )}
           {home.urgency === "high" && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-red-500/95 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm backdrop-blur-sm tracking-wider uppercase">
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-500/95 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm backdrop-blur-sm tracking-wider uppercase">
               <Zap className="h-2.5 w-2.5 fill-current" /> Urgent
             </span>
           )}
           {home.category === "hostel" && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-purple-600/95 px-2 py-0.5 text-[9px] font-bold text-white shadow-sm backdrop-blur-sm tracking-wider uppercase">
+            <span className="inline-flex items-center gap-1 rounded-full bg-purple-600/95 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm backdrop-blur-sm tracking-wider uppercase">
               <Building2 className="h-2.5 w-2.5" /> {home.hostelType ? home.hostelType.charAt(0).toUpperCase() + home.hostelType.slice(1) : "Hostel"}
             </span>
           )}
@@ -214,10 +210,10 @@ export const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved, isVirtual
           <Heart className="h-4 w-4" fill={isSaved ? "currentColor" : "none"} />
         </button>
         <div className="absolute left-3 bottom-3 flex items-center gap-2 z-20">
-          <span className="rounded-full bg-gold-500/95 px-2.5 py-1 text-[11px] font-mono font-semibold text-white backdrop-blur-sm shadow-sm border border-gold-400/50">
+          <span className="rounded-full bg-gradient-to-r from-gold-500 to-ember-600 px-2.5 py-1 text-[11px] font-mono font-semibold text-white backdrop-blur-sm shadow-sm border border-gold-400/50">
             {formatPrice(home.price)}
           </span>
-          <span className="rounded-full bg-blue-950/85 px-2 py-1 text-[9px] font-semibold text-white backdrop-blur-sm uppercase tracking-wider border border-gold-600/50">
+          <span className="rounded-full bg-blue-950/85 px-2 py-1 text-[11px] font-semibold text-white backdrop-blur-sm uppercase tracking-wider border border-gold-600/50">
             {home.type === "sale" ? "Sale" : "Rent"}
           </span>
         </div>
@@ -241,8 +237,10 @@ export const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved, isVirtual
         <div className="mt-auto pt-3">
           {home.propertyType === "land" ? (
             // Land has no bedrooms/bathrooms — show road access & area instead
-            // of a row of dashes.
-            <div className="flex items-center justify-between text-[11px] font-mono font-medium text-slate-600 bg-slate-50 rounded-lg p-2 border border-slate-100">
+            // of a row of dashes. The divider ticks between values do the
+            // grouping, and `mt-auto pt-3` on the wrapper already separates
+            // this row from the title/location above — no bordered box needed.
+            <div className="flex items-center justify-between text-[11px] font-mono font-medium text-slate-600">
               <span className="flex items-center gap-1 truncate">
                 <Route className="h-3 w-3 text-slate-400 shrink-0" />
                 {home?.specs?.roadAccess?.widthFeet ? `${home.specs.roadAccess.widthFeet} ft road` : "Road: —"}
@@ -257,7 +255,7 @@ export const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved, isVirtual
               <span className="flex items-center gap-1 truncate max-w-[100px]"><Ruler className="h-3 w-3 text-slate-400 shrink-0" /> {formatArea(home?.specs?.landArea, home.sqft)}</span>
             </div>
           ) : (
-            <div className="flex items-center justify-between text-[11px] font-mono font-medium text-slate-600 bg-slate-50 rounded-lg p-2 border border-slate-100">
+            <div className="flex items-center justify-between text-[11px] font-mono font-medium text-slate-600">
               <span className="flex items-center gap-1"><Bed className="h-3 w-3 text-slate-400" /> {home?.specs?.bedrooms || home.beds || "-"}</span>
               <div className="w-px h-3 bg-slate-200" />
               <span className="flex items-center gap-1"><Bath className="h-3 w-3 text-slate-400" /> {home?.specs?.bathrooms || home.baths || "-"}</span>
@@ -266,7 +264,7 @@ export const ListingCard = ({ home, onToggleSave, onOpenHome, isSaved, isVirtual
             </div>
           )}
 
-          <div className="mt-2.5 flex items-center justify-between text-[10px] text-slate-400 font-medium">
+          <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-500 font-medium">
             <span className="inline-flex items-center gap-1">
               <Eye className="h-3 w-3" />
               {home.views ?? 0} views

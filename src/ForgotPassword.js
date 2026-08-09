@@ -93,15 +93,18 @@ export default function ForgotPassword({ onGoLogin }) {
           Back to sign in
         </button>
 
-        {/* Icon + Title */}
-        <div className="text-center mb-6">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gold-500 text-white mb-3 shadow-md">
-            <KeyRound className="h-5 w-5" />
+        {/* Icon + Title — side-by-side, not the generic icon-tile-above-
+            heading AI scaffold */}
+        <div className="mb-6">
+          <div className="flex items-center gap-3">
+            <div className="shrink-0 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gold-500 text-white shadow-md">
+              <KeyRound className="h-5 w-5" />
+            </div>
+            <h1 className="text-xl font-bold text-slate-900">
+              {step === 1 ? "Forgot your password?" : "Check your email"}
+            </h1>
           </div>
-          <h1 className="text-xl font-bold text-slate-900">
-            {step === 1 ? "Forgot your password?" : "Check your email"}
-          </h1>
-          <p className="mt-1.5 text-sm text-slate-500 max-w-xs mx-auto">
+          <p className="mt-3 text-sm text-slate-500">
             {step === 1
               ? "Enter your email and we'll generate a 6-digit reset code."
               : "Enter the code below to create a new password."}

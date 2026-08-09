@@ -81,8 +81,11 @@ export default function PropertyLocationMap({ home }) {
         )}
       </MapContainer>
 
+      {/* This is a full sentence, not a short label, so it's read as body
+          text (12px floor) rather than a functional tag (11px floor) —
+          text-xs clears both. */}
       {isApproximate && (
-        <div className="absolute bottom-4 left-4 z-[500] glass rounded-xl px-3 py-1.5 text-[10px] font-semibold text-slate-600 shadow-md">
+        <div className="absolute bottom-4 left-4 z-[500] glass rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-md">
           Approximate area — exact pin hidden until you contact the owner
         </div>
       )}

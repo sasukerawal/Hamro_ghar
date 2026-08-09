@@ -5,10 +5,6 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --primary-glow: conic-gradient(from 180deg at 50% 50%, #3b82f633 0deg, #1d4ed833 55deg, #60a5fa33 120deg, #2563eb33 160deg, transparent 360deg);
-}
-
 /* ─── Scrollbar-free horizontal trays (e.g. TagsSelector) ──── */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
@@ -203,23 +199,6 @@ textarea:focus-visible,
   animation-delay: 0.30s;
 }
 
-/* ─── Pulse glow (stats / hero card) ────────────────────── */
-@keyframes pulseGlow {
-
-  0%,
-  100% {
-    box-shadow: 0 0 20px rgba(180, 82, 47, 0.20);
-  }
-
-  50% {
-    box-shadow: 0 0 42px rgba(180, 82, 47, 0.40);
-  }
-}
-
-.glow-heavy {
-  animation: pulseGlow 4s ease-in-out infinite;
-}
-
 /* ─── Verification stamp ─────────────────────────────────── */
 /* A rotated ink-stamp motif — the site's one signature graphic move.
    Used anywhere a listing or owner is verified: the hero, listing
@@ -231,7 +210,10 @@ textarea:focus-visible,
   gap: 0.3em;
   border: 1.5px solid currentColor;
   border-radius: 9999px;
-  padding: 0.2em 0.65em 0.2em 0.5em;
+  /* 0.45em vertical / 0.9em horizontal keeps ≥4px / ≥8px breathing room
+     even at the smallest (9px) size this is used at — the old padding
+     read as text flush against the border at small sizes. */
+  padding: 0.45em 0.9em 0.45em 0.9em;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -247,6 +229,88 @@ textarea:focus-visible,
   border-radius: 9999px;
   background: currentColor;
   flex-shrink: 0;
+}
+
+/* ─── Stamp-down entrance ────────────────────────────────── */
+/* The one authored focal moment: an ink stamp actually striking the
+   page, not fading in. Descends at a steeper angle, compresses past
+   its resting -3deg on impact, then settles. Reserve this for a
+   single, page-level stamp (e.g. the property detail hero badge) —
+   never the repeated grid-card stamps, which already animate as part
+   of the card's own entrance and would double up. */
+@keyframes stampDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-14px) scale(1.35) rotate(-16deg);
+  }
+
+  55% {
+    opacity: 1;
+    transform: translateY(0) scale(0.92) rotate(-1deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(-3deg);
+  }
+}
+
+.stamp-in {
+  animation: stampDown 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ─── Wizard step continuity ─────────────────────────────── */
+/* PostListing's 6-step flow: forward advances travel from the right,
+   back retreats travel from the left — the direction the user is
+   moving through the form, not an arbitrary fade every time. */
+@keyframes stepInForward {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes stepInBack {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.step-in-forward {
+  animation: stepInForward 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.step-in-back {
+  animation: stepInBack 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ─── Route continuity ───────────────────────────────────── */
+/* Every page change gets one fast, consistent crossfade instead of an
+   instant snap — deliberately quick (200ms) so it reads as continuity,
+   not a loading moment users wait through. */
+@keyframes routeFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.route-fade-in {
+  animation: routeFadeIn 0.2s ease-out both;
 }
 
 /* ─── Card hover lift ────────────────────────────────────── */
@@ -279,12 +343,26 @@ html {
   .animate-fade-in-up,
   .animate-pulse-slow,
   .animate-scale-up-down,
-  .glow-heavy,
   [class*="stagger-"] {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
     animation-delay: 0s !important;
+  }
+
+  /* Not transform: none here — .stamp's own static rotate(-3deg) must
+     survive; only the impact animation itself is what's suppressed. */
+  .stamp-in {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  .step-in-forward,
+  .step-in-back,
+  .route-fade-in {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 
   .card-lift {

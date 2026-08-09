@@ -826,7 +826,10 @@ export default function HomePage({
        * A small blue dot badge appears over "Filters" when any filter is active.
        */}
       <div
-        className={`sm:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center bg-slate-900/95 backdrop-blur-md text-white rounded-full p-1.5 shadow-2xl border border-slate-700/50 transition-all duration-300 ${showMobileFab && !isFilterModalOpen
+        // shadow-2xl (a 50px blur) plus a 1px border is the generic
+        // "thin-border-wide-shadow" AI chrome combo — a moderate shadow
+        // with no competing border reads as more deliberate elevation.
+        className={`sm:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center bg-slate-900/95 backdrop-blur-md text-white rounded-full p-1.5 shadow-lg shadow-black/30 transition-all duration-300 ${showMobileFab && !isFilterModalOpen
           ? "opacity-100 translate-y-0 pointer-events-auto"
           : "opacity-0 translate-y-4 pointer-events-none"
           }`}

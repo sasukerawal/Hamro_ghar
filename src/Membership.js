@@ -136,7 +136,7 @@ export default function Membership({ onLogout, onGoHome, onEditListing }) {
             <div className="flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl sm:text-2xl font-bold">{user?.name || "Member"}</h1>
-                <span className="stamp bg-white/10 border-white/30 text-white text-[9px]">
+                <span className="stamp bg-white/10 border-white/30 text-white text-[11px]">
                   Member
                 </span>
               </div>
@@ -146,12 +146,12 @@ export default function Membership({ onLogout, onGoHome, onEditListing }) {
             <div className="flex gap-1 shrink-0 bg-white/5 rounded-2xl border border-white/10 px-4 py-3">
               <div className="text-center px-3">
                 <p className="font-mono text-2xl font-bold text-white">{loadingMyListings ? "…" : myListings.length}</p>
-                <p className="text-[10px] uppercase tracking-wider text-white/50 font-medium mt-0.5">Posted</p>
+                <p className="text-[11px] uppercase tracking-wider text-white/50 font-medium mt-0.5">Posted</p>
               </div>
               <div className="w-px bg-white/10 mx-1" />
               <div className="text-center px-3">
                 <p className="font-mono text-2xl font-bold text-white">{loadingSaved ? "…" : savedHomes.length}</p>
-                <p className="text-[10px] uppercase tracking-wider text-white/50 font-medium mt-0.5">Saved</p>
+                <p className="text-[11px] uppercase tracking-wider text-white/50 font-medium mt-0.5">Saved</p>
               </div>
             </div>
           </div>
@@ -279,7 +279,7 @@ function MyListingCard({ home, openMenuId, setOpenMenuId, onView, onEdit, onTogg
         <div className="absolute top-0 w-full h-16 bg-gradient-to-b from-black/60 to-transparent"></div>
 
         {/* Status Badge Top Left */}
-        <span className={`absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1.5 backdrop-blur-md ${isActive ? "bg-emerald-500/90 text-white" : "bg-slate-800/90 text-slate-200"}`}>
+        <span className={`absolute top-3 left-3 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1.5 backdrop-blur-md ${isActive ? "bg-emerald-500/90 text-white" : "bg-slate-800/90 text-slate-200"}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : 'bg-slate-400'}`}></span>
           {isActive ? "Active" : "Hidden"}
         </span>

@@ -37,6 +37,10 @@ export default function PostListing() {
   const navigate = useNavigate();
 
   const [currentStep, setCurrentStep] = useState(1);
+  // Which way the step transition should travel — set by nextStep/prevStep,
+  // read by stepAnimClass below so the motion matches the direction of
+  // travel through the form instead of playing the same fade every time.
+  const [stepDirection, setStepDirection] = useState('forward');
   const [fetching, setFetching] = useState(!!editId);
   const [submitting, setSubmitting] = useState(false);
 
@@ -333,12 +337,15 @@ export default function PostListing() {
     const err = validateStep(currentStep);
     if (err) return toast.error(err);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    setStepDirection('forward');
     setCurrentStep(p => p + 1);
   };
   const prevStep = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    setStepDirection('back');
     setCurrentStep(p => Math.max(1, p - 1));
   };
+  const stepAnimClass = stepDirection === 'forward' ? 'step-in-forward' : 'step-in-back';
 
   const handleSubmit = async () => {
     const err = validateStep(6);
@@ -490,8 +497,12 @@ export default function PostListing() {
           {STEPS.map((t, i) => {
             const isActive = currentStep === i + 1;
             const isPast = currentStep > i + 1;
+            // Upcoming-step text was text-slate-300 — 1.5:1 on white and
+            // 1.4:1 on the badge's slate-100, both far under the 4.5:1
+            // floor. slate-500 keeps it visibly de-emphasized vs the
+            // active/past steps while staying legible.
             return (
-              <div key={i} className={`font-bold whitespace-nowrap min-w-max flex items-center gap-2 transition-colors ${isActive ? 'text-gold-700' : isPast ? 'text-slate-700' : 'text-slate-300'}`}>
+              <div key={i} className={`font-bold whitespace-nowrap min-w-max flex items-center gap-2 transition-colors ${isActive ? 'text-gold-700' : isPast ? 'text-slate-700' : 'text-slate-500'}`}>
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs ${isActive ? 'bg-gold-500 text-white shadow-md' : isPast ? 'bg-slate-200 text-slate-600' : 'bg-slate-100 border'}`}>
                   {isPast ? <CheckCircle className="w-4 h-4" /> : (i + 1)}
                 </div>
@@ -505,7 +516,7 @@ export default function PostListing() {
 
           <div className="relative z-10 mb-10">
             {currentStep === 1 && (
-              <div className="space-y-6 animate-fade-in-up">
+              <div className={`space-y-6 ${stepAnimClass}`}>
                 <div>
                   <h2 className="text-2xl font-extrabold mb-1">The Basics</h2>
                   <p className="text-sm text-slate-500 font-medium">What kind of property are you listing?</p>
@@ -583,7 +594,7 @@ export default function PostListing() {
             )}
 
             {currentStep === 2 && (
-              <div className="space-y-6 animate-fade-in-up">
+              <div className={`space-y-6 ${stepAnimClass}`}>
                 <div>
                   <h2 className="text-2xl font-extrabold mb-1">Deep Location</h2>
                   <p className="text-sm text-slate-500 font-medium">Precise location helps buyers find your property in search.</p>
@@ -681,7 +692,7 @@ export default function PostListing() {
             )}
 
             {currentStep === 3 && (
-              <div className="space-y-8 animate-fade-in-up">
+              <div className={`space-y-8 ${stepAnimClass}`}>
                 <div>
                   <h2 className="text-2xl font-extrabold mb-1">Specifications</h2>
                   <p className="text-sm text-slate-500 font-medium">Crucial details for the Nepali buyer/renter.</p>
@@ -864,7 +875,7 @@ export default function PostListing() {
             )}
 
             {currentStep === 4 && (
-              <div className="space-y-8 animate-fade-in-up">
+              <div className={`space-y-8 ${stepAnimClass}`}>
                 <div>
                   <h2 className="text-2xl font-extrabold mb-1">Amenities & Facilities</h2>
                   <p className="text-sm text-slate-500 font-medium">Select all the extra features your property provides.</p>
@@ -999,7 +1010,7 @@ export default function PostListing() {
             )}
 
             {currentStep === 5 && (
-              <div className="space-y-8 animate-fade-in-up">
+              <div className={`space-y-8 ${stepAnimClass}`}>
                 <div>
                   <h2 className="text-2xl font-extrabold mb-1">Upload Media</h2>
                   <p className="text-sm font-medium text-slate-500">Premium listings require high-quality photos to build buyer trust.</p>
@@ -1072,7 +1083,7 @@ export default function PostListing() {
             )}
 
             {currentStep === 6 && (
-              <div className="space-y-6 animate-fade-in-up">
+              <div className={`space-y-6 ${stepAnimClass}`}>
                 <div>
                   <h2 className="text-2xl font-extrabold mb-1">Tell the Narrative</h2>
                   <p className="text-sm text-slate-500 font-medium">Auto-generated titles perform better for SEO, but you can override it.</p>

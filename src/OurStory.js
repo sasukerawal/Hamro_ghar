@@ -9,35 +9,38 @@ import { ArrowDown, ArrowUp, Home, X } from "lucide-react";
 // dot nav, prev/next) so it never traps navigation or breaks back-behavior.
 const PANELS = [
   {
-    kicker: "01 — Welcome",
+    // `label` is assistive-tech-only context (aria-label on the dot nav),
+    // never rendered as a visible kicker above the heading — that's a
+    // banned pattern regardless of content. The heading carries the panel.
+    label: "Welcome",
     heading: "Renting in Nepal shouldn't feel like a gamble.",
     body:
       "Hamro Ghar exists because finding a home — or a tenant — has relied on word of mouth, brokers, and blind trust for far too long.",
     tone: "dark",
   },
   {
-    kicker: "02 — No Middlemen",
+    label: "No Middlemen",
     heading: "No brokers. No hidden dalali fees.",
     body:
       "You talk directly to the owner or the seeker. What you see is what you pay — nothing tacked on at the door.",
     tone: "accent",
   },
   {
-    kicker: "03 — Verified",
+    label: "Verified",
     heading: "Every listing carries our verification stamp.",
     body:
       "Ownership, location, and photos are checked before a listing goes live, so you can trust what you're looking at.",
     tone: "dark",
   },
   {
-    kicker: "04 — Both Sides",
+    label: "Both Sides",
     heading: "Built equally for seekers and owners.",
     body:
       "Whether you're hunting for a room in Kathmandu or listing your ghar in Pokhara, the experience is built for you specifically.",
     tone: "accent",
   },
   {
-    kicker: "05 — Your Turn",
+    label: "Your Turn",
     heading: "Your next home is closer than you think.",
     body: "Browse verified listings across Nepal, today.",
     tone: "cta",
@@ -136,9 +139,6 @@ export default function OurStory() {
                 transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
               }}
             >
-              <span className="text-xs sm:text-sm font-black uppercase tracking-[0.3em] opacity-70 mb-6">
-                {panel.kicker}
-              </span>
               <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black leading-tight max-w-3xl">
                 {panel.heading}
               </h2>
@@ -171,7 +171,7 @@ export default function OurStory() {
             <button
               key={panel.heading}
               type="button"
-              aria-label={`Go to section ${i + 1}: ${panel.kicker}`}
+              aria-label={`Go to section ${i + 1}: ${panel.label}`}
               aria-current={i === index}
               onClick={() => jumpTo(i)}
               className={`w-2.5 rounded-full transition-all ${

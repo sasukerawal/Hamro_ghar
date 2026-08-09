@@ -7,11 +7,28 @@ import {
     MapPin, CreditCard, Users, ChevronLeft, Lock
 } from "lucide-react";
 
-const TipCard = ({ icon: Icon, title, tips, color = "blue" }) => (
+// Tailwind's content scanner only picks up class names it can find as
+// complete literal strings in source — `bg-${color}-50` never matches,
+// so any color not already used elsewhere verbatim silently compiles to
+// nothing (this is exactly what had happened to "purple" and "amber"
+// here: the icon tiles rendered with no background/color at all). A
+// static map keeps every variant's full class strings visible to Tailwind.
+const TIP_COLOR_CLASSES = {
+    blue: { bg: "bg-blue-50", icon: "text-blue-600" },
+    purple: { bg: "bg-purple-50", icon: "text-purple-600" },
+    green: { bg: "bg-green-50", icon: "text-green-600" },
+    amber: { bg: "bg-amber-50", icon: "text-amber-600" },
+    red: { bg: "bg-red-50", icon: "text-red-600" },
+    slate: { bg: "bg-slate-50", icon: "text-slate-600" },
+};
+
+const TipCard = ({ icon: Icon, title, tips, color = "blue" }) => {
+    const tone = TIP_COLOR_CLASSES[color] || TIP_COLOR_CLASSES.blue;
+    return (
     <div className={`bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow`}>
         <div className={`flex items-center gap-3 mb-4`}>
-            <div className={`p-2 rounded-xl bg-${color}-50`}>
-                <Icon className={`w-5 h-5 text-${color}-600`} />
+            <div className={`p-2 rounded-xl ${tone.bg}`}>
+                <Icon className={`w-5 h-5 ${tone.icon}`} />
             </div>
             <h3 className="font-bold text-slate-900">{title}</h3>
         </div>
@@ -24,7 +41,8 @@ const TipCard = ({ icon: Icon, title, tips, color = "blue" }) => (
             ))}
         </ul>
     </div>
-);
+    );
+};
 
 const WarningCard = ({ title, description }) => (
     <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
@@ -55,15 +73,18 @@ export default function SafetyTips() {
                     <ChevronLeft className="w-4 h-4" /> Back
                 </button>
 
-                {/* Header */}
-                <div className="text-center mb-10">
-                    <div className="inline-flex p-3 bg-blue-100 rounded-2xl mb-4">
-                        <Shield className="w-8 h-8 text-gold-700" />
+                {/* Header — icon sits beside the heading, not stacked
+                    above it in its own tile */}
+                <div className="mb-10">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="shrink-0 inline-flex p-2.5 bg-blue-100 rounded-2xl">
+                            <Shield className="w-6 h-6 text-gold-700" />
+                        </div>
+                        <h1 className="text-3xl font-black text-slate-900">
+                            Safety Tips
+                        </h1>
                     </div>
-                    <h1 className="text-3xl font-black text-slate-900 mb-2">
-                        Safety Tips
-                    </h1>
-                    <p className="text-slate-500 max-w-lg mx-auto">
+                    <p className="text-slate-500 max-w-lg">
                         Protecting yourself from scams is important. Follow these guidelines to have a safe experience on HamroGhar.
                     </p>
                 </div>
@@ -175,7 +196,7 @@ export default function SafetyTips() {
                     <h2 className="text-lg font-bold text-blue-900 mb-2">
                         Encountered something suspicious?
                     </h2>
-                    <p className="text-sm text-gold-700 mb-4">
+                    <p className="text-sm text-gold-700 mb-4 max-w-md mx-auto">
                         Help us keep HamroGhar safe. Use the <strong>"Report"</strong> button on any listing to flag suspicious activity.
                         Our team reviews every report.
                     </p>

@@ -11,7 +11,12 @@ export default function NotFound() {
       <div className="text-center max-w-md">
         {/* Big colorful 404 */}
         <div className="relative mb-6">
-          <p className="text-[120px] sm:text-[160px] font-black text-blue-100 leading-none select-none">
+          {/* This warm-ink scale's pale steps (100-300) are all close
+              enough in lightness to the gradient background that none
+              of them cleared the 3:1 large-text floor — needed blue-500
+              to actually pass; at this glyph size it still reads as a
+              background numeral, not primary content. */}
+          <p className="text-[120px] sm:text-[160px] font-black text-blue-500 leading-none select-none">
             404
           </p>
           <div className="absolute inset-0 flex items-center justify-center">
@@ -24,7 +29,9 @@ export default function NotFound() {
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-3">
           Page not found
         </h1>
-        <p className="text-slate-500 text-sm sm:text-base mb-8">
+        {/* slate-500 measured 4.2:1 against this card's blue-100 gradient
+            stop, just under the 4.5:1 floor; slate-600 clears it. */}
+        <p className="text-slate-600 text-sm sm:text-base mb-8">
           Looks like this home doesn't exist — or it may have been moved.
           Let's get you back to finding your perfect place.
         </p>

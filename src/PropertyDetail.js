@@ -39,7 +39,7 @@ const MetricBox = ({ label, value, icon }) => {
     <div className="flex flex-col border border-slate-200 rounded-xl p-3 bg-white shadow-sm hover:border-blue-300 transition-colors">
       <div className="flex items-center gap-1.5 mb-1 text-slate-500">
         {icon}
-        <span className="text-[10px] uppercase font-bold tracking-wider">{label}</span>
+        <span className="text-[11px] uppercase font-bold tracking-wider">{label}</span>
       </div>
       <span className="font-black text-slate-900 text-sm leading-tight">{value}</span>
     </div>
@@ -225,7 +225,7 @@ export default function PropertyDetail() {
           <div className="sm:hidden">
             <div className="h-[35vh] rounded-2xl overflow-hidden bg-slate-900 relative" onClick={() => setLightboxIdx(0)}>
               <img src={images[0]} alt="Main" className="w-full h-full object-cover" loading="eager" />
-              <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
+              <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-1 rounded-full">
                 1 / {images.length}
               </div>
             </div>
@@ -295,8 +295,16 @@ export default function PropertyDetail() {
                   {home.propertyType}
                 </span>
                 {(home.isVerified || home.verificationStatus === 'verified') && (
-                  <span className="flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border border-emerald-200" title={home.verificationNote || "Identity and documents verified by admin"}>
-                    <CheckCircle2 className="w-4 h-4" /> Verified
+                  // The app's one signature graphic move (DESIGN.md's
+                  // "Verified Stamp") — not a checkmark pill. This is the
+                  // single page-level occurrence, so it earns the authored
+                  // stamp-down entrance; grid-card stamps don't get it,
+                  // they already animate as part of the card's own reveal.
+                  <span
+                    className="stamp stamp-in text-emerald-800 text-sm bg-emerald-50 shadow-sm"
+                    title={home.verificationNote || "Identity and documents verified by admin"}
+                  >
+                    Verified
                   </span>
                 )}
               </div>
@@ -522,9 +530,12 @@ export default function PropertyDetail() {
           {/* Details Sidebar Sticky */}
           <div className="lg:col-span-1 hidden lg:block">
             <div className="sticky top-24 space-y-6">
-              <div className="bg-white border border-slate-200 rounded-3xl shadow-2xl shadow-slate-200 p-7">
+              {/* shadow-2xl (50px blur) + a thin border is the generic
+                  thin-border-wide-shadow AI-chrome combo — shadow-lg
+                  keeps real elevation without the oversized blur. */}
+              <div className="bg-white border border-slate-200 rounded-3xl shadow-lg shadow-slate-200 p-7">
                 <div className="mb-8">
-                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Asking Price</p>
+                  <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Asking Price</p>
                   <div className="flex items-baseline gap-1">
                     <h2 className="text-4xl font-black text-slate-900 tracking-tight">{priceLabel}</h2>
                     {home.type === "rent" && <span className="text-slate-500 font-bold text-lg">/mo</span>}
@@ -533,7 +544,7 @@ export default function PropertyDetail() {
 
                 <div className="space-y-3 mb-8">
                   {home.contact?.phone && (
-                    <a href={`tel:${home.contact.phone}`} className="w-full bg-gold-500 hover:bg-gold-600 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-gold-500/20 flex items-center justify-center gap-2 transform active:scale-95 text-lg">
+                    <a href={`tel:${home.contact.phone}`} className="w-full bg-gradient-to-r from-gold-500 to-ember-600 hover:from-gold-600 hover:to-ember-700 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-gold-500/20 flex items-center justify-center gap-2 transform active:scale-95 text-lg">
                       <Phone className="w-5 h-5" /> Call: {home.contact.phone}
                     </a>
                   )}
@@ -560,7 +571,7 @@ export default function PropertyDetail() {
                         <Mail className="w-4 h-4" /> Email
                       </a>
                     ) : (
-                      <div className="flex items-center justify-center gap-2 bg-slate-50 text-slate-400 font-bold py-3 rounded-xl text-sm border-2 border-slate-100 line-through">
+                      <div className="flex items-center justify-center gap-2 bg-slate-50 text-slate-500 font-bold py-3 rounded-xl text-sm border-2 border-slate-100 line-through">
                         <Mail className="w-4 h-4" /> Email
                       </div>
                     )}
@@ -570,7 +581,7 @@ export default function PropertyDetail() {
                         <Facebook className="w-4 h-4 shrink-0" /> <span className="truncate">Facebook</span>
                       </a>
                     ) : (
-                      <div className="flex items-center justify-center gap-2 bg-slate-50 text-slate-400 font-bold py-3 rounded-xl text-sm border-2 border-slate-100 line-through">
+                      <div className="flex items-center justify-center gap-2 bg-slate-50 text-slate-500 font-bold py-3 rounded-xl text-sm border-2 border-slate-100 line-through">
                         <Facebook className="w-4 h-4" /> Facebook
                       </div>
                     )}
@@ -580,7 +591,7 @@ export default function PropertyDetail() {
                         <Instagram className="w-4 h-4 shrink-0" /> <span className="truncate">Instagram</span>
                       </a>
                     ) : (
-                      <div className="hidden sm:flex items-center justify-center gap-2 bg-slate-50 text-slate-400 font-bold py-3 rounded-xl text-sm border-2 border-slate-100 line-through">
+                      <div className="hidden sm:flex items-center justify-center gap-2 bg-slate-50 text-slate-500 font-bold py-3 rounded-xl text-sm border-2 border-slate-100 line-through">
                         <Instagram className="w-4 h-4" /> Insta
                       </div>
                     )}
@@ -588,7 +599,9 @@ export default function PropertyDetail() {
                 </div>
 
                 {home.owner && (
-                  <div className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl border-2 border-slate-100">
+                  // Plain row on a top hairline, not a second bordered/tinted
+                  // box — this already sits inside the sidebar's own card.
+                  <div className="flex items-center gap-4 pt-5 border-t border-slate-100">
                     <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center text-gold-700 font-black text-xl border-2 border-white shadow-sm">
                       {home.owner.name?.charAt(0) || "U"}
                     </div>
@@ -608,7 +621,10 @@ export default function PropertyDetail() {
                   </div>
                 )}
 
-                <div className="mt-8 pt-6 border-t-2 border-slate-100 flex items-start gap-3 bg-amber-50/50 p-4 rounded-xl border border-amber-100">
+                {/* No separate top divider — mt-8 plus the box's own border
+                    already separates this from the content above; a second
+                    hairline right against the box's edge was redundant. */}
+                <div className="mt-8 flex items-start gap-3 bg-amber-50/50 p-4 rounded-xl border border-amber-100">
                   <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
                   <p className="text-xs text-slate-600 font-medium leading-relaxed">
                     <strong className="text-slate-900">Safety Tip:</strong> Never transfer funds before verifying the property and identity in person. We do not intermediate payments.
@@ -634,7 +650,7 @@ export default function PropertyDetail() {
       {/* Mobile Sticky CTA */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 pb-safe flex items-center justify-between z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.08)]">
         <div>
-          <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Price</p>
+          <p className="text-[11px] text-slate-500 font-black uppercase tracking-widest">Price</p>
           <p className="text-xl font-black text-slate-900 tracking-tight">{priceLabel} <span className="text-sm font-bold text-slate-500">{home.type === 'rent' && '/mo'}</span></p>
         </div>
         <div className="flex gap-2">
@@ -670,7 +686,7 @@ export default function PropertyDetail() {
           )}
 
           {home.contact?.phone ? (
-            <a href={`tel:${home.contact.phone}`} className="grow bg-gold-500 hover:bg-gold-600 active:scale-95 text-white font-black px-4 h-12 rounded-xl shadow-lg shadow-gold-500/20 flex items-center justify-center gap-2 transition-transform">
+            <a href={`tel:${home.contact.phone}`} className="grow bg-gradient-to-r from-gold-500 to-ember-600 hover:from-gold-600 hover:to-ember-700 active:scale-95 text-white font-black px-4 h-12 rounded-xl shadow-lg shadow-gold-500/20 flex items-center justify-center gap-2 transition-transform">
               <Phone className="w-5 h-5" /> Call
             </a>
           ) : (

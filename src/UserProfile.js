@@ -243,7 +243,9 @@ export default function UserProfile({ onGoHome, onLogout }) {
             <div>
               <h1 className="text-xl font-extrabold text-slate-900">{user.name}</h1>
               <p className="text-sm text-slate-500">{user.email}</p>
-              <span className="stamp mt-1 text-gold-700 text-[9px]">
+              {/* 9px was below the 11px functional-text floor for a
+                  role badge that actually conveys account tier. */}
+              <span className="stamp mt-1 text-gold-700 text-[11px]">
                 {user.role || "member"}
               </span>
             </div>
@@ -443,7 +445,7 @@ function ProfileSection({ title, icon, subtitle, isEditing, saving, onEdit, onCa
             <p className="text-sm font-semibold text-slate-900">{title}</p>
           </div>
           {subtitle && !isEditing && (
-            <p className="text-[11px] text-slate-400 mt-0.5 ml-6">{subtitle}</p>
+            <p className="text-[11px] text-slate-500 mt-0.5 ml-6">{subtitle}</p>
           )}
         </div>
         {isEditing ? (
@@ -489,7 +491,7 @@ function TextInput({ icon, label, type = "text", value, onChange, placeholder })
     <div className="flex items-center gap-3 rounded-xl border border-blue-100 bg-white px-3 py-2.5 shadow-sm">
       <div className="shrink-0">{icon}</div>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-semibold uppercase text-slate-400 tracking-wide">{label}</p>
+        <p className="text-[11px] font-semibold uppercase text-slate-500 tracking-wide">{label}</p>
         <input
           type={type}
           value={value}
@@ -497,7 +499,7 @@ function TextInput({ icon, label, type = "text", value, onChange, placeholder })
           placeholder={placeholder}
           autoComplete="off"
           spellCheck={false}
-          className="mt-0.5 w-full bg-transparent text-sm font-medium outline-none text-slate-800 placeholder:text-slate-300"
+          className="mt-0.5 w-full bg-transparent text-sm font-medium outline-none text-slate-800 placeholder:text-slate-500"
         />
       </div>
     </div>
@@ -507,12 +509,20 @@ function TextInput({ icon, label, type = "text", value, onChange, placeholder })
 /* Info row for view mode */
 function InfoRow({ icon, label, value }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-3 py-2.5 shadow-sm">
+    // No border/bg/shadow of its own — these already sit inside
+    // ProfileSection's card; a full box per row was nested-card noise.
+    // The parent's `space-y-1.5` plus this hairline divider does the
+    // grouping instead.
+    <div className="flex items-center gap-3 border-b border-slate-100 last:border-0 py-2.5 first:pt-0">
       <div className="shrink-0 text-slate-400">{icon}</div>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-semibold uppercase text-slate-400 tracking-wide">{label}</p>
+        {/* Was text-[10px] (below the 11px functional-text floor) on
+            slate-400 (2.6:1 on white, needs 4.5:1) */}
+        <p className="text-[11px] font-semibold uppercase text-slate-500 tracking-wide">{label}</p>
         <p className="mt-0.5 text-sm font-semibold text-slate-700 truncate">
-          {value || <span className="text-slate-300 font-normal italic">Not set</span>}
+          {/* slate-300 measured 1.5:1 on white — slate-500 clears 4.5:1
+              while staying visually distinct from a real value. */}
+          {value || <span className="text-slate-500 font-normal italic">Not set</span>}
         </p>
       </div>
     </div>
@@ -526,10 +536,10 @@ function SocialViewRow({ icon, label, value }) {
     : null;
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-3 py-2.5 shadow-sm">
+    <div className="flex items-center gap-3 border-b border-slate-100 last:border-0 py-2.5 first:pt-0">
       <div className="shrink-0">{icon}</div>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-semibold uppercase text-slate-400 tracking-wide">{label}</p>
+        <p className="text-[11px] font-semibold uppercase text-slate-500 tracking-wide">{label}</p>
         {href ? (
           <a
             href={href}
@@ -540,7 +550,7 @@ function SocialViewRow({ icon, label, value }) {
             {value}
           </a>
         ) : (
-          <p className="mt-0.5 text-sm text-slate-300 italic">Not set</p>
+          <p className="mt-0.5 text-sm text-slate-500 italic">Not set</p>
         )}
       </div>
     </div>

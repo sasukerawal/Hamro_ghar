@@ -129,7 +129,11 @@ export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang
             <p className="text-sm max-[425px]:text-xs font-bold text-slate-900 tracking-tight">
               HamroGhar
             </p>
-            <p className="text-[11px] max-[425px]:text-[10px] text-emerald-600 font-medium">
+            {/* emerald-600 measured 3.8:1 on white, below the 4.5:1 body-text
+                floor; emerald-800 clears it with margin at this small size. */}
+            {/* Was max-[425px]:text-[10px] — dropped below the 11px
+                functional-text floor at narrow widths. */}
+            <p className="text-[11px] text-emerald-800 font-medium">
               {t.tagline}
             </p>
           </div>
@@ -174,7 +178,7 @@ export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang
               </Link>
               <Link
                 to="/register"
-                className="relative overflow-hidden inline-flex items-center justify-center rounded-full bg-gold-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gold-600"
+                className="relative overflow-hidden inline-flex items-center justify-center rounded-full bg-gradient-to-r from-gold-500 to-ember-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:from-gold-600 hover:to-ember-700 transition-colors"
                 onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
                 onPointerDown={joinRipple.onPointerDown}
               >
@@ -342,7 +346,7 @@ export default function Header({ isLoggedIn, onLogout, lang = "en", onToggleLang
                       <button
                         type="button"
                         onClick={() => handleMobileNav("/register")}
-                        className="w-full rounded-xl bg-gold-500 py-2.5 text-sm font-semibold text-white hover:bg-gold-600 transition-colors"
+                        className="w-full rounded-xl bg-gradient-to-r from-gold-500 to-ember-600 py-2.5 text-sm font-semibold text-white hover:from-gold-600 hover:to-ember-700 transition-colors"
                       >
                         {t.joinFree}
                       </button>

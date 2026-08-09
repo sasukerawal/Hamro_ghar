@@ -83,10 +83,8 @@ export function SiteReviewsSection({ isLoggedIn, t }) {
       >
         {/* Header */}
         <div className="flex items-end justify-between gap-4 mb-6">
-          <div>
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-gold-700 uppercase">{t.communityTag}</p>
-            <h2 className="text-xl sm:text-2xl font-bold text-blue-900">{t.communityTitle}</h2>
-          </div>
+          {/* No eyebrow label — the heading carries this on its own */}
+          <h2 className="text-xl sm:text-2xl font-bold text-blue-900">{t.communityTitle}</h2>
           {avgRating && (
             <div className="flex items-center gap-1.5 bg-gold-50 border border-gold-200 rounded-2xl px-3 py-1.5">
               <Star className="h-4 w-4 text-gold-500 fill-gold-500" />
@@ -149,7 +147,7 @@ export function SiteReviewsSection({ isLoggedIn, t }) {
                 </div>
                 <p className="text-sm text-slate-700 mb-3">"{r.comment}"</p>
                 <p className="text-xs font-semibold text-blue-900">{r.userName}</p>
-                <p className="text-[11px] text-slate-400">{new Date(r.createdAt).toLocaleDateString()}</p>
+                <p className="text-[11px] text-slate-500">{new Date(r.createdAt).toLocaleDateString()}</p>
               </div>
             ))}
           </div>

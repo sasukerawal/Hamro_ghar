@@ -306,7 +306,7 @@ export function ListingModal({
                   <ChevronRight className="h-6 w-6" />
                 </button>
                 {/* Image Counter */}
-                <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full pointer-events-none">
+                <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-1 rounded-full pointer-events-none">
                   {activeIndex + 1} / {images.length}
                 </div>
               </>

@@ -9,7 +9,11 @@ const ICONS = {
 };
 
 export const HighlightStrip = ({ t }) => (
-  <section className="bg-white border-y border-slate-100">
+  // No border-y: the white background already reads as a distinct band
+  // against the slate-50 hero above and slate-50 listings grid below —
+  // a hairline here was redundant, and mechanically made this whole
+  // section register as a "card" that its own tiles nested inside.
+  <section className="bg-white">
     <div className="max-w-6xl mx-auto px-4 py-8 grid gap-5 sm:grid-cols-3">
       <HighlightItem icon={ICONS.users} title={t.strip1Title} text={t.strip1Text} delay="0ms" />
       <HighlightItem icon={ICONS.wifi} title={t.strip2Title} text={t.strip2Text} delay="80ms" />
@@ -20,7 +24,10 @@ export const HighlightStrip = ({ t }) => (
     <div className="max-w-6xl mx-auto px-4 pb-5">
       <div className="flex items-start gap-3 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3.5 shadow-sm">
         <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-        <p className="text-[11px] text-amber-800 leading-relaxed">
+        {/* 11px is below the 12px body-text floor — bumped since this is
+            a safety warning, the last text on the page that should be
+            hard to read. */}
+        <p className="text-xs text-amber-800 leading-relaxed max-w-[58ch]">
           <span className="font-bold">{t.riskTitle} —</span> {t.riskText}
         </p>
       </div>

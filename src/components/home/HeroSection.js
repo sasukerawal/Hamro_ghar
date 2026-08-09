@@ -21,8 +21,16 @@ export const HeroSection = ({
   const avgViews = stats.avgViews ?? "—";
   const searchRipple = useRipple();
 
+  // A separate blurred "glow orb" div was tried here for atmosphere, but a
+  // saturated-center-fading-to-transparent radial is the exact decorative-
+  // halo AI-tell regardless of which page section it sits in. A full-bleed
+  // linear wash reads as a considered background treatment instead — still
+  // mostly neutral slate-50, not a cream flood, just a warm drift toward
+  // one corner.
   return (
-    <section className="relative bg-slate-50 overflow-hidden">
+    // No overflow-hidden — nothing here bleeds past the section edge, and
+    // it was clipping the showcase card's own decorative offset frame.
+    <section className="relative bg-gradient-to-br from-slate-50 via-slate-50 to-gold-50/60">
       <div className="max-w-6xl mx-auto px-4 py-16 lg:py-24 grid gap-10 lg:grid-cols-2 items-center relative z-10">
         {/* Left copy */}
         <div className="animate-fade-in-up">
@@ -65,7 +73,7 @@ export const HeroSection = ({
               type="button"
               onClick={onSearch}
               onPointerDown={searchRipple.onPointerDown}
-              className="relative overflow-hidden inline-flex items-center justify-center gap-2 rounded-xl bg-gold-500 px-5 py-3 min-h-[44px] text-sm font-semibold text-white hover:bg-gold-600 active:scale-95 transition-all shadow-md shadow-gold-600/25"
+              className="relative overflow-hidden inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-gold-500 to-ember-600 px-5 py-3 min-h-[44px] text-sm font-semibold text-white hover:from-gold-600 hover:to-ember-700 active:scale-95 transition-all shadow-md shadow-gold-600/25"
             >
               {searchRipple.rippleLayer}
               <Search className="h-4 w-4" />
@@ -111,14 +119,17 @@ const VerifiedShowcase = ({ t, totalListings, cities, avgViews, className = "" }
 
     <div className="relative rounded-[1.75rem] bg-white border border-slate-200 shadow-2xl shadow-blue-900/10 overflow-hidden">
       {/* Sample listing "photo" — an illustrated block, never a fake stock photo */}
-      <div className="relative h-40 bg-[linear-gradient(135deg,#1A1410_0%,#4F2415_55%,#B4522F_100%)] flex items-center justify-center overflow-hidden">
+      <div className="relative h-40 bg-[linear-gradient(135deg,#1A1410_0%,#4F2415_50%,#B4522F_85%,#E8A33D_130%)] flex items-center justify-center overflow-hidden">
         <svg viewBox="0 0 64 64" className="h-16 w-16 text-gold-400/40" fill="none" stroke="currentColor" strokeWidth="2.5">
           <path d="M8 30 L32 10 L56 30" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M14 26 V54 H50 V26" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M26 54 V38 H38 V54" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
 
-        <span className="stamp absolute top-3 left-3 bg-white/95 text-gold-700 text-[10px] shadow-sm">
+        {/* Fully opaque, not /95 — any backdrop bleed-through against
+            this dark photo gradient risked dragging the effective
+            contrast down. */}
+        <span className="stamp absolute top-3 left-3 bg-white text-gold-700 text-[11px] shadow-sm">
           {t.statsVerified}
         </span>
       </div>
@@ -137,7 +148,7 @@ const VerifiedShowcase = ({ t, totalListings, cities, avgViews, className = "" }
         <div className="mt-3 flex items-center gap-4 font-mono text-xs text-slate-500 border-t border-slate-100 pt-3">
           <span className="flex items-center gap-1.5"><Bed className="h-3.5 w-3.5" /> 2</span>
           <span className="flex items-center gap-1.5"><Bath className="h-3.5 w-3.5" /> 1</span>
-          <span className="ml-auto text-slate-400">{t.statsSampleTag}</span>
+          <span className="ml-auto text-slate-500">{t.statsSampleTag}</span>
         </div>
       </div>
 
@@ -154,7 +165,7 @@ const VerifiedShowcase = ({ t, totalListings, cities, avgViews, className = "" }
 const MiniStat = ({ value, label }) => (
   <div className="px-3 py-3 text-center">
     <NumberTicker value={value} className="font-mono text-sm font-bold text-slate-900" />
-    <p className="text-[9px] uppercase tracking-wider text-slate-400 mt-0.5 leading-tight">{label}</p>
+    <p className="text-[11px] uppercase tracking-wider text-slate-500 mt-0.5 leading-tight">{label}</p>
   </div>
 );
 

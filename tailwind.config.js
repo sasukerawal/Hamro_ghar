@@ -46,6 +46,20 @@ module.exports = {
           900: '#4F2415',
           950: '#2E1409',
         },
+        // Secondary warm accent — a richer marigold/copper sitting between
+        // terracotta and pure gold, grounded in the same fired-brick /
+        // Kathmandu-dusk world. Reserved for gradient depth and atmospheric
+        // glow (hero/CTA backgrounds, premium-card highlights) — never for
+        // button fills, body text, or anything already using `gold-*`, so
+        // every contrast pairing verified this session stays untouched.
+        ember: {
+          300: '#F0BB6B',
+          400: '#E8A33D',
+          500: '#D9822E',
+          600: '#A5551C',
+          700: '#8A4517',
+          800: '#6B3512',
+        },
       },
       fontFamily: {
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
