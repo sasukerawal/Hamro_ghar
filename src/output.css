@@ -1199,6 +1199,10 @@ video {
   height: 1.5px;
 }
 
+.h-\[130\%\]{
+  height: 130%;
+}
+
 .h-\[35vh\]{
   height: 35vh;
 }
@@ -2374,11 +2378,6 @@ video {
   background-color: rgb(226 232 240 / var(--tw-bg-opacity, 1));
 }
 
-.bg-slate-300{
-  --tw-bg-opacity: 1;
-  background-color: rgb(203 213 225 / var(--tw-bg-opacity, 1));
-}
-
 .bg-slate-400{
   --tw-bg-opacity: 1;
   background-color: rgb(148 163 184 / var(--tw-bg-opacity, 1));
@@ -2442,6 +2441,10 @@ video {
 
 .bg-white\/20{
   background-color: rgb(255 255 255 / 0.2);
+}
+
+.bg-white\/30{
+  background-color: rgb(255 255 255 / 0.3);
 }
 
 .bg-white\/40{
@@ -2530,6 +2533,12 @@ video {
   --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
 }
 
+.from-blue-950{
+  --tw-gradient-from: #1A1410 var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(26 20 16 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
 .from-emerald-600{
   --tw-gradient-from: #059669 var(--tw-gradient-from-position);
   --tw-gradient-to: rgb(5 150 105 / 0) var(--tw-gradient-to-position);
@@ -2566,6 +2575,11 @@ video {
   --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
 }
 
+.via-blue-950\/60{
+  --tw-gradient-to: rgb(26 20 16 / 0)  var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), rgb(26 20 16 / 0.6) var(--tw-gradient-via-position), var(--tw-gradient-to);
+}
+
 .via-gold-500{
   --tw-gradient-to: rgb(180 82 47 / 0)  var(--tw-gradient-to-position);
   --tw-gradient-stops: var(--tw-gradient-from), #B4522F var(--tw-gradient-via-position), var(--tw-gradient-to);
@@ -2574,11 +2588,6 @@ video {
 .via-slate-100{
   --tw-gradient-to: rgb(241 245 249 / 0)  var(--tw-gradient-to-position);
   --tw-gradient-stops: var(--tw-gradient-from), #f1f5f9 var(--tw-gradient-via-position), var(--tw-gradient-to);
-}
-
-.via-slate-50{
-  --tw-gradient-to: rgb(248 250 252 / 0)  var(--tw-gradient-to-position);
-  --tw-gradient-stops: var(--tw-gradient-from), #f8fafc var(--tw-gradient-via-position), var(--tw-gradient-to);
 }
 
 .via-transparent{
@@ -2599,16 +2608,16 @@ video {
   --tw-gradient-to: rgb(131 120 104 / 0) var(--tw-gradient-to-position);
 }
 
+.to-blue-950\/20{
+  --tw-gradient-to: rgb(26 20 16 / 0.2) var(--tw-gradient-to-position);
+}
+
 .to-ember-600{
   --tw-gradient-to: #A5551C var(--tw-gradient-to-position);
 }
 
 .to-emerald-700{
   --tw-gradient-to: #047857 var(--tw-gradient-to-position);
-}
-
-.to-gold-50\/60{
-  --tw-gradient-to: rgb(251 241 236 / 0.6) var(--tw-gradient-to-position);
 }
 
 .to-gold-600{
@@ -2645,6 +2654,10 @@ video {
 
 .fill-current{
   fill: currentColor;
+}
+
+.fill-gold-400{
+  fill: #C97850;
 }
 
 .fill-gold-500{
@@ -2975,6 +2988,10 @@ video {
   text-align: right;
 }
 
+.font-display{
+  font-family: Fraunces, "Times New Roman", serif;
+}
+
 .font-mono{
   font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -3083,8 +3100,8 @@ video {
   font-style: italic;
 }
 
-.leading-\[1\.12\]{
-  line-height: 1.12;
+.leading-\[1\.1\]{
+  line-height: 1.1;
 }
 
 .leading-none{
@@ -3219,6 +3236,11 @@ video {
 .text-emerald-800{
   --tw-text-opacity: 1;
   color: rgb(6 95 70 / var(--tw-text-opacity, 1));
+}
+
+.text-gold-300{
+  --tw-text-opacity: 1;
+  color: rgb(219 154 116 / var(--tw-text-opacity, 1));
 }
 
 .text-gold-400{
@@ -3422,6 +3444,10 @@ video {
 
 .opacity-90{
   opacity: 0.9;
+}
+
+.opacity-\[0\.06\]{
+  opacity: 0.06;
 }
 
 .shadow{
@@ -3682,8 +3708,16 @@ video {
   transition-duration: 500ms;
 }
 
+.duration-600{
+  transition-duration: 600ms;
+}
+
 .duration-700{
   transition-duration: 700ms;
+}
+
+.ease-editorial{
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .ease-in-out{
@@ -3754,8 +3788,16 @@ video {
   animation-duration: 500ms;
 }
 
+.duration-600{
+  animation-duration: 600ms;
+}
+
 .duration-700{
   animation-duration: 700ms;
+}
+
+.ease-editorial{
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .ease-in-out{
@@ -3945,34 +3987,37 @@ textarea:focus-visible,
   }
 }
 
+/* genjutsu cast — hero-motion, variant C (Cinematic), validated 2026-08-11:
+   0.6s duration, 0.1s per-card stagger, MASTER.md editorial ease. */
+
 .animate-fade-in-up {
-  animation: fadeInUp 0.5s ease both;
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* Staggered delays for grid cards */
 
 .stagger-1 {
-  animation-delay: 0.05s;
+  animation-delay: 0.1s;
 }
 
 .stagger-2 {
-  animation-delay: 0.10s;
+  animation-delay: 0.2s;
 }
 
 .stagger-3 {
-  animation-delay: 0.15s;
+  animation-delay: 0.3s;
 }
 
 .stagger-4 {
-  animation-delay: 0.20s;
+  animation-delay: 0.4s;
 }
 
 .stagger-5 {
-  animation-delay: 0.25s;
+  animation-delay: 0.5s;
 }
 
 .stagger-6 {
-  animation-delay: 0.30s;
+  animation-delay: 0.6s;
 }
 
 /* ─── Verification stamp ─────────────────────────────────── */

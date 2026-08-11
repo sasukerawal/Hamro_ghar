@@ -36,11 +36,30 @@ export const FeaturedListings = ({
   const { ref, isVisible } = useScrollReveal();
 
   return (
-  <section ref={ref} className="bg-slate-50 py-10">
-    <div className={`max-w-6xl mx-auto px-4 transition-all duration-700 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
+  <section ref={ref} className="relative bg-slate-50 py-10 overflow-hidden">
+    {/* imag2 — faint texture only (6% opacity), lazy-loaded since it's below
+        the fold. Kept subtle deliberately: this section's job is showing the
+        listing cards, not competing with them for attention. */}
+    <picture>
+      <source
+        srcSet="/optimized/imag2-1600.webp 1600w, /optimized/imag2-900.webp 900w, /optimized/imag2-480.webp 480w"
+        sizes="100vw"
+        type="image/webp"
+      />
+      <img
+        src="/optimized/imag2-900.webp"
+        alt=""
+        aria-hidden="true"
+        loading="lazy"
+        decoding="async"
+        className="absolute inset-0 h-full w-full object-cover opacity-[0.06] -z-10"
+      />
+    </picture>
+
+    <div className={`max-w-6xl mx-auto px-4 transition-all duration-600 ease-editorial ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
       <div className="flex items-end justify-between gap-4 mb-6">
         {/* No eyebrow label — the heading carries this on its own */}
-        <h2 className="text-xl sm:text-2xl font-bold text-blue-900">
+        <h2 className="font-display text-xl sm:text-2xl font-medium text-blue-900">
           {t.listingsTitle}
         </h2>
         {!loading && listings.length > 0 && (

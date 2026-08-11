@@ -170,33 +170,35 @@ textarea:focus-visible,
   }
 }
 
+/* genjutsu cast — hero-motion, variant C (Cinematic), validated 2026-08-11:
+   0.6s duration, 0.1s per-card stagger, MASTER.md editorial ease. */
 .animate-fade-in-up {
-  animation: fadeInUp 0.5s ease both;
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* Staggered delays for grid cards */
 .stagger-1 {
-  animation-delay: 0.05s;
+  animation-delay: 0.1s;
 }
 
 .stagger-2 {
-  animation-delay: 0.10s;
+  animation-delay: 0.2s;
 }
 
 .stagger-3 {
-  animation-delay: 0.15s;
+  animation-delay: 0.3s;
 }
 
 .stagger-4 {
-  animation-delay: 0.20s;
+  animation-delay: 0.4s;
 }
 
 .stagger-5 {
-  animation-delay: 0.25s;
+  animation-delay: 0.5s;
 }
 
 .stagger-6 {
-  animation-delay: 0.30s;
+  animation-delay: 0.6s;
 }
 
 /* ─── Verification stamp ─────────────────────────────────── */

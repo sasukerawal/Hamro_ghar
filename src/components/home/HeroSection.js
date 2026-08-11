@@ -1,8 +1,17 @@
-import React from "react";
+import React, { useRef } from "react";
 import { MapPin, Search, Star, Bed, Bath } from "lucide-react";
+import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import AddressSuggestionsList from "../../AddressSuggestionsList";
 import NumberTicker from "../common/NumberTicker";
 import { useRipple } from "../common/Ripple";
+
+// genjutsu cast — hero motion, variant C (Cinematic), validated 2026-08-11.
+// Parallax factor 0.25, 0.6s reveal, 0.14s stagger, MASTER.md editorial ease.
+const HERO_EASE = [0.16, 1, 0.3, 1];
+const HERO_DURATION = 0.6;
+const HERO_STAGGER = 0.14;
+const HERO_PARALLAX_FACTOR = 0.25;
+const HERO_IMAGE_OPACITY = 0.7;
 
 export const HeroSection = ({
   t,
@@ -20,35 +29,97 @@ export const HeroSection = ({
   const cities = stats.citiesCount ?? "—";
   const avgViews = stats.avgViews ?? "—";
   const searchRipple = useRipple();
+  const sectionRef = useRef(null);
+  const reduceMotion = useReducedMotion();
 
-  // A separate blurred "glow orb" div was tried here for atmosphere, but a
-  // saturated-center-fading-to-transparent radial is the exact decorative-
-  // halo AI-tell regardless of which page section it sits in. A full-bleed
-  // linear wash reads as a considered background treatment instead — still
-  // mostly neutral slate-50, not a cream flood, just a warm drift toward
-  // one corner.
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start start", "end start"],
+  });
+  const parallaxY = useTransform(
+    scrollYProgress,
+    [0, 1],
+    [0, reduceMotion ? 0 : 400 * HERO_PARALLAX_FACTOR]
+  );
+
+  const revealProps = (index) =>
+    reduceMotion
+      ? { initial: false, animate: { opacity: 1, y: 0 } }
+      : {
+          initial: { opacity: 0, y: 24 },
+          animate: { opacity: 1, y: 0 },
+          transition: {
+            duration: HERO_DURATION,
+            delay: index * HERO_STAGGER,
+            ease: HERO_EASE,
+          },
+        };
+
   return (
-    // No overflow-hidden — nothing here bleeds past the section edge, and
-    // it was clipping the showcase card's own decorative offset frame.
-    <section className="relative bg-gradient-to-br from-slate-50 via-slate-50 to-gold-50/60">
-      <div className="max-w-6xl mx-auto px-4 py-16 lg:py-24 grid gap-10 lg:grid-cols-2 items-center relative z-10">
+    // Full-bleed imag1 background + parallax (MASTER.md editorial surface:
+    // dark-image ground, warm-ink gradient scrim for text legibility) —
+    // replaces the prior slate/gold gradient wash. No overflow-hidden on the
+    // outer section for the showcase card's offset frame; the image layer
+    // gets its own overflow-hidden instead.
+    // isolate is load-bearing: without it, `relative` alone doesn't create a
+    // stacking context, so the image layer's -z-10 resolves against the
+    // nearest ancestor stacking context instead of this section — which put
+    // it behind the page background entirely (invisible image, invisible
+    // white headline text with nothing dark behind it).
+    <section ref={sectionRef} className="relative isolate overflow-hidden">
+      <motion.div className="absolute inset-0 -z-10 overflow-hidden" style={{ y: parallaxY }}>
+        <picture>
+          <source
+            srcSet="/optimized/imag1-1600.webp 1600w, /optimized/imag1-900.webp 900w, /optimized/imag1-480.webp 480w"
+            sizes="100vw"
+            type="image/webp"
+          />
+          {/* Ken Burns — one-time 1.08→1 zoom over 8s, not a loop (a looping
+              zoom on a hero reads as a screensaver, not "alive"). Skipped
+              entirely under reduced-motion via initial=false. */}
+          <motion.img
+            src="/optimized/imag1-900.webp"
+            alt=""
+            aria-hidden="true"
+            fetchpriority="high"
+            className="h-[130%] w-full object-cover object-[50%_35%]"
+            style={{ opacity: HERO_IMAGE_OPACITY }}
+            initial={reduceMotion ? false : { scale: 1.08 }}
+            animate={{ scale: 1 }}
+            transition={reduceMotion ? { duration: 0 } : { duration: 8, ease: "easeOut" }}
+          />
+        </picture>
+        <div className="absolute inset-0 bg-gradient-to-t from-blue-950 via-blue-950/60 to-blue-950/20" />
+      </motion.div>
+
+      {/* Mobile: near-fullscreen (88vh) so the photo dominates instead of
+          being a cropped strip behind content sized to fit; content is
+          bottom-anchored so the primary CTA lands in the thumb-reachable
+          zone (mobile-principles). Desktop: unchanged two-column grid. */}
+      <div className="max-w-6xl mx-auto px-4 pb-12 pt-28 min-h-[88vh] flex flex-col justify-end lg:min-h-0 lg:py-24 lg:grid lg:grid-cols-2 lg:items-center gap-10 relative z-10">
         {/* Left copy */}
-        <div className="animate-fade-in-up">
-          <p className="stamp text-gold-700 text-[11px]">
+        <div>
+          <motion.p {...revealProps(0)} className="stamp text-gold-300 text-[11px]">
             {t.heroTag}
-          </p>
+          </motion.p>
 
-          <h1 className="mt-5 text-3xl sm:text-4xl lg:text-5xl font-extrabold text-blue-900 leading-[1.12] tracking-tight">
+          <motion.h1
+            {...revealProps(1)}
+            className="font-display mt-5 text-4xl sm:text-4xl lg:text-5xl font-semibold text-white leading-[1.1] tracking-tight"
+          >
             {t.heroH1a}
-            <span className="block mt-1 text-gold-700">{t.heroH1b}</span>
-          </h1>
+            <span className="block mt-1 text-gold-300">{t.heroH1b}</span>
+          </motion.h1>
 
-          <p className="mt-4 text-slate-600 text-sm sm:text-base max-w-md leading-relaxed">
+          <motion.p {...revealProps(2)} className="mt-4 text-white/80 text-sm sm:text-base max-w-md leading-relaxed">
             {t.heroSub}
-          </p>
+          </motion.p>
 
           {/* Search box */}
-          <div className="mt-7 rounded-2xl bg-white shadow-xl border border-slate-200 p-3 flex flex-col gap-3 sm:flex-row sm:items-center relative z-20">
+          <motion.div
+            {...revealProps(3)}
+            className="mt-7 rounded-2xl bg-white shadow-xl border border-slate-200 p-3 flex flex-col gap-3 sm:flex-row sm:items-center relative z-20"
+          >
             <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-transparent focus-within:border-gold-300 transition-colors relative">
               <MapPin className="h-4 w-4 text-gold-600 shrink-0" />
               <input
@@ -79,35 +150,36 @@ export const HeroSection = ({
               <Search className="h-4 w-4" />
               {t.searchBtn}
             </button>
-          </div>
+          </motion.div>
 
           {/* Trust row */}
-          <div className="mt-5 flex items-center gap-4 text-xs text-slate-500">
+          <motion.div {...revealProps(4)} className="mt-5 flex items-center gap-4 text-xs text-white/70">
             <div className="flex items-center gap-1">
               {[0, 1, 2, 3, 4].map((i) => (
-                <Star key={i} className="h-3.5 w-3.5 text-gold-500 fill-gold-500" />
+                <Star key={i} className="h-3.5 w-3.5 text-gold-400 fill-gold-400" />
               ))}
-              <span className="ml-1 font-medium text-slate-600">{t.heroTrust}</span>
+              <span className="ml-1 font-medium text-white/80">{t.heroTrust}</span>
             </div>
-            <span className="h-3 w-px bg-slate-300" />
+            <span className="h-3 w-px bg-white/30" />
             <button
               type="button"
               onClick={onGoLogin}
-              className="text-gold-700 font-semibold hover:underline underline-offset-2 transition-colors"
+              className="text-gold-300 font-semibold hover:underline underline-offset-2 transition-colors"
             >
               {t.heroSignIn}
             </button>
-          </div>
+          </motion.div>
         </div>
 
         {/* Right: the thesis — a stamped, verified listing, not an abstract metric */}
-        <VerifiedShowcase
-          t={t}
-          totalListings={total}
-          cities={cities}
-          avgViews={avgViews}
-          className="hidden lg:block"
-        />
+        <motion.div {...revealProps(2)} className="hidden lg:block">
+          <VerifiedShowcase
+            t={t}
+            totalListings={total}
+            cities={cities}
+            avgViews={avgViews}
+          />
+        </motion.div>
       </div>
     </section>
   );

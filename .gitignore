@@ -27,3 +27,10 @@ Thumbs.db
 
 # Tailwind generated
 src/output.css
+
+# Source images for scripts/optimize-images.mjs — the generated
+# public/optimized/*.webp files are what the app actually serves and are
+# committed; these raw ~7MB-each PNGs stay local to keep the repo lean.
+public/imag1.png
+public/imag2.png
+public/imag3.png

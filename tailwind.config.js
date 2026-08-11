@@ -60,9 +60,42 @@ module.exports = {
           700: '#8A4517',
           800: '#6B3512',
         },
+        // MASTER.md — warm-parchment editorial canvas, replaces white/near-white
+        // on editorial surfaces only (hero, listing detail, showcase). Utility
+        // surfaces (search, forms, dashboard) deliberately keep white/slate-50.
+        parchment: {
+          DEFAULT: '#F7EFE4',
+          deep: '#EFE3D2',
+          hairline: '#DED0B8',
+        },
+        // MASTER.md — the palette's cool counterpoint to warm-ink, reserved for
+        // dark UI chrome on utility surfaces (dashboard shell, nav, chat) so
+        // those stay "modern platform" rather than editorial-warm.
+        graphite: {
+          DEFAULT: '#22252A',
+          soft: '#3A3E45',
+        },
       },
       fontFamily: {
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+        // MASTER.md — headline serif, editorial surfaces only (H1/H2, not UI
+        // chrome or body copy, which stay on the default sans/Outfit stack).
+        display: ['Fraunces', '"Times New Roman"', 'serif'],
+      },
+      borderRadius: {
+        // MASTER.md — split shape language: editorial surfaces go sharp,
+        // utility controls keep the existing pill-rounded scale untouched.
+        'editorial-sm': '2px',
+        'editorial-md': '4px',
+      },
+      transitionDuration: {
+        // MASTER.md motion regimes — utility stays on Tailwind's defaults
+        // (100-200ms range already covered), editorial gets named slow steps.
+        450: '450ms',
+        600: '600ms',
+      },
+      transitionTimingFunction: {
+        editorial: 'cubic-bezier(0.16, 1, 0.3, 1)',
       },
       keyframes: {
         'pulse-slow': {
@@ -77,11 +110,18 @@ module.exports = {
           '0%, 100%': { transform: 'scale(1)' },
           '50%': { transform: 'scale(1.05)' },
         },
+        // MASTER.md editorial reveal — used with stagger via inline delay,
+        // never on utility surfaces (see MASTER.md §7, forbidden list).
+        'editorial-reveal': {
+          '0%': { opacity: 0, transform: 'translateY(24px)' },
+          '100%': { opacity: 1, transform: 'translateY(0)' },
+        },
       },
       animation: {
         'pulse-slow': 'pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'fade-in': 'fade-in 0.8s ease-out forwards',
         'scale-up-down': 'scale-up-down 4s ease-in-out infinite',
+        'editorial-reveal': 'editorial-reveal 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
       },
     },
   },
